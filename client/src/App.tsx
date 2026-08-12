@@ -15,6 +15,13 @@ import { LoginPage } from './views/LoginPage';
 import { DashboardView } from './views/DashboardView';
 import { MyWorkView } from './views/MyWorkView';
 import { IncidentsView } from './views/IncidentsView';
+import { BoardsView } from './views/BoardsView';
+import { FiltersView } from './views/FiltersView';
+import { RecentUpdatesView } from './views/RecentUpdatesView';
+import { TimeLoggedView } from './views/TimeLoggedView';
+import { DashboardsView } from './views/DashboardsView';
+import { TeamView } from './views/TeamView';
+import { SettingsView } from './views/SettingsView';
 
 function ComingSoon({ title }: { title: string }) {
   return (
@@ -36,6 +43,20 @@ function ActiveView() {
       return <MyWorkView />;
     case 'incidents':
       return <IncidentsView />;
+    case 'boards':
+      return <BoardsView />;
+    case 'filters':
+      return <FiltersView />;
+    case 'recent':
+      return <RecentUpdatesView />;
+    case 'timelogged':
+      return <TimeLoggedView />;
+    case 'dashboards':
+      return <DashboardsView />;
+    case 'team':
+      return <TeamView />;
+    case 'settings':
+      return <SettingsView />;
     default:
       return <ComingSoon title={activePageName(route)} />;
   }
