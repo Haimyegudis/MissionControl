@@ -4,6 +4,7 @@
 import { useEffect } from 'react';
 import { Shell } from './components/Shell';
 import { ToastHost } from './components/Toast';
+import { DialogHost, useDialogs } from './dialogs/DialogHost';
 import { activePageName, routeStore } from './router';
 import { initScheduler } from './stores/scheduler';
 import { sessionStore } from './stores/session';
@@ -26,6 +27,19 @@ function ComingSoon({ title }: { title: string }) {
 function ActiveView() {
   const route = useStore(routeStore);
   return <ComingSoon title={activePageName(route)} />;
+}
+
+/** Shell + views, wired to the dialog openers (must render under DialogHost). */
+function ConnectedShell() {
+  const dialogs = useDialogs();
+  return (
+    <Shell
+      onCreateIncident={() => dialogs.openCreateIssue()}
+      onOpenPalette={(mode) => dialogs.openPalette(mode)}
+    >
+      <ActiveView />
+    </Shell>
+  );
 }
 
 /** Keep <html data-theme> in sync with settings (theme applies live). */
@@ -72,17 +86,9 @@ export default function App() {
 
   return (
     <>
-      <Shell
-        onCreateIncident={() => pushToast({ title: 'Create Incident', body: 'Create-issue dialog arrives in a later task.' })}
-        onOpenPalette={(mode) =>
-          pushToast({
-            title: mode === 'pomodoro' ? 'Pick issue for Pomodoro' : 'Command palette',
-            body: 'The command palette arrives in a later task.',
-          })
-        }
-      >
-        <ActiveView />
-      </Shell>
+      <DialogHost>
+        <ConnectedShell />
+      </DialogHost>
       <ToastHost />
     </>
   );
