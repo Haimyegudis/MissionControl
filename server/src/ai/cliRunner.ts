@@ -39,11 +39,14 @@ export function resolveCopilotExe(): string {
   try {
     const res = spawnSync('where', ['copilot'], { encoding: 'utf8', windowsHide: true });
     if (res.status === 0 && typeof res.stdout === 'string') {
-      const hit = res.stdout
+      const lines = res.stdout
         .split(/\r?\n/)
         .map((line) => line.trim())
-        .filter((line) => line.length > 0)
-        .find((line) => line.toLowerCase().endsWith('.exe') && existsSync(line));
+        .filter((line) => line.length > 0 && existsSync(line));
+      // Prefer a real .exe; fall back to the npm .cmd/.bat shim.
+      const hit =
+        lines.find((line) => line.toLowerCase().endsWith('.exe')) ??
+        lines.find((line) => /\.(cmd|bat)$/i.test(line));
       if (hit) {
         cachedExePath = hit;
         return hit;
@@ -112,7 +115,15 @@ export async function runCopilotCli(
         '--output-format',
         'text',
       ];
-      const child = spawn(exe, args, { windowsHide: true });
+      // npm ships copilot as a .cmd shim — batch files need a shell. Quote
+      // args ourselves (none contain embedded quotes) and hand cmd one line.
+      const isBatch = /\.(cmd|bat)$/i.test(exe);
+      const child = isBatch
+        ? spawn(
+            [exe, ...args].map((a) => (/[\s&()^,;=]/.test(a) ? `"${a}"` : a)).join(' '),
+            { windowsHide: true, shell: true },
+          )
+        : spawn(exe, args, { windowsHide: true });
 
       let stdout = '';
       let stderr = '';

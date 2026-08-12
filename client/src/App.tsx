@@ -12,6 +12,9 @@ import { loadSettings, settingsStore } from './stores/settings';
 import { pushToast } from './stores/toasts';
 import { useStore } from './stores/useStore';
 import { LoginPage } from './views/LoginPage';
+import { DashboardView } from './views/DashboardView';
+import { MyWorkView } from './views/MyWorkView';
+import { IncidentsView } from './views/IncidentsView';
 
 function ComingSoon({ title }: { title: string }) {
   return (
@@ -26,7 +29,16 @@ function ComingSoon({ title }: { title: string }) {
 
 function ActiveView() {
   const route = useStore(routeStore);
-  return <ComingSoon title={activePageName(route)} />;
+  switch (route) {
+    case 'dashboard':
+      return <DashboardView />;
+    case 'mywork':
+      return <MyWorkView />;
+    case 'incidents':
+      return <IncidentsView />;
+    default:
+      return <ComingSoon title={activePageName(route)} />;
+  }
 }
 
 /** Shell + views, wired to the dialog openers (must render under DialogHost). */
