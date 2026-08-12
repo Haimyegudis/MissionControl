@@ -1,0 +1,182 @@
+/**
+ * Copilot CLI runner (ui-parity-contract.md §13.2).
+ *
+ * Resolves copilot.exe, writes the prompt to a temp file prefixed with the
+ * anti-tool header, spawns the CLI with a fixed argument list, accumulates
+ * stdout/stderr (no token streaming) and returns trimmed stdout after exit.
+ */
+import { spawn, spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { existsSync, unlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
+/** 15-minute hard timeout, then the process tree is killed. */
+const TIMEOUT_MS = 15 * 60 * 1000;
+
+const NOT_FOUND_MESSAGE =
+  'copilot.exe not found. Install with `winget install GitHub.CopilotCLI` and run `copilot login` once.';
+
+/** Anti-tool header prepended to every prompt file (verbatim). */
+export const ANTI_TOOL_HEADER =
+  'IMPORTANT: Do NOT call any tools (no shell, no write, no read). Respond with text only based on the request below.\n\n';
+
+let cachedExePath: string | null = null;
+
+/** Test hook: forget the cached copilot.exe path. */
+export function resetCopilotExeCache(): void {
+  cachedExePath = null;
+}
+
+/**
+ * Resolve copilot.exe: `where copilot` (first line ending in .exe that
+ * exists) → %LOCALAPPDATA%\Programs\CopilotCLI\copilot.exe → throw.
+ * Result is cached for the process lifetime.
+ */
+export function resolveCopilotExe(): string {
+  if (cachedExePath !== null) return cachedExePath;
+
+  try {
+    const res = spawnSync('where', ['copilot'], { encoding: 'utf8', windowsHide: true });
+    if (res.status === 0 && typeof res.stdout === 'string') {
+      const hit = res.stdout
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .find((line) => line.toLowerCase().endsWith('.exe') && existsSync(line));
+      if (hit) {
+        cachedExePath = hit;
+        return hit;
+      }
+    }
+  } catch {
+    // `where` unavailable — fall through to the fixed location.
+  }
+
+  const localAppData = process.env.LOCALAPPDATA;
+  if (localAppData) {
+    const candidate = path.join(localAppData, 'Programs', 'CopilotCLI', 'copilot.exe');
+    if (existsSync(candidate)) {
+      cachedExePath = candidate;
+      return candidate;
+    }
+  }
+
+  throw new Error(NOT_FOUND_MESSAGE);
+}
+
+/** Kill the whole process tree (taskkill /T on Windows). */
+function killTree(pid: number | undefined, child: ReturnType<typeof spawn>): void {
+  if (process.platform === 'win32' && pid !== undefined) {
+    try {
+      spawnSync('taskkill', ['/PID', String(pid), '/T', '/F'], { windowsHide: true });
+      return;
+    } catch {
+      // fall through to plain kill
+    }
+  }
+  try {
+    child.kill('SIGKILL');
+  } catch {
+    // already gone
+  }
+}
+
+/**
+ * Run copilot.exe with the prompt delivered via a temp file. Resolves with
+ * trimmed stdout; rejects on non-zero exit, timeout, abort or spawn failure.
+ */
+export async function runCopilotCli(
+  prompt: string,
+  model: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  const exe = resolveCopilotExe();
+  const tmpFile = path.join(tmpdir(), `copilot-prompt-${randomUUID()}.txt`);
+  writeFileSync(tmpFile, ANTI_TOOL_HEADER + prompt, 'utf8');
+
+  try {
+    return await new Promise<string>((resolve, reject) => {
+      const args = [
+        '-p',
+        `Follow ALL instructions in the file ${tmpFile} exactly. Output ONLY the answer text, nothing else.`,
+        '-s',
+        '--model',
+        model,
+        '--allow-all-paths',
+        '--deny-tool',
+        'shell',
+        '--deny-tool',
+        'write',
+        '--no-custom-instructions',
+        '--output-format',
+        'text',
+      ];
+      const child = spawn(exe, args, { windowsHide: true });
+
+      let stdout = '';
+      let stderr = '';
+      let settled = false;
+      let timedOut = false;
+      let aborted = false;
+
+      child.stdout?.setEncoding('utf8');
+      child.stderr?.setEncoding('utf8');
+      child.stdout?.on('data', (chunk: string) => {
+        stdout += chunk;
+      });
+      child.stderr?.on('data', (chunk: string) => {
+        stderr += chunk;
+      });
+
+      const timer = setTimeout(() => {
+        timedOut = true;
+        killTree(child.pid, child);
+      }, TIMEOUT_MS);
+
+      const onAbort = (): void => {
+        aborted = true;
+        killTree(child.pid, child);
+      };
+      if (signal) {
+        if (signal.aborted) onAbort();
+        else signal.addEventListener('abort', onAbort, { once: true });
+      }
+
+      const finish = (err: Error | null, value?: string): void => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        signal?.removeEventListener('abort', onAbort);
+        if (err) reject(err);
+        else resolve(value ?? '');
+      };
+
+      child.on('error', (err) => {
+        finish(new Error(`Failed to start copilot.exe: ${err.message}`));
+      });
+
+      child.on('close', (code) => {
+        if (timedOut) {
+          finish(new Error('copilot.exe timed out after 15 minutes.'));
+          return;
+        }
+        if (aborted) {
+          finish(new Error('copilot.exe run was aborted.'));
+          return;
+        }
+        if (code !== 0) {
+          finish(new Error(`copilot.exe exited ${code}. ${stderr.trim() || '(no stderr)'}`));
+          return;
+        }
+        finish(null, stdout.trim());
+      });
+    });
+  } finally {
+    try {
+      unlinkSync(tmpFile);
+    } catch {
+      // best-effort cleanup
+    }
+  }
+}
