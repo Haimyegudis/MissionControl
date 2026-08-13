@@ -85,6 +85,56 @@ function GroupLabel({ children }: { children: ReactNode }) {
   );
 }
 
+/** Collapsible sidebar group; open state persists per group id. */
+function NavGroup({
+  id,
+  label,
+  emphasized,
+  children,
+}: {
+  id: string;
+  label: string;
+  emphasized?: boolean;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(() => localStorage.getItem(`mc.grp.${id}`) !== '0');
+  const toggle = () =>
+    setOpen((prev) => {
+      localStorage.setItem(`mc.grp.${id}`, prev ? '0' : '1');
+      return !prev;
+    });
+  return (
+    <>
+      <button
+        onClick={toggle}
+        title={open ? 'Collapse group' : 'Expand group'}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          width: '100%',
+          padding: '10px 12px 4px',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          textAlign: 'left',
+          fontSize: emphasized ? 12.5 : 10.5,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          color: emphasized ? 'var(--accent-cyan)' : 'var(--muted)',
+          fontWeight: emphasized ? 800 : 600,
+        }}
+      >
+        <span aria-hidden style={{ fontSize: 9, width: 11, display: 'inline-block' }}>
+          {open ? '▾' : '▸'}
+        </span>
+        {label}
+      </button>
+      {open && children}
+    </>
+  );
+}
+
 function PomodoroWidget({ onPickIssue }: { onPickIssue: () => void }) {
   const state = useStore(pomodoroStore);
   const iconBtn: CSSProperties = {
@@ -154,6 +204,13 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
   const lastRefresh = useStore(lastRefreshStore);
   const [refreshRunning, setRefreshRunning] = useState(false);
   const [pinned, setPinned] = useState<PinnedBoard[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem('mc.sidebar') !== '0');
+
+  const toggleSidebar = () =>
+    setSidebarOpen((prev) => {
+      localStorage.setItem('mc.sidebar', prev ? '0' : '1');
+      return !prev;
+    });
 
   const openPalette = useCallback(
     (mode: 'default' | 'pomodoro' = 'default') => onOpenPalette?.(mode),
@@ -233,9 +290,24 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* ------------------------------------------------------- top bar --- */}
       <header style={topBarStyle}>
-        <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
-          <span style={{ color: 'var(--accent-cyan)' }}>JIRA</span>
-          <span style={{ color: 'var(--text-primary)' }}> WEB</span>
+        <button
+          className="btn btn-icon"
+          title={sidebarOpen ? 'Hide menu' : 'Show menu'}
+          onClick={toggleSidebar}
+        >
+          ☰
+        </button>
+        <div
+          style={{
+            fontSize: 16,
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            whiteSpace: 'nowrap',
+            fontFamily: 'var(--font-display)',
+          }}
+        >
+          <span style={{ color: 'var(--accent-cyan)' }}>MISSION</span>
+          <span style={{ color: 'var(--text-primary)' }}> CONTROL</span>
         </div>
         <div style={{ marginLeft: 24, color: 'var(--muted)', fontSize: 13, whiteSpace: 'nowrap' }}>
           {activePageName(route)}
@@ -301,20 +373,23 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
 
       {/* ---------------------------------------------------- body -------- */}
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        {sidebarOpen && (
         <nav style={sidebarStyle}>
-          <GroupLabel>JIRA</GroupLabel>
-          {ROUTES.filter((r) => r.id !== 'settings').map((r) => (
-            <NavItem key={r.id} route={r} active={route === r.id} />
-          ))}
+          <NavGroup id="jira" label="JIRA" emphasized>
+            {ROUTES.filter((r) => r.id !== 'settings').map((r) => (
+              <NavItem key={r.id} route={r} active={route === r.id} />
+            ))}
+          </NavGroup>
 
-          <GroupLabel>TESTRAIL</GroupLabel>
-          {TESTRAIL_ROUTES.map((r) => (
-            <NavItem
-              key={r.id}
-              route={r}
-              active={route === r.id || (r.id === 'testrail-runs' && route === 'testrail-run')}
-            />
-          ))}
+          <NavGroup id="testrail" label="TESTRAIL" emphasized>
+            {TESTRAIL_ROUTES.map((r) => (
+              <NavItem
+                key={r.id}
+                route={r}
+                active={route === r.id || (r.id === 'testrail-runs' && route === 'testrail-run')}
+              />
+            ))}
+          </NavGroup>
 
           <div style={{ height: 1, background: 'var(--border-soft)', margin: '10px 8px' }} />
 
@@ -389,6 +464,7 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
             </>
           )}
         </nav>
+        )}
 
         <main style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: 16 }}>{children}</main>
       </div>
