@@ -8,7 +8,7 @@ import { DialogHost, useDialogs } from './dialogs/DialogHost';
 import { activePageName, routeStore } from './router';
 import { initScheduler } from './stores/scheduler';
 import { sessionStore } from './stores/session';
-import { loadSettings, resolveTheme, settingsStore } from './stores/settings';
+import { isSettingsLoaded, loadSettings, resolveTheme, settingsStore } from './stores/settings';
 import { pushToast } from './stores/toasts';
 import { useStore } from './stores/useStore';
 import { LoginPage } from './views/LoginPage';
@@ -26,6 +26,7 @@ import { CaseLibraryView } from './views/testrail/CaseLibraryView';
 import { RunsView } from './views/testrail/RunsView';
 import { RunDetailView } from './views/testrail/RunDetailView';
 import { TestRailReportsView } from './views/testrail/TestRailReportsView';
+import { ConfluenceView } from './views/confluence/ConfluenceView';
 
 function ComingSoon({ title }: { title: string }) {
   return (
@@ -69,6 +70,8 @@ function ActiveView() {
       return <RunDetailView />;
     case 'testrail-reports':
       return <TestRailReportsView />;
+    case 'confluence':
+      return <ConfluenceView />;
     default:
       return <ComingSoon title={activePageName(route)} />;
   }
@@ -87,17 +90,50 @@ function ConnectedShell() {
   );
 }
 
-/** Keep <html data-theme> in sync with settings (theme applies live). */
+/** Keep <html data-theme> in sync with settings (theme applies live). Waits
+ *  for the first real load so the boot splash's persisted theme survives,
+ *  then mirrors the resolved value to localStorage for the splash script. */
 function useThemeSync() {
   const settings = useStore(settingsStore);
   useEffect(() => {
-    document.documentElement.dataset.theme = resolveTheme(settings.theme);
-  }, [settings.theme]);
+    if (!isSettingsLoaded()) return;
+    const resolved = resolveTheme(settings.theme);
+    document.documentElement.dataset.theme = resolved;
+    try {
+      localStorage.setItem('jiraweb.theme', resolved);
+    } catch {
+      /* mirror is best-effort */
+    }
+  }, [settings]);
+}
+
+/** Dismiss the boot splash (client/index.html) once React has painted. Fast
+ *  loads (<150ms — the splash's appear delay) remove it before it ever shows;
+ *  otherwise the ~1.8s radar animation completes, then fades out (.4s). */
+function useSplashDismiss() {
+  useEffect(() => {
+    const el = document.getElementById('splash');
+    if (!el || el.dataset.closing) return;
+    el.dataset.closing = '1';
+    const started = Number(el.dataset.start ?? '0');
+    const elapsed = started > 0 ? Date.now() - started : Number.POSITIVE_INFINITY;
+    if (elapsed < 150) {
+      el.remove();
+      return;
+    }
+    window.setTimeout(() => {
+      el.classList.add('done');
+      window.setTimeout(() => el.remove(), 450);
+    }, Math.max(0, 1800 - elapsed));
+    // No cleanup: the splash must be dismissed exactly once, even under
+    // StrictMode's mount → unmount → remount cycle.
+  }, []);
 }
 
 export default function App() {
   const session = useStore(sessionStore);
   useThemeSync();
+  useSplashDismiss();
 
   // Once connected: load settings, then start the refresh scheduler.
   useEffect(() => {

@@ -65,6 +65,8 @@ function emptyCredentials(): Credentials {
     testRailBaseUrl: '',
     testRailEmail: '',
     testRailApiKey: '',
+    confluenceBaseUrl: '',
+    confluencePat: '',
   };
 }
 
@@ -85,7 +87,12 @@ export function testrailRoutes(deps: AppDeps): Router {
     '/session',
     h(async (req, res) => {
       const body = (req.body ?? {}) as Record<string, unknown>;
-      const baseUrl = requireString(body.baseUrl, 'baseUrl');
+      // Fixed HP TestRail endpoint — the Settings UI no longer sends a
+      // baseUrl; explicit values (older clients, saved configs) still win.
+      const baseUrl =
+        typeof body.baseUrl === 'string' && body.baseUrl.trim()
+          ? body.baseUrl
+          : 'https://hp-testrail.external.hp.com';
       const email = requireString(body.email, 'email');
       const apiKey = requireString(body.apiKey, 'apiKey');
       const user = await service.connect({ baseUrl, email, apiKey });

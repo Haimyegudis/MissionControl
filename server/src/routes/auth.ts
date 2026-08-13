@@ -34,18 +34,27 @@ export function authStatus(deps: AppDeps): AuthStatus {
   };
 }
 
+/** Fixed HP Jira endpoint — the Settings UI no longer sends a baseUrl;
+ *  explicit values (older clients, saved profiles) still win when present. */
+const DEFAULT_JIRA_BASE_URL = 'https://hp-jira.external.hp.com';
+
 function credentialsFromBody(deps: AppDeps, body: Record<string, unknown>): Credentials {
-  // Preserve saved TestRail fields — a Jira login must not wipe them.
+  // Preserve saved integrations — a Jira login must not wipe them.
   const saved = deps.credentials.load();
   return {
     email: typeof body.email === 'string' ? body.email : '',
-    jiraBaseUrl: requireString(body.baseUrl, 'baseUrl'),
+    jiraBaseUrl:
+      typeof body.baseUrl === 'string' && body.baseUrl.trim()
+        ? body.baseUrl
+        : DEFAULT_JIRA_BASE_URL,
     jiraPat: requireString(body.pat, 'pat'),
     instanceType: body.instanceType === 'cloud' ? 'cloud' : 'datacenter',
     defaultProjectKey: defaultProjectKey(deps),
     testRailBaseUrl: saved?.testRailBaseUrl ?? '',
     testRailEmail: saved?.testRailEmail ?? '',
     testRailApiKey: saved?.testRailApiKey ?? '',
+    confluenceBaseUrl: saved?.confluenceBaseUrl ?? '',
+    confluencePat: saved?.confluencePat ?? '',
   };
 }
 
@@ -76,7 +85,14 @@ export function authRoutes(deps: AppDeps): Router {
   router.post(
     '/logout',
     h((_req, res) => {
-      deps.credentials.clear();
+      // Disconnect Jira without destroying independent TestRail/Confluence
+      // connections saved in the same local configuration file.
+      const saved = deps.credentials.load();
+      if (saved) {
+        deps.credentials.save({ ...saved, email: '', jiraBaseUrl: '', jiraPat: '' });
+      } else {
+        deps.credentials.clear();
+      }
       deps.session.clear();
       res.status(204).end();
     }),

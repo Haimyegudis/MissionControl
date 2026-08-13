@@ -30,6 +30,7 @@ vi.mock('../src/api/client', () => {
     timelogged: group(),
     incidents: group(),
     settings: group(),
+    confluence: group(),
     filters: group(),
     teams: group(),
     pinnedBoards: group(),
@@ -151,22 +152,43 @@ describe('MemberDetail (§9.2)', () => {
   });
 });
 
-describe('SettingsView (§14)', () => {
-  it('renders every card and the action bar', () => {
+describe('SettingsView (§14, redesign)', () => {
+  it('renders the mini-nav, every section and the action bar', () => {
     const html = renderToString(<SettingsView />);
-    expect(html).toContain('AI Assistant');
-    expect(html).toContain('Dashboard widgets');
-    expect(html).toContain('Account');
-    expect(html).toContain('Connected as:');
-    expect(html).toContain('Update PAT');
+    // Sticky mini-nav anchors == section kickers.
+    for (const label of ['Connections', 'Preferences', 'Notifications', 'Dashboard', 'AI Assistant', 'Reminders', 'Data']) {
+      expect(html).toContain(label);
+    }
+    // Connections is the single home for identity/secrets — all four services.
+    expect(html).toContain('Jira');
+    expect(html).toContain('TestRail');
+    expect(html).toContain('Confluence');
+    expect(html).toContain('GitHub Copilot');
+    expect(html).toContain('Personal access token');
+    expect(html).toContain('Connect / Test');
+    expect(html).toContain('Clear TestRail cache');
     expect(html).toContain('Log out');
-    expect(html).toContain('Appearance');
-    expect(html).toContain('Refresh');
+    expect(html).toContain('Login to Copilot');
+    // Service URLs are hardcoded — shown read-only, never as inputs.
+    expect(html).toContain('hp-jira.external.hp.com');
+    expect(html).toContain('hp-testrail.external.hp.com');
+    expect(html).toContain('v-indigo-confluence.inr.rd.hpicorp.net:6443');
+    expect(html).not.toContain('Base URL');
+    // TestRail email defaults to the Jira email; override is behind a link.
+    expect(html).toContain('Use a different email');
+    // Surviving settings, regrouped into flat sections. The managed URLs
+    // (incidentDashboardUrl, aiEndpoint) are intentionally absent from the UI.
+    expect(html).toContain('Theme');
+    expect(html).toContain('Railbook');
     expect(html).toContain('Pause when minimized');
-    expect(html).toContain('Notifications');
+    expect(html).toContain('Refresh interval');
     expect(html).toContain('Mute all');
-    expect(html).toContain('HP Indigo');
     expect(html).toContain('Default project key');
+    expect(html).not.toContain('Incident dashboard URL');
+    expect(html).toContain('Dashboard widgets');
+    expect(html).not.toContain('Endpoint');
+    expect(html).toContain('Model');
+    expect(html).toContain('Log-work reminder');
     expect(html).toContain('Clear cache');
     expect(html).toContain('Save');
   });

@@ -11,8 +11,215 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap"
     />
+    <!-- Boot splash — paints before React ("mission control radar"). Pure CSS,
+         transform/opacity only. Hidden for the first 150ms (animation-delay)
+         so fast loads never flash; App.tsx dismisses it after first render. -->
+    <style>
+      #splash {
+        --sp-bg: #050816;
+        --sp-text: #e8eefa;
+        --sp-muted: #8aa0bf;
+        --sp-accent: #1fe0e0;
+        --sp-c1: #4f9cf9; /* Jira */
+        --sp-c2: #22d38f; /* TestRail */
+        --sp-c3: #1fe0e0; /* Confluence */
+        --sp-c4: #ff4ecd; /* AI */
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        background: var(--sp-bg);
+        color: var(--sp-text);
+        font-family: 'Segoe UI', 'Segoe UI Variable Text', system-ui, -apple-system, sans-serif;
+        opacity: 0;
+        animation: sp-in 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) 0.15s forwards;
+      }
+      #splash.theme-railbook {
+        --sp-bg: #f2ecdd;
+        --sp-text: #23201a;
+        --sp-muted: #8a8069;
+        --sp-accent: #c7431d;
+        --sp-c1: #a33413;
+        --sp-c2: #2e7d4a;
+        --sp-c3: #c7431d;
+        --sp-c4: #6a5aa8;
+        font-family: 'Archivo', 'Segoe UI', sans-serif;
+      }
+      #splash.theme-light {
+        --sp-bg: #d9e2f2;
+        --sp-text: #10203c;
+        --sp-muted: #5a6c88;
+        --sp-accent: #0895a8;
+        --sp-c1: #2563eb;
+        --sp-c2: #0f9d6a;
+        --sp-c3: #0895a8;
+        --sp-c4: #c2199f;
+      }
+      #splash.done {
+        animation: sp-out 0.4s ease forwards;
+        pointer-events: none;
+      }
+      #splash .sp-stage {
+        position: relative;
+        width: 340px;
+        height: 340px;
+        display: grid;
+        place-items: center;
+      }
+      /* Radar rings + one thin sweep, rotating exactly once. */
+      #splash .sp-ring,
+      #splash .sp-ring2 {
+        position: absolute;
+        border-radius: 50%;
+        border: 1px solid color-mix(in srgb, var(--sp-accent) 30%, transparent);
+        opacity: 0;
+        animation: sp-ring 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) 0.2s forwards;
+      }
+      #splash .sp-ring {
+        inset: 26px;
+      }
+      #splash .sp-ring2 {
+        inset: 72px;
+        border-color: color-mix(in srgb, var(--sp-accent) 16%, transparent);
+        animation-delay: 0.3s;
+      }
+      #splash .sp-sweep {
+        position: absolute;
+        inset: 26px;
+        border-radius: 50%;
+        background: conic-gradient(
+          from 0deg,
+          color-mix(in srgb, var(--sp-accent) 35%, transparent) 0deg,
+          transparent 70deg
+        );
+        -webkit-mask: radial-gradient(closest-side, transparent 54%, #000 55%);
+        mask: radial-gradient(closest-side, transparent 54%, #000 55%);
+        opacity: 0;
+        animation: sp-sweep 1.5s cubic-bezier(0.33, 0, 0.2, 1) 0.2s forwards;
+      }
+      /* Four feature glyphs converging on the center — one app, all features. */
+      #splash .sp-g {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin: -11px 0 0 -11px;
+        width: 22px;
+        height: 22px;
+        display: grid;
+        place-items: center;
+        font-size: 15px;
+        line-height: 1;
+        opacity: 0;
+        animation: sp-conv 1s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+      }
+      #splash .sp-g1 { color: var(--sp-c1); --tx: -132px; --ty: -46px; animation-delay: 0.35s; }
+      #splash .sp-g2 { color: var(--sp-c2); --tx: 128px; --ty: -66px; animation-delay: 0.47s; }
+      #splash .sp-g3 { color: var(--sp-c3); --tx: 110px; --ty: 84px; animation-delay: 0.59s; }
+      #splash .sp-g4 { color: var(--sp-c4); --tx: -104px; --ty: 92px; animation-delay: 0.71s; }
+      /* Wordmark tracks in; MISSION carries the accent. */
+      #splash .sp-word {
+        font-size: 21px;
+        font-weight: 650;
+        letter-spacing: 0.5em;
+        white-space: nowrap;
+        text-indent: 0.5em; /* balances the trailing letter-spacing */
+        opacity: 0;
+        animation: sp-word 0.85s cubic-bezier(0.22, 0.61, 0.36, 1) 0.5s forwards;
+      }
+      #splash.theme-railbook .sp-word {
+        font-family: 'Fraunces', Georgia, serif;
+        font-weight: 600;
+      }
+      #splash .sp-word b {
+        font-weight: inherit;
+        color: var(--sp-accent);
+      }
+      #splash .sp-sub {
+        margin-top: 12px;
+        font-size: 9.5px;
+        font-weight: 600;
+        letter-spacing: 0.34em;
+        text-indent: 0.34em;
+        text-transform: uppercase;
+        color: var(--sp-muted);
+        text-align: center;
+        opacity: 0;
+        animation: sp-sub 0.55s ease-out 1s forwards;
+      }
+      @keyframes sp-in {
+        to { opacity: 1; }
+      }
+      @keyframes sp-out {
+        to { opacity: 0; }
+      }
+      @keyframes sp-ring {
+        from { opacity: 0; transform: scale(0.92); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      @keyframes sp-sweep {
+        0% { opacity: 0; transform: rotate(0deg); }
+        12% { opacity: 1; }
+        82% { opacity: 1; }
+        100% { opacity: 0; transform: rotate(360deg); }
+      }
+      @keyframes sp-conv {
+        0% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(1); }
+        22% { opacity: 0.95; }
+        78% { opacity: 0.95; }
+        100% { opacity: 0; transform: translate(0, 0) scale(0.35); }
+      }
+      @keyframes sp-word {
+        from { opacity: 0; letter-spacing: 0.5em; text-indent: 0.5em; }
+        to { opacity: 1; letter-spacing: 0.18em; text-indent: 0.18em; }
+      }
+      @keyframes sp-sub {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #splash .sp-sweep,
+        #splash .sp-g { animation-duration: 0.01s; opacity: 0; }
+        #splash .sp-word,
+        #splash .sp-sub,
+        #splash .sp-ring,
+        #splash .sp-ring2 { animation-duration: 0.2s; }
+      }
+    </style>
   </head>
   <body>
+    <div id="splash" aria-hidden="true">
+      <div class="sp-stage">
+        <div class="sp-ring"></div>
+        <div class="sp-ring2"></div>
+        <div class="sp-sweep"></div>
+        <span class="sp-g sp-g1">◆</span>
+        <span class="sp-g sp-g2">▣</span>
+        <span class="sp-g sp-g3">▤</span>
+        <span class="sp-g sp-g4">✦</span>
+        <div>
+          <div class="sp-word"><b>MISSION</b> CONTROL</div>
+          <div class="sp-sub">Jira · TestRail · Confluence · AI — one deck</div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // Theme + start stamp for the splash, synchronously before first paint.
+      // stores/settings.ts mirrors the resolved theme to localStorage on save.
+      (function () {
+        var splash = document.getElementById('splash');
+        try {
+          var t = localStorage.getItem('jiraweb.theme');
+          if (t === 'railbook' || t === 'light') {
+            document.documentElement.setAttribute('data-theme', t);
+            if (splash) splash.classList.add('theme-' + t);
+          }
+        } catch (e) {
+          /* default dark */
+        }
+        if (splash) splash.dataset.start = String(Date.now());
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

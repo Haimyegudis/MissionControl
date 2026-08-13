@@ -598,7 +598,7 @@ export function ConfluenceView() {
   };
   const filteredRoots = roots.filter((p) => p.title.toLowerCase().includes(pageQuery.toLowerCase()));
 
-  if (!loading && (!status?.configured || error.includes('Connect Confluence'))) return <div className="cf-connect-empty card"><div className="cf-logo">C</div><h2>Connect Confluence</h2><p>Open Settings and add your Confluence Base URL and PAT. This workspace will show only Indigo spaces.</p><a className="btn btn-primary" href="#/settings">Open Settings</a>{error ? <div className="cf-error">{error}</div> : null}</div>;
+  if (!loading && (!status?.configured || error.includes('Connect Confluence'))) return <div className="cf-connect-empty card"><div className="cf-logo">C</div><h2>Connect Confluence</h2><p>Open Settings and add your Confluence personal access token. This workspace will show only Indigo spaces.</p><a className="btn btn-primary" href="#/settings">Open Settings</a>{error ? <div className="cf-error">{error}</div> : null}</div>;
 
   return (
     <div className="cf-workspace">

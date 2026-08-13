@@ -41,6 +41,13 @@ export function getSettings(): AppSettings {
   return settingsStore.get();
 }
 
+/** True once loadSettings has resolved at least once (store holds real data,
+ *  not defaults). The theme→localStorage mirror waits for this so the boot
+ *  splash's persisted theme is never clobbered by the default. */
+export function isSettingsLoaded(): boolean {
+  return loaded;
+}
+
 /**
  * Persist a partial update. Optimistically applies locally, then reconciles
  * with the server's merged copy.
