@@ -152,7 +152,7 @@ export function UserSearchPicker({
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                background: i === active ? 'rgba(31, 224, 224, 0.14)' : 'transparent',
+                background: i === active ? 'color-mix(in srgb, var(--accent-cyan) 14%, transparent)' : 'transparent',
               }}
             >
               {u}

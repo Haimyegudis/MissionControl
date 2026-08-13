@@ -87,11 +87,11 @@ export function prepareDescriptionHtml(html: string, browseUrl: string | null | 
 /** Contract CSS for the scoped description container (class name passed in). */
 export function descriptionCss(scope: string): string {
   return [
-    `.${scope}{font-size:13px;color:#E8EEFA;overflow-wrap:anywhere;}`,
+    `.${scope}{font-size:13px;color:var(--text-primary);overflow-wrap:anywhere;}`,
     `.${scope} img{max-width:100%;}`,
-    `.${scope} a{color:#1FE0E0;}`,
-    `.${scope} pre,.${scope} code{background:#1B2436;padding:6px;border-radius:4px;}`,
+    `.${scope} a{color:var(--accent-cyan);}`,
+    `.${scope} pre,.${scope} code{background:var(--bg-panel-high);padding:6px;border-radius:4px;}`,
     `.${scope} table{border-collapse:collapse;}`,
-    `.${scope} table,.${scope} th,.${scope} td{border:1px solid #334155;}`,
+    `.${scope} table,.${scope} th,.${scope} td{border:1px solid var(--border-strong);}`,
   ].join('\n');
 }

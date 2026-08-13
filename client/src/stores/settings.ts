@@ -8,6 +8,14 @@ import { createStore } from './store';
 
 export const settingsStore = createStore<AppSettings>(defaultAppSettings());
 
+/** Map a stored theme value onto the <html data-theme> attribute. */
+export function resolveTheme(theme: string | null | undefined): 'dark' | 'light' | 'railbook' {
+  const t = (theme ?? '').toLowerCase();
+  if (t === 'light') return 'light';
+  if (t === 'railbook') return 'railbook';
+  return 'dark';
+}
+
 let loaded = false;
 let loading: Promise<AppSettings> | null = null;
 

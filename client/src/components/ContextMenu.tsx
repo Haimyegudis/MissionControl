@@ -102,7 +102,7 @@ function MenuList({
               background: sub?.index === i ? 'var(--bg-panel)' : 'transparent',
             }}
             onMouseOver={(e) => {
-              if (!entry.disabled) (e.currentTarget as HTMLElement).style.background = 'rgba(126,154,210,0.12)';
+              if (!entry.disabled) (e.currentTarget as HTMLElement).style.background = 'var(--bg-panel-high)';
             }}
             onMouseOut={(e) => {
               (e.currentTarget as HTMLElement).style.background = sub?.index === i ? 'var(--bg-panel)' : 'transparent';

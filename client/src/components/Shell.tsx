@@ -7,7 +7,7 @@ import { activePageName, navigate, ROUTES, routeStore, type RouteId } from '../r
 import { pausePomodoro, pomodoroStore, resumePomodoro, statusText, stopPomodoro } from '../stores/pomodoro';
 import { lastRefreshStore, triggerNow } from '../stores/scheduler';
 import { sessionStore } from '../stores/session';
-import { settingsStore, updateSettings } from '../stores/settings';
+import { resolveTheme, settingsStore, updateSettings } from '../stores/settings';
 import { pushToast } from '../stores/toasts';
 import { useStore } from '../stores/useStore';
 import type { PinnedBoard } from '../types';
@@ -220,6 +220,14 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
 
   const recent = (appSettings.recentIssues ?? []).slice(0, 3);
   const isDark = appSettings.theme !== 'Light';
+  const isRailbook = resolveTheme(appSettings.theme) === 'railbook';
+
+  const toggleRailbook = () => {
+    const next = isRailbook ? 'Dark' : 'railbook';
+    updateSettings({ theme: next }).catch(() => {
+      /* optimistic local flip already applied */
+    });
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -266,6 +274,14 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
 
         <button className="btn btn-icon" title="Toggle theme" onClick={toggleTheme}>
           {isDark ? '🌙' : '☀️'}
+        </button>
+
+        <button
+          className="btn btn-icon"
+          title={isRailbook ? 'Switch to Nightdeck (dark)' : 'Switch to Railbook'}
+          onClick={toggleRailbook}
+        >
+          {isRailbook ? '☾' : '☀'}
         </button>
 
         <button

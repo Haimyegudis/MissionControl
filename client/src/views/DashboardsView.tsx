@@ -86,7 +86,7 @@ export function DashboardsView() {
                   padding: '8px 10px',
                   borderRadius: 8,
                   cursor: 'pointer',
-                  background: d.id === selectedId ? 'rgba(31, 224, 224, 0.12)' : 'transparent',
+                  background: d.id === selectedId ? 'color-mix(in srgb, var(--accent-cyan) 12%, transparent)' : 'transparent',
                   border: '1px solid ' + (d.id === selectedId ? 'var(--border-strong)' : 'transparent'),
                 }}
               >

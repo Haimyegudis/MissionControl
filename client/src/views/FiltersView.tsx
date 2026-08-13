@@ -169,7 +169,7 @@ export function FiltersView() {
                   padding: '8px 10px',
                   borderRadius: 8,
                   cursor: 'pointer',
-                  background: f.id === selectedId ? 'rgba(31, 224, 224, 0.12)' : 'transparent',
+                  background: f.id === selectedId ? 'color-mix(in srgb, var(--accent-cyan) 12%, transparent)' : 'transparent',
                   border: '1px solid ' + (f.id === selectedId ? 'var(--border-strong)' : 'transparent'),
                 }}
               >

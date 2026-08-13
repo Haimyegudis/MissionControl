@@ -311,7 +311,7 @@ export function DataGrid<T>({
                     onRowContextMenu(row, { clientX: e.clientX, clientY: e.clientY });
                   }}
                   style={{
-                    background: isSelected ? 'rgba(31, 224, 224, 0.12)' : 'transparent',
+                    background: isSelected ? 'color-mix(in srgb, var(--accent-cyan) 12%, transparent)' : 'transparent',
                     cursor: onRowDoubleClick || multiSelect ? 'pointer' : 'default',
                   }}
                 >

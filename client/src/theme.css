@@ -30,6 +30,10 @@
   --scroll-thumb: rgba(126, 154, 210, 0.28);
   --scroll-thumb-hover: rgba(126, 154, 210, 0.5);
 
+  --font-body: 'Segoe UI', 'Segoe UI Variable Text', system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-body);
+  --font-mono: Consolas, 'Cascadia Mono', monospace;
+
   color-scheme: dark;
 }
 
@@ -59,8 +63,43 @@
   --scroll-thumb: rgba(30, 52, 96, 0.22);
   --scroll-thumb-hover: rgba(30, 52, 96, 0.4);
 
+  --font-body: 'Segoe UI', 'Segoe UI Variable Text', system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-body);
+  --font-mono: Consolas, 'Cascadia Mono', monospace;
+
   color-scheme: light;
 }
+
+:root[data-theme='railbook'] {
+  --bg-gradient: radial-gradient(1200px 500px at 85% -10%, rgba(199, 67, 29, 0.07), transparent 60%);
+  --bg-panel: #fdfbf4;
+  --bg-panel-high: #f8f4e8;
+  --border-soft: #e5decb;
+  --border-strong: #d8d0bb;
+  --text-primary: #23201a;
+  --muted: #8a8069;
+  --accent-cyan: #c7431d;
+  --accent-green: #2e7d4a;
+  --accent-yellow: #a87b14;
+  --accent-red: #b3271e;
+  --accent-magenta: #6a5aa8;
+  --accent-blue: #a33413;
+  --toast-bg: #23201a;
+  --toast-border: #4c463a;
+  --toast-title: #f2ecdd;
+  --toast-body: #d8d0bb;
+  --input-bg: #fffef9;
+  --shadow-card: 0 18px 40px -24px rgba(35, 32, 26, 0.45);
+  --focus-ring: rgba(199, 67, 29, 0.2);
+  --scroll-thumb: rgba(35, 32, 26, 0.22);
+  --scroll-thumb-hover: rgba(35, 32, 26, 0.38);
+  --font-body: 'Archivo', 'Segoe UI', sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-mono: 'Spline Sans Mono', Consolas, monospace;
+  color-scheme: light;
+}
+
+:root[data-theme='railbook'] body { background-color: #f2ecdd; }
 
 /* ---------------------------------------------------------------- reset --- */
 
@@ -81,7 +120,7 @@ body {
   background: var(--bg-gradient) fixed;
   background-color: #050816;
   color: var(--text-primary);
-  font-family: 'Segoe UI', 'Segoe UI Variable Text', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
@@ -199,6 +238,11 @@ select option {
 :root[data-theme='light'] select option {
   background: #ffffff;
   color: #10203c;
+}
+
+:root[data-theme='railbook'] select option {
+  background: #fffef9;
+  color: #23201a;
 }
 
 label {

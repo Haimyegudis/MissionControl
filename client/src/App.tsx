@@ -8,7 +8,7 @@ import { DialogHost, useDialogs } from './dialogs/DialogHost';
 import { activePageName, routeStore } from './router';
 import { initScheduler } from './stores/scheduler';
 import { sessionStore } from './stores/session';
-import { loadSettings, settingsStore } from './stores/settings';
+import { loadSettings, resolveTheme, settingsStore } from './stores/settings';
 import { pushToast } from './stores/toasts';
 import { useStore } from './stores/useStore';
 import { LoginPage } from './views/LoginPage';
@@ -79,7 +79,7 @@ function ConnectedShell() {
 function useThemeSync() {
   const settings = useStore(settingsStore);
   useEffect(() => {
-    document.documentElement.dataset.theme = settings.theme === 'Light' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = resolveTheme(settings.theme);
   }, [settings.theme]);
 }
 

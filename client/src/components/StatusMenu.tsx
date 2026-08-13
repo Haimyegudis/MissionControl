@@ -136,7 +136,7 @@ export function StatusMenu({ issueKey, onNeedsDialog, onPatched, onDone }: Statu
         <div
           key={t.id}
           style={{ ...itemStyle, cursor: 'pointer' }}
-          onMouseOver={(e) => ((e.currentTarget as HTMLElement).style.background = 'rgba(126,154,210,0.12)')}
+          onMouseOver={(e) => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-panel-high)')}
           onMouseOut={(e) => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
           onClick={() => {
             onDone?.();

@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { settings as settingsApi } from '../api/client';
 import { ALLOWED_INTERVALS_SECONDS, syncFromSettings } from '../stores/scheduler';
 import { login, logout, sessionStore } from '../stores/session';
-import { loadSettings, updateSettings } from '../stores/settings';
+import { loadSettings, resolveTheme, updateSettings } from '../stores/settings';
 import { useStore } from '../stores/useStore';
 import {
   buildWidgetToggles,
@@ -73,7 +73,7 @@ export function SettingsView() {
   const applyThemeLive = (value: string) => {
     setTheme(value);
     // Applies immediately (App also re-syncs from the settings store on save).
-    document.documentElement.dataset.theme = value === 'Light' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = resolveTheme(value);
   };
 
   const save = async () => {
@@ -228,6 +228,7 @@ export function SettingsView() {
             <select value={theme} onChange={(e) => applyThemeLive(e.target.value)}>
               <option value="Dark">Dark</option>
               <option value="Light">Light</option>
+              <option value="railbook">Railbook</option>
             </select>
           </div>
         </Card>
