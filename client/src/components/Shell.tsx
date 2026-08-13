@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { pinnedBoards as pinnedBoardsApi, settings as settingsApi } from '../api/client';
-import { formatClock, formatElapsed, trimRecentSummary } from '../lib/format';
-import { activePageName, navigate, ROUTES, TESTRAIL_ROUTES, routeStore, type RouteId } from '../router';
+import { formatClock, formatElapsed } from '../lib/format';
+import { navigate, ROUTES, TESTRAIL_ROUTES, routeStore, type RouteId } from '../router';
 import { pausePomodoro, pomodoroStore, resumePomodoro, statusText, stopPomodoro } from '../stores/pomodoro';
 import { lastRefreshStore, triggerNow } from '../stores/scheduler';
 import { sessionStore } from '../stores/session';
@@ -268,20 +268,17 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
     }
   };
 
-  const toggleTheme = () => {
-    const next = appSettings.theme === 'Light' ? 'Dark' : 'Light';
-    updateSettings({ theme: next }).catch(() => {
-      /* optimistic local flip already applied */
-    });
+  const resolvedTheme = resolveTheme(appSettings.theme);
+
+  // Single button cycles Dark → Light → Railbook → Dark.
+  const THEME_CYCLE: Record<string, { next: string; icon: string; label: string }> = {
+    dark: { next: 'Light', icon: '🌙', label: 'Nightdeck — click for Light' },
+    light: { next: 'railbook', icon: '☀️', label: 'Light — click for Railbook' },
+    railbook: { next: 'Dark', icon: '📖', label: 'Railbook — click for Nightdeck' },
   };
-
-  const recent = (appSettings.recentIssues ?? []).slice(0, 3);
-  const isDark = appSettings.theme !== 'Light';
-  const isRailbook = resolveTheme(appSettings.theme) === 'railbook';
-
-  const toggleRailbook = () => {
-    const next = isRailbook ? 'Dark' : 'railbook';
-    updateSettings({ theme: next }).catch(() => {
+  const themeInfo = THEME_CYCLE[resolvedTheme] ?? THEME_CYCLE.dark;
+  const cycleTheme = () => {
+    updateSettings({ theme: themeInfo.next }).catch(() => {
       /* optimistic local flip already applied */
     });
   };
@@ -309,10 +306,6 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
           <span style={{ color: 'var(--accent-cyan)' }}>MISSION</span>
           <span style={{ color: 'var(--text-primary)' }}> CONTROL</span>
         </div>
-        <div style={{ marginLeft: 24, color: 'var(--muted)', fontSize: 13, whiteSpace: 'nowrap' }}>
-          {activePageName(route)}
-        </div>
-
         <div style={{ flex: 1 }} />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)' }}>
@@ -344,16 +337,8 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
           🔍
         </button>
 
-        <button className="btn btn-icon" title="Toggle theme" onClick={toggleTheme}>
-          {isDark ? '🌙' : '☀️'}
-        </button>
-
-        <button
-          className="btn btn-icon"
-          title={isRailbook ? 'Switch to Nightdeck (dark)' : 'Switch to Railbook'}
-          onClick={toggleRailbook}
-        >
-          {isRailbook ? '☾' : '☀'}
+        <button className="btn btn-icon" title={themeInfo.label} onClick={cycleTheme}>
+          {themeInfo.icon}
         </button>
 
         <button
@@ -442,27 +427,6 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
             </>
           )}
 
-          {recent.length > 0 && (
-            <>
-              <GroupLabel>Recent</GroupLabel>
-              {recent.map((r) => (
-                <div
-                  key={r.key}
-                  title={`${r.key} — ${r.summary}`}
-                  style={{
-                    padding: '4px 12px',
-                    fontSize: 12,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>{r.key}</span>
-                  <span style={{ color: 'var(--muted)' }}> {trimRecentSummary(r.key, r.summary)}</span>
-                </div>
-              ))}
-            </>
-          )}
         </nav>
         )}
 

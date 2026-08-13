@@ -1,15 +1,14 @@
 // TestRail settings cards (Phase 3 — unified-deck plan T16): connection
-// (baseUrl/email/apiKey + connect/test + status + disconnect + clear cache)
-// and the people editor (id → name rows, add row, bulk "id=name" import).
+// (baseUrl/email/apiKey + connect/test + status + disconnect + clear cache).
+// People names load automatically from the server store — no manual editor.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { trApi } from '../../api/testrail';
 import { pushToast } from '../../stores/toasts';
 import {
   connectTestRail,
   disconnectTestRail,
   initTestRail,
-  savePeople,
   trStore,
 } from '../../stores/testrail';
 import { useStore } from '../../stores/useStore';
@@ -35,11 +34,6 @@ export function TestRailSettings() {
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
-
-  // People editor state.
-  const [newId, setNewId] = useState('');
-  const [newName, setNewName] = useState('');
-  const [bulk, setBulk] = useState('');
 
   useEffect(() => {
     void initTestRail();
@@ -89,59 +83,6 @@ export function TestRailSettings() {
     } catch (err) {
       pushToast({ title: 'Clear cache failed', body: errText(err) });
     }
-  };
-
-  // Ids to show: known people plus ids collected from loaded cases/runs.
-  const peopleIds = useMemo(() => {
-    const ids = new Set<number>(Object.keys(st.people).map(Number));
-    for (const list of Object.values(st.cases)) {
-      for (const c of list ?? []) {
-        if (c.ownerId) ids.add(c.ownerId);
-        if (c.createdBy) ids.add(c.createdBy);
-        if (c.assignedToId) ids.add(c.assignedToId);
-      }
-    }
-    for (const r of st.runs) {
-      if (r.createdBy) ids.add(r.createdBy);
-    }
-    return [...ids].sort((a, b) => a - b);
-  }, [st.people, st.cases, st.runs]);
-
-  const setPersonName = (id: number, name: string) => {
-    const next = { ...st.people };
-    if (name.trim()) next[String(id)] = name.trim();
-    else delete next[String(id)];
-    savePeople(next);
-  };
-
-  const addPerson = () => {
-    const id = Number(newId.trim());
-    if (!id || !newName.trim()) {
-      pushToast({ title: 'TestRail', body: 'Need id + name.' });
-      return;
-    }
-    savePeople({ ...st.people, [String(id)]: newName.trim() });
-    setNewId('');
-    setNewName('');
-  };
-
-  const importBulk = () => {
-    const next = { ...st.people };
-    let added = 0;
-    for (const line of bulk.split('\n')) {
-      const m = line.match(/^\s*(\d+)\s*[=,\t]\s*(.+?)\s*$/);
-      if (m) {
-        next[m[1]] = m[2];
-        added++;
-      }
-    }
-    if (!added) {
-      pushToast({ title: 'TestRail', body: 'No valid lines (format: id=name).' });
-      return;
-    }
-    savePeople(next);
-    setBulk('');
-    pushToast({ title: 'TestRail', body: `Imported ${added} names.` });
   };
 
   const connected = st.phase === 'connected' && st.session?.connected;
@@ -198,61 +139,6 @@ export function TestRailSettings() {
             {status}
           </div>
         ) : null}
-      </Card>
-
-      <Card title="TestRail People">
-        <p className="muted" style={{ fontSize: 12, margin: 0 }}>
-          TestRail blocks the user list for non-admin accounts, so ids appear as "user N". Give them names here —
-          used everywhere (owner, assigned to, results).
-        </p>
-        <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {peopleIds.map((id) => (
-            <div key={id} style={row}>
-              <span className="muted" style={{ fontFamily: 'var(--font-mono)', minWidth: 70 }}>
-                #{id}
-              </span>
-              <input
-                style={{ flex: 1 }}
-                defaultValue={st.people[String(id)] ?? ''}
-                placeholder={`user ${id}`}
-                onBlur={(e) => {
-                  if ((st.people[String(id)] ?? '') !== e.target.value.trim()) setPersonName(id, e.target.value);
-                }}
-              />
-            </div>
-          ))}
-          {peopleIds.length === 0 ? (
-            <div className="muted" style={{ fontSize: 12 }}>
-              No user ids collected yet — browse some cases first.
-            </div>
-          ) : null}
-        </div>
-        <div style={row}>
-          <input
-            placeholder="user id"
-            value={newId}
-            onChange={(e) => setNewId(e.target.value)}
-            style={{ minWidth: 90, maxWidth: 110 }}
-          />
-          <input placeholder="name" value={newName} onChange={(e) => setNewName(e.target.value)} style={{ flex: 1 }} />
-          <button className="btn" onClick={addPerson}>
-            Add
-          </button>
-        </div>
-        <label style={fieldCol}>
-          Bulk paste — one per line: id=name
-          <textarea
-            rows={4}
-            value={bulk}
-            placeholder={'16883=David Cohen\n17012=Dana Levi'}
-            onChange={(e) => setBulk(e.target.value)}
-          />
-        </label>
-        <div>
-          <button className="btn" onClick={importBulk}>
-            Import names
-          </button>
-        </div>
       </Card>
 
       {confirm ? <ConfirmDialog spec={confirm} onClose={() => setConfirm(null)} /> : null}
