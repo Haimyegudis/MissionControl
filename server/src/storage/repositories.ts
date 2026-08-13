@@ -402,6 +402,61 @@ function parseIntArray(json: string): number[] {
 }
 
 // ---------------------------------------------------------------------------
+// TestRail cache + people (Phase 2 — unified-deck plan T8)
+// ---------------------------------------------------------------------------
+
+export interface TestRailCacheEntry {
+  json: string;
+  /** Epoch milliseconds. */
+  updatedAt: number;
+}
+
+export function trCacheGet(db: Db, key: string): TestRailCacheEntry | null {
+  const row = db
+    .prepare('SELECT json, updatedAt FROM TestRailCache WHERE key = @k')
+    .get({ k: key }) as { json: string; updatedAt: number } | undefined;
+  if (!row) return null;
+  return { json: row.json, updatedAt: row.updatedAt };
+}
+
+/** Caller passes an already-serialized JSON string. */
+export function trCacheSet(db: Db, key: string, json: string): void {
+  db.prepare(
+    `INSERT INTO TestRailCache (key, json, updatedAt) VALUES (@k, @json, @u)
+     ON CONFLICT(key) DO UPDATE SET json = excluded.json, updatedAt = excluded.updatedAt`,
+  ).run({ k: key, json, u: Date.now() });
+}
+
+export function trCacheClear(db: Db): void {
+  db.prepare('DELETE FROM TestRailCache').run();
+}
+
+export interface TestRailPerson {
+  id: number;
+  name: string;
+}
+
+export function trPeopleAll(db: Db): TestRailPerson[] {
+  const rows = db.prepare('SELECT id, name FROM TestRailPeople ORDER BY id').all() as TestRailPerson[];
+  return rows.map((r) => ({ id: r.id, name: r.name }));
+}
+
+export function trPeopleUpsertMany(db: Db, people: TestRailPerson[]): void {
+  const upsert = db.prepare(
+    `INSERT INTO TestRailPeople (id, name) VALUES (@id, @name)
+     ON CONFLICT(id) DO UPDATE SET name = excluded.name`,
+  );
+  const tx = db.transaction((rows: TestRailPerson[]) => {
+    for (const row of rows) upsert.run({ id: row.id, name: row.name });
+  });
+  tx(people);
+}
+
+export function trPeopleClear(db: Db): void {
+  db.prepare('DELETE FROM TestRailPeople').run();
+}
+
+// ---------------------------------------------------------------------------
 // TeamRepo
 // ---------------------------------------------------------------------------
 

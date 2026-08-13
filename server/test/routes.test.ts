@@ -71,6 +71,9 @@ function connect(session: JiraSession): void {
       jiraPat: 'secret-pat',
       instanceType: 'datacenter',
       defaultProjectKey: 'ISW',
+      testRailBaseUrl: '',
+      testRailEmail: '',
+      testRailApiKey: '',
     },
     USER,
   );
@@ -172,6 +175,21 @@ function makeDeps(): AppDeps {
     },
     createDefaults: { load: vi.fn(() => null), save: vi.fn(), clear: vi.fn() },
     createMetaCache: { load: vi.fn(() => null), save: vi.fn(), clearAll: vi.fn() },
+    testrail: {
+      status: vi.fn(() => ({ connected: false, baseUrl: null, email: null, user: null })),
+      connect: vi.fn(async () => ({ id: 1, name: 'TR User', email: null, isActive: true })),
+      disconnect: vi.fn(),
+      requireClient: vi.fn(() => {
+        throw new Error('not connected');
+      }),
+      cachedJson: vi.fn(async () => null),
+      clearCache: vi.fn(),
+      fetchMeta: vi.fn(async () => ({ users: [], statuses: [], caseTypes: [], priorities: [] })),
+      prefetch: vi.fn(() => ({ started: true })),
+      prefetchStatus: vi.fn(() => ({ active: false, done: 0, total: 0 })),
+      getPeople: vi.fn(() => ({})),
+      setPeople: vi.fn(),
+    },
     askLumo: vi.fn(async () => ({ summary: 'ok', cards: [] })),
   };
 }

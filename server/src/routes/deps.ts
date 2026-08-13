@@ -11,6 +11,9 @@ import type { TimeLoggedPeriod } from '../jira/timeLogged.js';
 import type { LumoResult, LumoTurn } from '../ai/lumoAgent.js';
 import type { CreateDefaultsEntry, CreateMetaEntry } from '../storage/fileStores.js';
 import type { MetadataCacheEntry } from '../storage/repositories.js';
+import type { TestRailClientLike } from '../testrail/client.js';
+import type { TrMeta, TrPrefetchProgress, TrSessionStatus } from '../testrail/service.js';
+import type { TrConnection, TrUser } from '../testrail/types.js';
 import type {
   AppSettings,
   DashboardSnapshot,
@@ -145,6 +148,21 @@ export interface CreateMetaCacheDep {
   clearAll(): void;
 }
 
+export interface TestRailDep {
+  status(): TrSessionStatus;
+  connect(connection: TrConnection): Promise<TrUser>;
+  disconnect(): void;
+  /** Throws TestRailNotConnectedError (→ 401) when no session is active. */
+  requireClient(): TestRailClientLike;
+  cachedJson(key: string, fetchFn: () => Promise<unknown>, fresh: boolean): Promise<unknown>;
+  clearCache(): void;
+  fetchMeta(projectId?: number | null): Promise<TrMeta>;
+  prefetch(projectIds: number[]): { started: boolean; active?: boolean };
+  prefetchStatus(): TrPrefetchProgress;
+  getPeople(): Record<string, string>;
+  setPeople(people: Record<string, unknown>): void;
+}
+
 export interface AskLumoRequest {
   turns: LumoTurn[];
   projectKey: string;
@@ -181,6 +199,7 @@ export interface AppDeps {
   };
   createDefaults: CreateDefaultsDep;
   createMetaCache: CreateMetaCacheDep;
+  testrail: TestRailDep;
   askLumo(request: AskLumoRequest): Promise<LumoResult>;
   /** Injectable fetch for the attachment proxy (defaults to global fetch). */
   fetchFn?: typeof fetch;

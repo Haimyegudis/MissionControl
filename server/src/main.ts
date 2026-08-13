@@ -21,6 +21,7 @@ import { metadataWarmup } from './jira/warmup.js';
 import { JiraWorklogService } from './jira/worklogService.js';
 import { openDb } from './storage/db.js';
 import { CreateDefaultsStore, CreateMetaCache } from './storage/fileStores.js';
+import { TestRailService } from './testrail/service.js';
 import {
   AppSettingsRepo,
   IssueCacheRepo,
@@ -54,6 +55,8 @@ const timeLogged = new TimeLoggedService(session, issueService, worklogService);
 const aggregator = new DashboardAggregator(session, issueService, timeLogged);
 const createDefaults = new CreateDefaultsStore();
 const createMetaCache = new CreateMetaCache();
+const testRail = new TestRailService(db);
+testRail.importLegacyPeopleIfEmpty();
 
 /** distinct:{project}:{field} cache over issueService.getDistinctIssueField. */
 function getDistinct(projectKey: string, fieldName: string, maxIssues: number): Promise<string[]> {
@@ -88,6 +91,7 @@ const app = createApp({
   repos: { appSettings, issueCache, metadataCache, savedFilters, teams, pinnedBoards },
   createDefaults,
   createMetaCache,
+  testrail: testRail,
   askLumo: (request) =>
     askLumo({ ...request, session, tools: issueService, runCli: runCopilotCli }),
   staticDir: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist'),
@@ -107,8 +111,28 @@ async function autoActivate(): Promise<void> {
   }
 }
 
+/** Auto-connect TestRail from saved credentials; a failed ping stays disconnected. */
+async function autoConnectTestRail(): Promise<void> {
+  const saved = credentials.load();
+  if (!saved || saved.testRailBaseUrl.trim().length === 0 || saved.testRailApiKey.trim().length === 0) {
+    return;
+  }
+  try {
+    const user = await testRail.connect({
+      baseUrl: saved.testRailBaseUrl,
+      email: saved.testRailEmail,
+      apiKey: saved.testRailApiKey,
+    });
+    console.log(`TestRail session restored: ${saved.testRailBaseUrl} as ${user.name}`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.log(`Saved TestRail credentials found but the ping failed (${message}); staying disconnected.`);
+  }
+}
+
 const port = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 5643;
 app.listen(port, '127.0.0.1', () => {
   console.log(`JiraWeb server listening on http://127.0.0.1:${port} (data: ${dataDir})`);
   void autoActivate();
+  void autoConnectTestRail();
 });

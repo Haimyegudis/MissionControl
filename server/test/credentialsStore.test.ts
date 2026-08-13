@@ -10,6 +10,9 @@ const sample: Credentials = {
   jiraPat: 'secret-pat-123',
   instanceType: 'datacenter',
   defaultProjectKey: 'ISW',
+  testRailBaseUrl: 'https://testrail.example.com/',
+  testRailEmail: 'user@example.com',
+  testRailApiKey: 'tr-api-key',
 };
 
 let tmpDir: string;
@@ -64,6 +67,16 @@ describe('CredentialsStore', () => {
     expect(store.exists()).toBe(false);
     expect(store.load()).toBeNull();
     expect(() => store.clear()).not.toThrow();
+  });
+
+  it('load() defaults TestRail fields to empty strings for legacy configs', () => {
+    const legacy = { ...sample } as Record<string, unknown>;
+    delete legacy.testRailBaseUrl;
+    delete legacy.testRailEmail;
+    delete legacy.testRailApiKey;
+    fs.writeFileSync(path.join(tmpDir, 'config.json'), JSON.stringify(legacy));
+    const store = new CredentialsStore();
+    expect(store.load()).toEqual({ ...sample, testRailBaseUrl: '', testRailEmail: '', testRailApiKey: '' });
   });
 
   it('load() returns null on corrupt JSON', () => {

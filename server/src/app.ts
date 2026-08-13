@@ -17,6 +17,7 @@ import { lumoRoutes } from './routes/lumo.js';
 import { metadataRoutes, miscRoutes } from './routes/misc.js';
 import { settingsRoutes } from './routes/settings.js';
 import { teamRoutes } from './routes/teams.js';
+import { testrailRoutes } from './routes/testrail.js';
 import { timeloggedRoutes } from './routes/timelogged.js';
 
 export type { AppDeps } from './routes/deps.js';
@@ -69,6 +70,7 @@ export function createApp(deps: AppDeps): Express {
   api.use('/metadata', metadataRoutes(deps));
   api.use('/misc', miscRoutes(deps));
   api.use('/lumo', lumoRoutes(deps));
+  api.use('/testrail', testrailRoutes(deps));
   api.use((req: Request, res: Response) => {
     res.status(404).json({ status: 404, message: `Not found: ${req.method} /api${req.path}` });
   });

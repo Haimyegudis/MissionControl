@@ -60,6 +60,17 @@ CREATE TABLE IF NOT EXISTS Teams (
     MembersJson TEXT NOT NULL DEFAULT '[]'
 );
 
+CREATE TABLE IF NOT EXISTS TestRailCache (
+    key TEXT PRIMARY KEY,
+    json TEXT NOT NULL,
+    updatedAt INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS TestRailPeople (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS IX_PinnedBoards_ProfileId ON PinnedBoards (ProfileId);
 CREATE INDEX IF NOT EXISTS IX_BoardWorkspaces_ProfileId ON BoardWorkspaces (ProfileId);
 `;

@@ -10,6 +10,9 @@ export interface Credentials {
   jiraPat: string;
   instanceType: JiraInstanceType;
   defaultProjectKey: string;
+  testRailBaseUrl: string;
+  testRailEmail: string;
+  testRailApiKey: string;
 }
 
 /**
@@ -47,6 +50,9 @@ export class CredentialsStore {
           typeof parsed.defaultProjectKey === 'string' && parsed.defaultProjectKey.trim().length > 0
             ? parsed.defaultProjectKey
             : 'ISW',
+        testRailBaseUrl: typeof parsed.testRailBaseUrl === 'string' ? parsed.testRailBaseUrl : '',
+        testRailEmail: typeof parsed.testRailEmail === 'string' ? parsed.testRailEmail : '',
+        testRailApiKey: typeof parsed.testRailApiKey === 'string' ? parsed.testRailApiKey : '',
       };
     } catch {
       return null; // corrupt JSON

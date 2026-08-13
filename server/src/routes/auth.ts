@@ -35,12 +35,17 @@ export function authStatus(deps: AppDeps): AuthStatus {
 }
 
 function credentialsFromBody(deps: AppDeps, body: Record<string, unknown>): Credentials {
+  // Preserve saved TestRail fields — a Jira login must not wipe them.
+  const saved = deps.credentials.load();
   return {
     email: typeof body.email === 'string' ? body.email : '',
     jiraBaseUrl: requireString(body.baseUrl, 'baseUrl'),
     jiraPat: requireString(body.pat, 'pat'),
     instanceType: body.instanceType === 'cloud' ? 'cloud' : 'datacenter',
     defaultProjectKey: defaultProjectKey(deps),
+    testRailBaseUrl: saved?.testRailBaseUrl ?? '',
+    testRailEmail: saved?.testRailEmail ?? '',
+    testRailApiKey: saved?.testRailApiKey ?? '',
   };
 }
 
