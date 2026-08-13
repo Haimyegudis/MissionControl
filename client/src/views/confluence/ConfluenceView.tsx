@@ -79,6 +79,17 @@ function PageViewer({ page, baseUrl, onEdit }: { page: ConfluencePageContent; ba
       return 1;
     }
   });
+  // Full-screen mode: the page takes over the whole viewport; ✕ or Esc exits.
+  const [fullScreen, setFullScreen] = useState(false);
+  useEffect(() => {
+    if (!fullScreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullScreen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [fullScreen]);
+
   const zoomWrapRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = zoomWrapRef.current;
@@ -101,7 +112,18 @@ function PageViewer({ page, baseUrl, onEdit }: { page: ConfluencePageContent; ba
   }, []);
 
   return (
-    <section className="cf-page-panel">
+    <section
+      className="cf-page-panel"
+      style={fullScreen ? {
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1000,
+        background: 'var(--bg-panel-high)',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '8px 12px',
+      } : undefined}
+    >
       <div className="cf-page-heading cf-page-actions">
         <div className="cf-breadcrumb">{page.spaceKey} <span>/</span> {page.title}</div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -110,8 +132,21 @@ function PageViewer({ page, baseUrl, onEdit }: { page: ConfluencePageContent; ba
               {Math.round(zoom * 100)}% ↺
             </button>
           ) : null}
+          {!fullScreen ? (
+            <button className="btn" title="Full screen (Esc to exit)" onClick={() => setFullScreen(true)}>⛶ Full screen</button>
+          ) : null}
           <button className="btn btn-primary" onClick={onEdit}>Edit</button>
           {openUrl ? <a className="btn" href={openUrl} target="_blank" rel="noreferrer">Open in Confluence ↗</a> : null}
+          {fullScreen ? (
+            <button
+              className="btn"
+              title="Exit full screen (Esc)"
+              onClick={() => setFullScreen(false)}
+              style={{ color: 'var(--accent-red)', fontWeight: 700 }}
+            >
+              ✕
+            </button>
+          ) : null}
         </div>
       </div>
       <div ref={zoomWrapRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
