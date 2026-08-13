@@ -4,6 +4,7 @@ import { JiraError, type JiraFetchOptions } from '../src/jira/httpClient.js';
 import {
   BASE_FIELDS,
   JiraIssueService,
+  extractCurrentFieldValue,
   resetEpicNameCache,
   type JqlFieldResolver,
 } from '../src/jira/issueService.js';
@@ -214,28 +215,41 @@ describe('JiraIssueService transitions', () => {
     expect(calls[0].opts.body).toEqual({ transition: { id: '7' } });
   });
 
-  it('getTransitionScreen reads fields for the matching transition', async () => {
+  it('getTransitionScreen reads fields for the matching transition and prefills current values', async () => {
     const session = makeSession();
-    const { fn, calls } = mockFetch(() => ({
-      transitions: [
-        { id: '4', fields: { bogus: { name: 'Bogus' } } },
-        {
-          id: '5',
-          fields: {
-            resolution: {
-              name: 'Resolution',
-              required: true,
-              schema: { type: 'resolution' },
-              allowedValues: [{ name: 'Done' }, { value: 'Rejected' }],
+    const { fn, calls } = mockFetch((path) => {
+      if (path === 'rest/api/2/issue/ISW-1') {
+        return { fields: { customfield_11000: { value: 'Development' } } };
+      }
+      return {
+        transitions: [
+          { id: '4', fields: { bogus: { name: 'Bogus' } } },
+          {
+            id: '5',
+            fields: {
+              resolution: {
+                name: 'Resolution',
+                required: true,
+                schema: { type: 'resolution' },
+                allowedValues: [{ name: 'Done' }, { value: 'Rejected' }],
+              },
+              customfield_11000: {
+                name: 'Task Type',
+                required: false,
+                schema: { type: 'option' },
+                allowedValues: [{ value: 'Development' }, { value: 'Support' }],
+              },
             },
           },
-        },
-      ],
-    }));
+        ],
+      };
+    });
     const svc = new JiraIssueService(session, fn);
 
     const screen = await svc.getTransitionScreen('ISW-1', '5');
     expect(calls[0].opts.query).toEqual({ expand: 'transitions.fields' });
+    expect(calls[1].path).toBe('rest/api/2/issue/ISW-1');
+    expect(calls[1].opts.query).toEqual({ fields: 'resolution,customfield_11000' });
     expect(screen).toEqual([
       {
         id: 'resolution',
@@ -244,8 +258,53 @@ describe('JiraIssueService transitions', () => {
         schemaType: 'resolution',
         itemType: null,
         allowedValues: ['Done', 'Rejected'],
+        currentValue: null,
+      },
+      {
+        id: 'customfield_11000',
+        name: 'Task Type',
+        required: false,
+        schemaType: 'option',
+        itemType: null,
+        allowedValues: ['Development', 'Support'],
+        currentValue: 'Development',
       },
     ]);
+  });
+
+  it('getTransitionScreen keeps fields when the current-value fetch fails', async () => {
+    const session = makeSession();
+    const { fn } = mockFetch((path) => {
+      if (path === 'rest/api/2/issue/ISW-1') throw new JiraError(500, 'boom');
+      return {
+        transitions: [
+          {
+            id: '5',
+            fields: {
+              resolution: { name: 'Resolution', schema: { type: 'resolution' }, allowedValues: [{ name: 'Done' }] },
+            },
+          },
+        ],
+      };
+    });
+    const svc = new JiraIssueService(session, fn);
+
+    const screen = await svc.getTransitionScreen('ISW-1', '5');
+    expect(screen).toHaveLength(1);
+    expect(screen[0].currentValue).toBeNull();
+  });
+
+  it('extractCurrentFieldValue handles the common Jira value shapes', () => {
+    expect(extractCurrentFieldValue(null)).toBeNull();
+    expect(extractCurrentFieldValue(undefined)).toBeNull();
+    expect(extractCurrentFieldValue('')).toBeNull();
+    expect(extractCurrentFieldValue('plain')).toBe('plain');
+    expect(extractCurrentFieldValue(4.5)).toBe('4.5');
+    expect(extractCurrentFieldValue({ value: 'Development' })).toBe('Development');
+    expect(extractCurrentFieldValue({ name: 'Fixed' })).toBe('Fixed');
+    expect(extractCurrentFieldValue({ displayName: 'Jane Doe' })).toBe('Jane Doe');
+    expect(extractCurrentFieldValue([{ value: 'A' }, { value: 'B' }])).toBe('A');
+    expect(extractCurrentFieldValue({ foo: 'bar' })).toBeNull();
   });
 });
 
@@ -384,6 +443,27 @@ describe('JiraIssueService getDistinctIssueField', () => {
     const values = await svc.getDistinctIssueField('ISW', 'Severity', 500, resolver);
     expect(values).toEqual(['42', 'Alpha', 'beta', 'gamma']);
     expect(calls).toHaveLength(1);
+  });
+
+  it('prefers a Jira user displayName over the login/email name', async () => {
+    const session = makeSession();
+    const { fn } = mockFetch(() => ({
+      issues: [
+        {
+          key: 'ISW-1',
+          fields: {
+            customfield_10101: {
+              name: 'jane.doe@example.com',
+              displayName: 'Jane Doe',
+            },
+          },
+        },
+      ],
+      total: 1,
+    }));
+    const svc = new JiraIssueService(session, fn);
+
+    expect(await svc.getDistinctIssueField('ISW', 'Assignee', 200, resolver)).toEqual(['Jane Doe']);
   });
 });
 
@@ -662,6 +742,21 @@ describe('JiraMetadataService', () => {
       predicateName: 'project',
       predicateValue: 'ISW',
     });
+  });
+
+  it('lists visible system and custom field names for JQL autocomplete', async () => {
+    const session = makeSession();
+    const { fn } = mockFetch((path) => {
+      expect(path).toBe('rest/api/2/field');
+      return [
+        { id: 'status', name: 'Status' },
+        { id: 'customfield_10001', name: 'Epic Link' },
+        { id: 'customfield_10002', name: 'Epic Link' },
+      ];
+    });
+    const svc = new JiraMetadataService(session, fn);
+
+    expect(await svc.getFields()).toEqual(['Epic Link', 'Status']);
   });
 
   it('resolveJqlField: cf[NNNN] for custom fields, id for system, quoted for unknown, alias table', async () => {
@@ -968,6 +1063,9 @@ class FakeMetadataService implements MetadataServiceLike {
   async getResolutions(): Promise<string[]> {
     return ['Done'];
   }
+  async getFields(): Promise<string[]> {
+    return ['Status', 'Epic Link'];
+  }
   async getVersions(): Promise<string[]> {
     return [];
   }
@@ -1011,6 +1109,8 @@ describe('CachedMetadataService', () => {
     expect(repo.get('meta:v10:default:components:ISW')).not.toBeNull();
     await svc.getAssignableUsers('ISW');
     expect(repo.get('meta:v10:default:users:ISW')).not.toBeNull();
+    await svc.getFields();
+    expect(repo.get('meta:v10:default:fields')).not.toBeNull();
   });
 
   it('stale hit returns immediately then refreshes in the background', async () => {
@@ -1047,7 +1147,7 @@ describe('CachedMetadataService', () => {
     expect(inner.suggestionCalls).toHaveLength(3); // cached second time
   });
 
-  it('getDistinct caches under distinct:{project}:{fieldLower}', async () => {
+  it('getDistinct caches under the v2 display-name-aware key', async () => {
     const { repo, svc } = setup();
     let loads = 0;
     const loader = async () => {
@@ -1055,7 +1155,7 @@ describe('CachedMetadataService', () => {
       return ['A', 'B'];
     };
     expect(await svc.getDistinct('ISW', 'Severity', loader)).toEqual(['A', 'B']);
-    expect(repo.get('meta:v10:default:distinct:ISW:severity')).not.toBeNull();
+    expect(repo.get('meta:v10:default:distinct:v2:ISW:severity')).not.toBeNull();
     expect(await svc.getDistinct('ISW', 'Severity', loader)).toEqual(['A', 'B']);
     expect(loads).toBe(1);
   });

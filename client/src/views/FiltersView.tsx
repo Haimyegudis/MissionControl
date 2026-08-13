@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { filters as filtersApi, issues as issuesApi } from '../api/client';
 import { DataGrid } from '../components/DataGrid';
 import type { GridColumn } from '../components/DataGrid';
+import { JqlEditor } from '../components/JqlEditor';
 import { dialogs } from '../dialogs/DialogHost';
 import { priorityColor, statusColor } from '../lib/colors';
 import type { JiraIssue, SavedFilter } from '../types';
@@ -200,11 +201,7 @@ export function FiltersView() {
         </label>
         <label>
           JQL
-          <textarea
-            value={editorJql}
-            onChange={(e) => setEditorJql(e.target.value)}
-            style={{ width: '100%', height: 120, marginTop: 4, resize: 'vertical', fontFamily: 'Consolas, monospace' }}
-          />
+          <JqlEditor value={editorJql} onChange={setEditorJql} />
         </label>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-primary" onClick={() => void save()}>

@@ -117,7 +117,16 @@ export const trApi = {
     get<TrPlanRun[]>(`/api/testrail/projects/${projectId}/planruns${fresh(force)}`),
   addRun: (
     projectId: number,
-    body: { suiteId: number | null; name: string; description: string | null; caseIds: number[]; refs: string | null },
+    body: {
+      suiteId: number | null;
+      name: string;
+      description: string | null;
+      refs: string | null;
+      assignedToId: number | null;
+      /** true → TestRail include_all (future suite cases auto-included); caseIds omitted. */
+      includeAll: boolean;
+      caseIds?: number[];
+    },
   ) => post<TrRun>(`/api/testrail/projects/${projectId}/runs`, body),
   updateRun: (runId: number, body: { name: string | null; description: string | null; refs: string | null }) =>
     put<TrRun>(`/api/testrail/runs/${runId}`, body),

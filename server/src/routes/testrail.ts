@@ -312,13 +312,16 @@ export function testrailRoutes(deps: AppDeps): Router {
     h(async (req, res) => {
       const pid = requireInt(req.params.id, 'projectId');
       const body = (req.body ?? {}) as Record<string, unknown>;
+      const includeAll = body.includeAll === true;
       res.json(
         await service.requireClient().addRun(pid, {
           suiteId: optInt(body.suiteId),
           name: requireString(body.name, 'name'),
           description: optStr(body.description),
-          caseIds: intArray(body.caseIds),
           refs: optStr(body.refs),
+          assignedToId: optInt(body.assignedToId),
+          includeAll,
+          caseIds: includeAll ? undefined : intArray(body.caseIds),
         }),
       );
     }),

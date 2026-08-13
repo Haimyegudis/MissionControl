@@ -114,6 +114,8 @@ export async function runCopilotCli(
         '--deny-tool',
         'write',
         '--no-custom-instructions',
+        '--context',
+        'long_context',
         '--output-format',
         'text',
       ];

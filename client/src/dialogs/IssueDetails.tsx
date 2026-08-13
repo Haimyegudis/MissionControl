@@ -5,6 +5,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { issues as issuesApi } from '../api/client';
+import { trApi } from '../api/testrail';
+import type { TrRun } from '../testrailTypes';
 import { Modal } from '../components/Modal';
 import { IssueLinkText } from '../components/IssueLinkText';
 import { priorityColor, statusColor } from '../lib/colors';
@@ -77,6 +79,8 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
   const [state, setState] = useState<LoadState>({ loading: true, error: null, details: null });
   const [transitionStatus, setTransitionStatus] = useState('');
   const [commentText, setCommentText] = useState('');
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [trRuns, setTrRuns] = useState<TrRun[]>([]);
   const [commentStatus, setCommentStatus] = useState('');
   const [commentBusy, setCommentBusy] = useState(false);
   const loadSeq = useRef(0);
@@ -143,6 +147,29 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
 
   const details = state.details;
   const issue = details?.issue ?? null;
+
+  // TestRail runs referencing this issue (via run refs) — best-effort, cached.
+  useEffect(() => {
+    let cancelled = false;
+    setTrRuns([]);
+    const key = details?.issue.key;
+    if (!key) return;
+    (async () => {
+      try {
+        const projects = (await trApi.projects()).filter((p) => /indigo/i.test(p.name) || p.id === 603);
+        const lists = await Promise.all(projects.map((p) => trApi.runs(p.id).catch(() => [] as TrRun[])));
+        const needle = key.toUpperCase();
+        const matches = lists.flat().filter((r) => (r.refs ?? '').toUpperCase().includes(needle));
+        matches.sort((a, b) => (b.createdOn ?? 0) - (a.createdOn ?? 0));
+        if (!cancelled) setTrRuns(matches.slice(0, 12));
+      } catch {
+        /* TestRail not connected — section simply stays hidden */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [details?.issue.key]);
 
   const reloadWithStatus = useCallback(async () => {
     const fresh = await load(currentKey);
@@ -337,7 +364,14 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
 
             {details.timeline.length > 0 && (
               <SectionCard title="Activity timeline">
-                {details.timeline.map((ev, i) => (
+                <button
+                  className="btn"
+                  style={{ marginBottom: 6 }}
+                  onClick={() => setTimelineOpen((v) => !v)}
+                >
+                  {timelineOpen ? '▾ Hide' : `▸ Show ${details.timeline.length} events`}
+                </button>
+                {timelineOpen && details.timeline.map((ev, i) => (
                   <div key={i} style={{ display: 'flex', gap: 10, padding: '4px 0', fontSize: 12.5 }}>
                     <div
                       style={{
@@ -356,6 +390,29 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
                     </div>
                   </div>
                 ))}
+              </SectionCard>
+            )}
+
+            {trRuns.length > 0 && (
+              <SectionCard title={`TestRail runs (${trRuns.length})`}>
+                {trRuns.map((r) => {
+                  const total = r.passedCount + r.failedCount + r.blockedCount + r.retestCount + r.untestedCount;
+                  const done = total - r.untestedCount;
+                  return (
+                    <div key={r.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '4px 0', fontSize: 12.5 }}>
+                      <a
+                        href={`#/testrail/run/${r.id}`}
+                        onClick={onClose}
+                        style={{ color: 'var(--accent-cyan)', textDecoration: 'underline', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                      >
+                        {r.name}
+                      </a>
+                      <span className="muted" style={{ whiteSpace: 'nowrap' }}>
+                        {r.isCompleted ? 'closed' : 'active'} · {done}/{total} · ✓{r.passedCount} ✗{r.failedCount}
+                      </span>
+                    </div>
+                  );
+                })}
               </SectionCard>
             )}
 

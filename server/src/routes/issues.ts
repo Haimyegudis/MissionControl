@@ -145,6 +145,8 @@ export function issueRoutes(deps: AppDeps): Router {
       } else {
         await deps.issues.performTransition(req.params.key, id);
       }
+      // Status changed — cached search results (dashboard, my work) are stale.
+      deps.repos.issueCache.clearAll();
       res.status(204).end();
     }),
   );

@@ -105,6 +105,31 @@ export function resetEpicNameCache(): void {
   epicNameCache.clear();
 }
 
+/**
+ * Issue field value → display string for transition-screen prefill.
+ * Handles strings, numbers, option/named objects ({value}/{name}/{displayName})
+ * and arrays (first element). Unknown shapes → null.
+ */
+export function extractCurrentFieldValue(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === 'string') return v.length > 0 ? v : null;
+  if (typeof v === 'number') return String(v);
+  if (Array.isArray(v)) {
+    for (const el of v) {
+      const s = extractCurrentFieldValue(el);
+      if (s !== null) return s;
+    }
+    return null;
+  }
+  if (typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    for (const key of ['value', 'name', 'displayName']) {
+      if (typeof o[key] === 'string' && (o[key] as string).length > 0) return o[key] as string;
+    }
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // ADF → plain text (comment bodies on Cloud)
 // ---------------------------------------------------------------------------
@@ -170,7 +195,9 @@ function collectDistinctValues(value: unknown, out: string[]): void {
   }
   if (typeof value === 'object') {
     const obj = value as Record<string, any>;
-    const direct = [obj.value, obj.name, obj.displayName].find(
+    // Jira user objects commonly expose both `name` (login/email) and
+    // `displayName` (human-readable name). Prefer the latter consistently.
+    const direct = [obj.displayName, obj.value, obj.name].find(
       (v) => typeof v === 'string' && v.length > 0,
     );
     if (direct) {
@@ -467,7 +494,24 @@ export class JiraIssueService {
         schemaType: typeof def?.schema?.type === 'string' ? def.schema.type : '',
         itemType: typeof def?.schema?.items === 'string' ? def.schema.items : null,
         allowedValues: allowed,
+        currentValue: null,
       });
+    }
+
+    // Prefill: read the issue's current values for the screen fields so the
+    // dialog keeps them (e.g. Task Type on close) instead of forcing a re-pick.
+    if (out.length > 0) {
+      try {
+        const issue = await this.fetchFn(
+          this.session,
+          `${this.prefix}/issue/${encodeURIComponent(issueKey)}`,
+          { query: { fields: out.map((f) => f.id).join(',') } },
+        );
+        const current = issue?.fields && typeof issue.fields === 'object' ? issue.fields : {};
+        for (const f of out) f.currentValue = extractCurrentFieldValue(current[f.id]);
+      } catch {
+        // best-effort — the dialog just starts empty
+      }
     }
     return out;
   }

@@ -74,6 +74,7 @@ export interface TrRun {
   createdOn: number | null;
   createdBy: number | null;
   assignedToId: number | null;
+  refs: string | null;
   passedCount: number;
   failedCount: number;
   blockedCount: number;

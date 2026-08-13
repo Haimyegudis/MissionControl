@@ -14,6 +14,7 @@ import { LumoMarkdown } from '../components/LumoMarkdown';
 import { sourceMeta } from './lumoSources';
 
 export const LUMO_MODELS = [
+  'claude-sonnet-5',
   'claude-sonnet-4.6',
   'claude-opus-4.6',
   'claude-haiku-4.5',

@@ -107,24 +107,20 @@ function useThemeSync() {
   }, [settings]);
 }
 
-/** Dismiss the boot splash (client/index.html) once React has painted. Fast
- *  loads (<150ms — the splash's appear delay) remove it before it ever shows;
- *  otherwise the ~1.8s radar animation completes, then fades out (.4s). */
+/** Dismiss the boot splash (client/index.html) after the full radar animation.
+ *  The user wants the animation on EVERY load/refresh — no fast-load skip:
+ *  the ~2.8s sequence always completes, then fades out (.4s). */
 function useSplashDismiss() {
   useEffect(() => {
     const el = document.getElementById('splash');
     if (!el || el.dataset.closing) return;
     el.dataset.closing = '1';
     const started = Number(el.dataset.start ?? '0');
-    const elapsed = started > 0 ? Date.now() - started : Number.POSITIVE_INFINITY;
-    if (elapsed < 150) {
-      el.remove();
-      return;
-    }
+    const elapsed = started > 0 ? Date.now() - started : 0;
     window.setTimeout(() => {
       el.classList.add('done');
       window.setTimeout(() => el.remove(), 450);
-    }, Math.max(0, 1800 - elapsed));
+    }, Math.max(0, 2800 - elapsed));
     // No cleanup: the splash must be dismissed exactly once, even under
     // StrictMode's mount → unmount → remount cycle.
   }, []);

@@ -117,6 +117,7 @@ export interface MetadataServiceLike {
   getStatuses(): Promise<string[]>;
   getPriorities(): Promise<string[]>;
   getResolutions(): Promise<string[]>;
+  getFields(): Promise<string[]>;
   getVersions(projectKey: string): Promise<string[]>;
   getComponents(projectKey: string): Promise<string[]>;
   getAssignableUsers(projectKey: string): Promise<string[]>;
@@ -139,7 +140,7 @@ export class CachedMetadataService implements MetadataServiceLike {
   /**
    * Stale-while-revalidate string-list cache; writes only non-empty results.
    * Public so callers can cache extra suffixes from §5 (e.g.
-   * `distinct:{projectKey}:{fieldLower}` over issueService.getDistinctIssueField).
+   * `distinct:v2:{projectKey}:{fieldLower}` over issueService.getDistinctIssueField).
    */
   async cachedList(suffix: string, loader: () => Promise<string[]>): Promise<string[]> {
     const cacheKey = this.key(suffix);
@@ -172,13 +173,13 @@ export class CachedMetadataService implements MetadataServiceLike {
     }
   }
 
-  /** `distinct:{projectKey}:{fieldLower}` cache over an injected loader. */
+  /** Versioned distinct cache; v2 prefers user displayName over login/email. */
   getDistinct(
     projectKey: string,
     fieldName: string,
     loader: () => Promise<string[]>,
   ): Promise<string[]> {
-    return this.cachedList(`distinct:${projectKey}:${fieldName.toLowerCase()}`, loader);
+    return this.cachedList(`distinct:v2:${projectKey}:${fieldName.toLowerCase()}`, loader);
   }
 
   getProjects(): Promise<string[]> {
@@ -200,6 +201,10 @@ export class CachedMetadataService implements MetadataServiceLike {
   /** Not in the §5 cached-suffix list — passes through. */
   getResolutions(): Promise<string[]> {
     return this.inner.getResolutions();
+  }
+
+  getFields(): Promise<string[]> {
+    return this.cachedList('fields', () => this.inner.getFields());
   }
 
   getVersions(projectKey: string): Promise<string[]> {

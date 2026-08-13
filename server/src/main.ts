@@ -4,7 +4,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { askLumo } from './ai/lumoAgent.js';
-import { runCopilotCli } from './ai/cliRunner.js';
+import { runCliForModel } from './ai/cliRunner.js';
+import { buildYakiTools } from './ai/yakiTools.js';
 import { createApp } from './app.js';
 import { dbFile, ensureDataDir } from './config/appPaths.js';
 import { CredentialsStore, type Credentials } from './config/credentialsStore.js';
@@ -31,6 +32,7 @@ import {
   TeamRepo,
 } from './storage/repositories.js';
 import type { JiraUser } from './types.js';
+import { ConfluenceService } from './confluence/service.js';
 
 const dataDir = ensureDataDir();
 const db = openDb(dbFile());
@@ -56,6 +58,7 @@ const aggregator = new DashboardAggregator(session, issueService, timeLogged);
 const createDefaults = new CreateDefaultsStore();
 const createMetaCache = new CreateMetaCache();
 const testRail = new TestRailService(db);
+const confluence = new ConfluenceService(credentials);
 testRail.importLegacyPeopleIfEmpty();
 
 /** distinct:{project}:{field} cache over issueService.getDistinctIssueField. */
@@ -64,6 +67,16 @@ function getDistinct(projectKey: string, fieldName: string, maxIssues: number): 
     issueService.getDistinctIssueField(projectKey, fieldName, maxIssues, metadata),
   );
 }
+
+// Composite Lumo tool surface: JiraWeb's own issue service (legacy three
+// tools) + the full Yaki tool catalog (brain, vectors, Confluence, TestRail,
+// config control, reasoning) reading Yaki's assets in place (YAKI_ROOT).
+const lumoTools = {
+  searchIssues: issueService.searchIssues.bind(issueService),
+  getIssueDetails: issueService.getIssueDetails.bind(issueService),
+  addComment: issueService.addComment.bind(issueService),
+  yaki: buildYakiTools({ session, testrail: testRail }),
+};
 
 /** Throwaway session + GET /myself — used by /auth/test|login and boot. */
 async function testConnection(creds: Credentials): Promise<JiraUser> {
@@ -92,8 +105,9 @@ const app = createApp({
   createDefaults,
   createMetaCache,
   testrail: testRail,
+  confluence,
   askLumo: (request) =>
-    askLumo({ ...request, session, tools: issueService, runCli: runCopilotCli }),
+    askLumo({ ...request, session, tools: lumoTools, runCli: runCliForModel }),
   staticDir: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist'),
 });
 
@@ -130,9 +144,21 @@ async function autoConnectTestRail(): Promise<void> {
   }
 }
 
+async function autoConnectConfluence(): Promise<void> {
+  if (!confluence.connection()) return;
+  try {
+    const user = await confluence.connect();
+    console.log(`Confluence session restored as ${user.displayName}`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.log(`Saved Confluence credentials found but the ping failed (${message}); staying disconnected.`);
+  }
+}
+
 const port = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 5643;
 app.listen(port, '127.0.0.1', () => {
   console.log(`JiraWeb server listening on http://127.0.0.1:${port} (data: ${dataDir})`);
   void autoActivate();
   void autoConnectTestRail();
+  void autoConnectConfluence();
 });

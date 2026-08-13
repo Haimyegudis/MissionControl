@@ -148,7 +148,7 @@ describe('TestRail case mapping', () => {
     expect(postJson).toHaveBeenCalledWith('update_case/42', { title: 'Renamed' });
   });
 
-  it('addRun always sends include_all=false with the explicit case ids', async () => {
+  it('addRun sends include_all=false with the explicit case ids by default', async () => {
     const { client, postJson } = makeClient(() => []);
     await client.addRun(4, { suiteId: 3, name: 'Nightly', description: null, caseIds: [1, 2], refs: null });
     expect(postJson).toHaveBeenCalledWith('add_run/4', {
@@ -158,6 +158,32 @@ describe('TestRail case mapping', () => {
       include_all: false,
       case_ids: [1, 2],
       refs: null,
+    });
+  });
+
+  it('addRun with includeAll=true omits case_ids entirely', async () => {
+    const { client, postJson } = makeClient(() => []);
+    await client.addRun(4, { suiteId: 3, name: 'Full', description: null, refs: null, includeAll: true, caseIds: [1, 2] });
+    expect(postJson).toHaveBeenCalledWith('add_run/4', {
+      suite_id: 3,
+      name: 'Full',
+      description: null,
+      include_all: true,
+      refs: null,
+    });
+  });
+
+  it('addRun passes assignedto_id through and defaults missing case ids to []', async () => {
+    const { client, postJson } = makeClient(() => []);
+    await client.addRun(4, { suiteId: 3, name: 'Assigned', description: 'd', refs: 'ISW-1', assignedToId: 9 });
+    expect(postJson).toHaveBeenCalledWith('add_run/4', {
+      suite_id: 3,
+      name: 'Assigned',
+      description: 'd',
+      include_all: false,
+      case_ids: [],
+      refs: 'ISW-1',
+      assignedto_id: 9,
     });
   });
 

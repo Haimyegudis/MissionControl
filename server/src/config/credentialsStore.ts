@@ -13,6 +13,8 @@ export interface Credentials {
   testRailBaseUrl: string;
   testRailEmail: string;
   testRailApiKey: string;
+  confluenceBaseUrl: string;
+  confluencePat: string;
 }
 
 /**
@@ -53,6 +55,8 @@ export class CredentialsStore {
         testRailBaseUrl: typeof parsed.testRailBaseUrl === 'string' ? parsed.testRailBaseUrl : '',
         testRailEmail: typeof parsed.testRailEmail === 'string' ? parsed.testRailEmail : '',
         testRailApiKey: typeof parsed.testRailApiKey === 'string' ? parsed.testRailApiKey : '',
+        confluenceBaseUrl: typeof parsed.confluenceBaseUrl === 'string' ? parsed.confluenceBaseUrl : '',
+        confluencePat: typeof parsed.confluencePat === 'string' ? parsed.confluencePat : '',
       };
     } catch {
       return null; // corrupt JSON

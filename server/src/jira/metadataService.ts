@@ -74,6 +74,23 @@ export class JiraMetadataService implements JqlFieldResolver {
     return this.fetchList(`${this.prefix}/resolution`, 'name');
   }
 
+  /** All visible Jira field display names, including custom fields. */
+  async getFields(): Promise<string[]> {
+    if (!this.session.isConnected) return [];
+    try {
+      const resp = await this.fetchFn(this.session, `${this.prefix}/field`);
+      const distinct = new Set<string>();
+      for (const el of Array.isArray(resp) ? (resp as any[]) : []) {
+        if (typeof el?.name === 'string' && el.name.trim().length > 0) {
+          distinct.add(el.name.trim());
+        }
+      }
+      return [...distinct].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    } catch {
+      return [];
+    }
+  }
+
   // -------------------------------------------------------------------------
   // Versions / components: distinct, ci sort, [] on any failure
   // -------------------------------------------------------------------------

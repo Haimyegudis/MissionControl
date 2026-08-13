@@ -123,6 +123,7 @@ function makeDeps(): Harness {
       getStatuses: vi.fn(async () => []),
       getPriorities: vi.fn(async () => []),
       getResolutions: vi.fn(async () => []),
+      getFields: vi.fn(async () => []),
       getVersions: vi.fn(async () => []),
       getComponents: vi.fn(async () => []),
       getAssignableUsers: vi.fn(async () => []),
@@ -400,6 +401,45 @@ describe('testrail prefetch and people', () => {
     });
     expect(harness.service.prefetchStatus()).toEqual({ active: false, done: 3, total: 3 });
     expect(harness.client.getSuites).toHaveBeenCalledTimes(1);
+  });
+
+  it('POST /projects/:id/runs forwards includeAll/assignedToId (caseIds only when not include-all)', async () => {
+    const harness = makeDeps();
+    const base = await start(harness);
+    await connectSession(base);
+
+    const post = (body: unknown) =>
+      fetch(`${base}/api/testrail/projects/1/runs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+    // include_all run: case ids are dropped before they reach the client.
+    let res = await post({ suiteId: 3, name: 'Full', includeAll: true, assignedToId: 9, caseIds: [1, 2] });
+    expect(res.status).toBe(200);
+    expect(harness.client.addRun).toHaveBeenLastCalledWith(1, {
+      suiteId: 3,
+      name: 'Full',
+      description: null,
+      refs: null,
+      assignedToId: 9,
+      includeAll: true,
+      caseIds: undefined,
+    });
+
+    // explicit snapshot run.
+    res = await post({ suiteId: 3, name: 'Picked', refs: 'ISW-1', caseIds: [4, 5] });
+    expect(res.status).toBe(200);
+    expect(harness.client.addRun).toHaveBeenLastCalledWith(1, {
+      suiteId: 3,
+      name: 'Picked',
+      description: null,
+      refs: 'ISW-1',
+      assignedToId: null,
+      includeAll: false,
+      caseIds: [4, 5],
+    });
   });
 
   it('people round-trips as an id -> name map and PUT replaces the set', async () => {

@@ -104,6 +104,7 @@ export function RunDetailView() {
       createdOn: null,
       createdBy: null,
       assignedToId: null,
+      refs: null,
       passedCount: 0,
       failedCount: 0,
       blockedCount: 0,

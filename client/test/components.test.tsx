@@ -37,6 +37,14 @@ describe('DataGrid', () => {
     expect(html).toContain('Second row');
   });
 
+  it('renders a resize grip on every header', () => {
+    const html = renderToString(
+      <DataGrid stateKey="Test.Grid" columns={columns} rows={rows} rowKey={(r) => r.key} />,
+    );
+    expect(html.split('dg-grip').length - 1).toBe(columns.length);
+    expect(html).toContain('Drag to resize · double-click to reset');
+  });
+
   it('renders the empty text when there are no rows', () => {
     const html = renderToString(
       <DataGrid stateKey="Test.Grid" columns={columns} rows={[]} rowKey={(r) => r.key} emptyText="Nothing here" />,

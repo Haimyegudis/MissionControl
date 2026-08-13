@@ -60,13 +60,13 @@ export function countOnHold(issues: readonly Pick<JiraIssue, 'status'>[]): numbe
 // Sprint data
 // ---------------------------------------------------------------------------
 
-/** §1 JQL: current sprint scoped to me or the picked user, open only. */
+/** Current sprint scoped to me or the picked user, including completed issues. */
 export function dashboardSprintJql(project: string, userFilter: string): string {
   const user = userFilter.trim();
   const who = user ? `assignee = "${user}"` : 'assignee = currentUser()';
   return (
     `project = ${project} AND sprint in openSprints() AND ${who}` +
-    ' AND statusCategory != Done ORDER BY priority DESC, updated DESC'
+    ' ORDER BY priority DESC, updated DESC'
   );
 }
 

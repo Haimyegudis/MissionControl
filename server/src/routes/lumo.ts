@@ -188,8 +188,8 @@ export function lumoRoutes(deps: AppDeps): Router {
       }
     }
     // Legacy stored defaults (pre-Sonnet-5) are coerced to the current default.
-    const LEGACY_MODELS = new Set(['gpt-4o-mini', 'claude-sonnet-4-5', 'claude-sonnet-5', 'claude-sonnet-5[1m]']);
-    if (!model || LEGACY_MODELS.has(model)) model = 'claude-sonnet-4.6';
+    const LEGACY_MODELS = new Set(['gpt-4o-mini', 'claude-sonnet-4-5', 'claude-sonnet-4.6', 'claude-sonnet-5[1m]']);
+    if (!model || LEGACY_MODELS.has(model)) model = 'claude-sonnet-5';
 
     res.status(200);
     res.setHeader('Content-Type', 'text/event-stream');

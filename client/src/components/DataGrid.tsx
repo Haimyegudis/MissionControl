@@ -1,11 +1,20 @@
-// Generic data grid (ui-parity §12.10): header sort, edge-drag column resize,
-// right-click header menu (visibility + CSV export), per-column state persisted
-// to localStorage `jiraweb.grid.{stateKey}` (debounced 250ms), row dblclick /
-// context-menu callbacks, optional ctrl/shift multi-select.
+// Generic data grid (ui-parity §12.10): header sort, edge-drag column resize
+// (7px grip, live drag, min 40px, double-click reset), right-click header menu
+// (visibility + CSV export), per-column state persisted to localStorage
+// `jiraweb.grid.{stateKey}` (pure logic in lib/gridState; widths flushed on
+// mouseup, menu edits debounced 250ms), row dblclick / context-menu callbacks,
+// optional ctrl/shift multi-select.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { buildCsv, csvFilename, downloadCsv } from '../lib/csv';
+import {
+  loadGridState,
+  resetColWidth,
+  resizeColWidth,
+  saveGridState,
+  type GridState,
+} from '../lib/gridState';
 import { ContextMenu } from './ContextMenu';
 import type { MenuEntry } from './ContextMenu';
 
@@ -20,24 +29,6 @@ export interface GridColumn<T> {
   sortValue?: (row: T) => string | number | null;
   /** Display/CSV text; falls back to the raw property named by `key`. */
   format?: (row: T) => string;
-}
-
-interface ColState {
-  order?: number;
-  width?: number;
-  hidden?: boolean;
-}
-
-type GridState = Record<string, ColState>;
-
-function loadState(stateKey: string): GridState {
-  try {
-    if (typeof localStorage === 'undefined') return {};
-    const raw = localStorage.getItem(`jiraweb.grid.${stateKey}`);
-    return raw ? (JSON.parse(raw) as GridState) : {};
-  } catch {
-    return {};
-  }
 }
 
 export interface DataGridProps<T> {
@@ -82,7 +73,7 @@ export function DataGrid<T>({
   emptyText = 'No rows.',
   maxHeight,
 }: DataGridProps<T>) {
-  const [state, setState] = useState<GridState>(() => loadState(stateKey));
+  const [state, setState] = useState<GridState>(() => loadGridState(stateKey));
   const [sort, setSort] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
   const [headerMenu, setHeaderMenu] = useState<{ x: number; y: number } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -90,17 +81,12 @@ export function DataGrid<T>({
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resizingRef = useRef(false);
 
-  // Debounced 250ms persistence.
+  // Debounced 250ms persistence (header-menu edits).
   const persist = (next: GridState) => {
+    stateRef.current = next;
     setState(next);
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      try {
-        localStorage.setItem(`jiraweb.grid.${stateKey}`, JSON.stringify(next));
-      } catch {
-        /* quota / unavailable */
-      }
-    }, 250);
+    saveTimer.current = setTimeout(() => saveGridState(stateKey, next), 250);
   };
   useEffect(
     () => () => {
@@ -148,12 +134,16 @@ export function DataGrid<T>({
     resizingRef.current = false;
     const onMove = (me: MouseEvent) => {
       resizingRef.current = true;
-      const w = Math.max(40, startWidth + (me.clientX - startX));
-      persist({ ...stateRef.current, [key]: { ...stateRef.current[key], width: w } });
+      // Live width update while dragging (clamped to MIN_COL_WIDTH).
+      const next = resizeColWidth(stateRef.current, key, startWidth, me.clientX - startX);
+      stateRef.current = next;
+      setState(next);
     };
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      // Persist the final width immediately on mouseup.
+      saveGridState(stateKey, stateRef.current);
       // Let the click that follows mouseup see the flag, then clear it.
       setTimeout(() => {
         resizingRef.current = false;
@@ -163,7 +153,15 @@ export function DataGrid<T>({
     window.addEventListener('mouseup', onUp);
   };
 
-  // Keep a ref of latest state for the resize closure.
+  // Double-click on the grip resets that column to its default width.
+  const resetColumn = (key: string) => {
+    const next = resetColWidth(stateRef.current, key);
+    stateRef.current = next;
+    setState(next);
+    saveGridState(stateKey, next);
+  };
+
+  // Keep a ref of latest state for the resize closures.
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -270,16 +268,14 @@ export function DataGrid<T>({
                   <span style={{ color: 'var(--accent-cyan)', marginLeft: 4 }}>{sort.dir === 'asc' ? '▲' : '▼'}</span>
                 ) : null}
                 <span
+                  className="dg-grip"
+                  title="Drag to resize · double-click to reset"
                   onMouseDown={(e) => beginResize(c.key, state[c.key]?.width ?? c.width, e)}
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: 6,
-                    height: '100%',
-                    cursor: 'col-resize',
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    resetColumn(c.key);
                   }}
+                  onClick={(e) => e.stopPropagation()}
                 />
               </th>
             ))}

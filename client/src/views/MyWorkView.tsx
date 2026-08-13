@@ -241,7 +241,8 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
       }
     }
 
-    // Roster: populate once — sprint JQL (1000) + current user.
+    // Roster: populate once from Indigo current-sprint issues + current user.
+    // Issue mapping always uses Jira displayName, never login/email.
     if (!rosterLoaded.current) {
       rosterLoaded.current = true;
       issuesApi

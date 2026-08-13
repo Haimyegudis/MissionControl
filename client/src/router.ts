@@ -17,7 +17,8 @@ export type RouteId =
   | 'testrail-cases'
   | 'testrail-runs'
   | 'testrail-run'
-  | 'testrail-reports';
+  | 'testrail-reports'
+  | 'confluence';
 
 export const ROUTES: Array<{ id: RouteId; label: string }> = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -38,6 +39,10 @@ export const TESTRAIL_ROUTES: Array<{ id: RouteId; label: string }> = [
   { id: 'testrail-reports', label: 'Reports' },
 ];
 
+export const CONFLUENCE_ROUTES: Array<{ id: RouteId; label: string }> = [
+  { id: 'confluence', label: 'Pages' },
+];
+
 const HASH_BY_TESTRAIL_ROUTE: Partial<Record<RouteId, string>> = {
   'testrail-cases': 'testrail/cases',
   'testrail-runs': 'testrail/runs',
@@ -46,6 +51,7 @@ const HASH_BY_TESTRAIL_ROUTE: Partial<Record<RouteId, string>> = {
 };
 
 const VALID = new Set<string>(ROUTES.map((r) => r.id));
+VALID.add('confluence');
 const DEFAULT_ROUTE: RouteId = 'dashboard';
 
 /** Run id for the `#/testrail/run/:id` route (null elsewhere). */
@@ -64,6 +70,7 @@ function parseHash(): RouteId {
     if (sub === 'reports') return 'testrail-reports';
     return 'testrail-cases';
   }
+  if (raw === 'confluence' || raw.startsWith('confluence/')) return 'confluence';
   const first = raw.split(/[/?]/, 1)[0];
   return VALID.has(first) ? (first as RouteId) : DEFAULT_ROUTE;
 }
@@ -84,6 +91,7 @@ export function navigateTestRailRun(runId: number): void {
 /** ActivePage display name for the top bar. */
 export function activePageName(route: RouteId): string {
   if (route === 'testrail-run') return 'TestRail — Run';
+  if (route === 'confluence') return 'Confluence — Indigo';
   const tr = TESTRAIL_ROUTES.find((r) => r.id === route);
   if (tr) return `TestRail — ${tr.label}`;
   return ROUTES.find((r) => r.id === route)?.label ?? 'Dashboard';

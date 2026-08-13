@@ -89,7 +89,8 @@ export function DashboardView() {
     const user = userFilterRef.current.trim();
     const jql = dashboardSprintJql(project, user);
 
-    // Roster tail: distinct assignee field values (2000), fetched once.
+    // Roster tail: assignees found on Indigo project issues, fetched once.
+    // The server normalizes Jira user objects to displayName.
     if (distinctRef.current === null) {
       distinctRef.current = [];
       metadata
@@ -106,7 +107,10 @@ export function DashboardView() {
     // beforehand, so a slow refresh never flashes an empty dashboard.
     const sprintPromise = api
       .post<CachedSearchResult>('/api/issues/cached-search', {
-        cacheKey: `dashboard:sprint:${user || 'me'}`,
+        // Versioned because the dashboard used to exclude Done issues. A new
+        // namespace prevents the one-hour delta cache from retaining that
+        // incomplete result set after upgrading.
+        cacheKey: `dashboard:sprint:all-statuses:${project}:${user || 'me'}`,
         jql,
         maxResults: 200,
       })

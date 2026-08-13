@@ -14,6 +14,7 @@ import type { MetadataCacheEntry } from '../storage/repositories.js';
 import type { TestRailClientLike } from '../testrail/client.js';
 import type { TrMeta, TrPrefetchProgress, TrSessionStatus } from '../testrail/service.js';
 import type { TrConnection, TrUser } from '../testrail/types.js';
+import type { ConfluenceService } from '../confluence/service.js';
 import type {
   AppSettings,
   DashboardSnapshot,
@@ -200,6 +201,8 @@ export interface AppDeps {
   createDefaults: CreateDefaultsDep;
   createMetaCache: CreateMetaCacheDep;
   testrail: TestRailDep;
+  /** Optional for isolated route tests; the real app always provides it. */
+  confluence?: ConfluenceService;
   askLumo(request: AskLumoRequest): Promise<LumoResult>;
   /** Injectable fetch for the attachment proxy (defaults to global fetch). */
   fetchFn?: typeof fetch;

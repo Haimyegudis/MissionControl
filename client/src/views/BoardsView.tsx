@@ -4,7 +4,7 @@
 // list; loads on session change only (no scheduler tick).
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { boards as boardsApi, pinnedBoards as pinnedBoardsApi } from '../api/client';
+import { boards as boardsApi } from '../api/client';
 import { DataGrid } from '../components/DataGrid';
 import type { GridColumn } from '../components/DataGrid';
 import {
@@ -14,6 +14,7 @@ import {
   type BoardDiagnostics,
 } from '../lib/viewBoards';
 import { sessionStore } from '../stores/session';
+import { pinBoard } from '../stores/pinnedBoards';
 import { pushToast } from '../stores/toasts';
 import { useStore } from '../stores/useStore';
 import type { JiraBoard } from '../types';
@@ -73,8 +74,7 @@ export function BoardsView() {
 
   const pin = async (board: JiraBoard) => {
     try {
-      await pinnedBoardsApi.add({ boardId: board.id, name: board.name, filterId: board.filterId });
-      // Shell sidebar reads pinned boards on mount; refresh wiring lands in B5.
+      await pinBoard({ boardId: board.id, name: board.name, filterId: board.filterId });
       pushToast({ title: 'Board pinned', body: board.name });
     } catch (err) {
       pushToast({ title: 'Pin failed', body: err instanceof Error ? err.message : String(err) });

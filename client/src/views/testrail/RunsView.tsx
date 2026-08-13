@@ -1,11 +1,18 @@
-// Test runs (Railbook renderRuns at parity): 200ms-debounced search across
-// ALL runs (name/description/id/creator), suite filter, My-runs chip, newest
-// 500 display cap, edit/close/delete (typed confirm), run creation with a
-// whole-suite/section scope and a live case-count preview.
+// Test runs (Railbook renderRuns at parity): project picker, 200ms-debounced
+// search across ALL runs (name/description/id/creator), suite filter, My-runs
+// chip, newest 500 display cap, edit/close/delete (typed confirm), and a
+// TestRail-parity run-creation dialog (assignee + include-all / specific
+// cases / dynamic filtering with a live case-count preview).
 
 import { useEffect, useMemo, useState } from 'react';
 import { trApi } from '../../api/testrail';
-import { fmtUnixDate, passPct, sectionDescendants } from '../../lib/testrail';
+import {
+  fmtUnixDate,
+  groupCasesBySection,
+  passPct,
+  resolveRunCaseFilter,
+  sectionPath,
+} from '../../lib/testrail';
 import { Modal } from '../../components/Modal';
 import { navigateTestRailRun } from '../../router';
 import { pushToast } from '../../stores/toasts';
@@ -13,11 +20,12 @@ import {
   ensureCases,
   ensureSections,
   loadRuns,
+  selectProject,
   trStore,
   userName,
   type TestRailState,
 } from '../../stores/testrail';
-import type { TrRun, TrSection } from '../../testrailTypes';
+import type { TrCase, TrRun, TrSection } from '../../testrailTypes';
 import {
   ConfirmDialog,
   DistBar,
@@ -52,6 +60,11 @@ export function RunsView() {
     const t = setTimeout(() => setSearch(searchInput), 200);
     return () => clearTimeout(t);
   }, [searchInput]);
+
+  // Project switch → the suite filter no longer applies to the new suites.
+  useEffect(() => {
+    setSuiteFilter('');
+  }, [st.projectId]);
 
   const me = st.session?.user?.id ?? null;
   const runs = st.runs;
@@ -123,6 +136,18 @@ export function RunsView() {
           lede={`${activeCount} active · ${filtered.length} in scope of ${runs.length} total.`}
         />
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <select
+            title="Project"
+            value={st.projectId ?? ''}
+            onChange={(e) => void selectProject(Number(e.target.value))}
+            style={{ minWidth: 150 }}
+          >
+            {st.projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
           {me != null ? (
             <button className={`chip c-mine ${myOnly ? 'active' : ''}`} onClick={() => setMyOnly((v) => !v)}>
               My runs<span className="n">{myCount}</span>
@@ -242,10 +267,13 @@ export function RunsView() {
 }
 
 // ---------------------------------------------------------------------------
-// run editor (Railbook runEditorModal) — create with explicit caseIds
+// run editor (TestRail add_run parity) — assignee + three case-selection modes
 // ---------------------------------------------------------------------------
 
 const fieldCol: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4 };
+const mono: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontSize: 11 };
+
+type CaseMode = 'all' | 'specific' | 'dynamic';
 
 export function RunEditor({
   st,
@@ -263,19 +291,36 @@ export function RunEditor({
   const [suiteId, setSuiteId] = useState<number | null>(
     typeof st.selSuiteId === 'number' ? st.selSuiteId : (st.suites[0]?.id ?? null),
   );
-  const [scope, setScope] = useState('all');
-  const [scopeSections, setScopeSections] = useState<TrSection[]>([]);
-  const [previewCount, setPreviewCount] = useState<number | null>(null);
+  // Assign To defaults to the connected TestRail user (native TestRail default).
+  const [assignedTo, setAssignedTo] = useState<number | ''>(st.session?.user?.id ?? '');
+  const [mode, setMode] = useState<CaseMode>('all');
+  const [sections, setSections] = useState<TrSection[]>([]);
+  const [suiteCases, setSuiteCases] = useState<TrCase[] | null>(null);
+  // "Select specific test cases" state.
+  const [sel, setSel] = useState<ReadonlySet<number>>(new Set());
+  const [pickFilter, setPickFilter] = useState('');
+  // "Dynamic filtering" state.
+  const [dynSections, setDynSections] = useState<number[]>([]);
+  const [dynPriority, setDynPriority] = useState<number | ''>('');
+  const [dynOwner, setDynOwner] = useState<number | ''>('');
+  const [dynTitle, setDynTitle] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // Live scope options + case-count preview.
+  const project = st.projects.find((p) => p.id === st.projectId);
+
+  // Suite change → (re)load its sections + cases, reset the case selections.
   useEffect(() => {
     if (isEdit || suiteId == null) return;
     let cancelled = false;
-    setScope('all');
-    void ensureSections(suiteId)
-      .then(([secs]) => {
-        if (!cancelled) setScopeSections([...secs].sort((a, b) => a.displayOrder - b.displayOrder));
+    setSuiteCases(null);
+    setSections([]);
+    setSel(new Set());
+    setDynSections([]);
+    void Promise.all([ensureSections(suiteId), ensureCases(suiteId)])
+      .then(([secLists]) => {
+        if (cancelled) return;
+        setSections([...secLists[0]].sort((a, b) => a.displayOrder - b.displayOrder));
+        setSuiteCases(trStore.get().cases[suiteId] ?? []);
       })
       .catch(() => {});
     return () => {
@@ -283,27 +328,58 @@ export function RunEditor({
     };
   }, [isEdit, suiteId]);
 
-  useEffect(() => {
-    if (isEdit || suiteId == null) return;
-    let cancelled = false;
-    setPreviewCount(null);
-    void ensureCases(suiteId)
-      .then(() => {
-        if (cancelled) return;
-        const cases = trStore.get().cases[suiteId] ?? [];
-        if (scope === 'all') {
-          setPreviewCount(cases.length);
-        } else {
-          const secs = trStore.get().sections[suiteId] ?? [];
-          const ids = sectionDescendants(Number(scope), secs);
-          setPreviewCount(cases.filter((c) => c.sectionId != null && ids.has(c.sectionId)).length);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [isEdit, suiteId, scope]);
+  // Assignee options: people map (id → name) merged with meta users + me.
+  const assignOptions = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const [id, personName] of Object.entries(st.people)) map.set(Number(id), personName);
+    for (const u of st.meta?.users ?? []) if (!map.has(u.id)) map.set(u.id, u.name);
+    const meUser = st.session?.user;
+    if (meUser && !map.has(meUser.id)) map.set(meUser.id, meUser.name);
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: 'base' }));
+  }, [st.people, st.meta, st.session]);
+
+  // Specific-mode picker: title-filtered cases grouped by section.
+  const pickCases = useMemo(() => {
+    const q = pickFilter.trim().toLowerCase();
+    const list = suiteCases ?? [];
+    return q ? list.filter((c) => c.title.toLowerCase().includes(q) || `c${c.id}` === q) : list;
+  }, [suiteCases, pickFilter]);
+  const pickGroups = useMemo(() => groupCasesBySection(pickCases, sections), [pickCases, sections]);
+
+  // Dynamic-mode live resolution (this is what gets sent as case_ids).
+  const dynMatches = useMemo(
+    () =>
+      resolveRunCaseFilter(suiteCases ?? [], sections, {
+        sectionIds: dynSections,
+        priorityId: dynPriority === '' ? null : dynPriority,
+        ownerId: dynOwner === '' ? null : dynOwner,
+        titleContains: dynTitle,
+      }),
+    [suiteCases, sections, dynSections, dynPriority, dynOwner, dynTitle],
+  );
+
+  const includedCount =
+    mode === 'all' ? (suiteCases?.length ?? null) : mode === 'specific' ? sel.size : dynMatches.length;
+
+  const toggleCase = (id: number, on: boolean) => {
+    setSel((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const toggleSection = (cases: TrCase[], on: boolean) => {
+    setSel((prev) => {
+      const next = new Set(prev);
+      for (const c of cases) {
+        if (on) next.add(c.id);
+        else next.delete(c.id);
+      }
+      return next;
+    });
+  };
 
   const save = async () => {
     if (!name.trim()) {
@@ -321,16 +397,10 @@ export function RunEditor({
         pushToast({ title: 'TestRail', body: 'Run updated.' });
       } else {
         if (st.projectId == null || suiteId == null) return;
-        const cases = trStore.get().cases[suiteId] ?? [];
-        let caseIds: number[];
-        if (scope === 'all') {
-          caseIds = cases.map((c) => c.id);
-        } else {
-          const secs = trStore.get().sections[suiteId] ?? [];
-          const ids = sectionDescendants(Number(scope), secs);
-          caseIds = cases.filter((c) => c.sectionId != null && ids.has(c.sectionId)).map((c) => c.id);
-        }
-        if (!caseIds.length) {
+        let caseIds: number[] | undefined;
+        if (mode === 'specific') caseIds = [...sel];
+        else if (mode === 'dynamic') caseIds = dynMatches.map((c) => c.id);
+        if (mode !== 'all' && (!caseIds || caseIds.length === 0)) {
           pushToast({ title: 'TestRail', body: 'Selection contains no cases.' });
           return;
         }
@@ -338,10 +408,18 @@ export function RunEditor({
           suiteId,
           name: name.trim(),
           description: description.trim() || null,
-          caseIds,
           refs: refs.trim() || null,
+          assignedToId: assignedTo === '' ? null : assignedTo,
+          includeAll: mode === 'all',
+          caseIds,
         });
-        pushToast({ title: 'TestRail', body: `Run created with ${caseIds.length} cases.` });
+        pushToast({
+          title: 'TestRail',
+          body:
+            mode === 'all'
+              ? 'Run created — all suite cases included.'
+              : `Run created with ${caseIds!.length} cases.`,
+        });
       }
       onClose();
       await loadRuns(true);
@@ -352,10 +430,22 @@ export function RunEditor({
     }
   };
 
+  const radioRow = (value: CaseMode, label: string, hint: string) => (
+    <label style={{ display: 'flex', alignItems: 'baseline', gap: 8, cursor: 'pointer' }}>
+      <input type="radio" name="runCaseMode" checked={mode === value} onChange={() => setMode(value)} />
+      <span>
+        {label}
+        <span className="muted" style={{ marginLeft: 8, fontSize: 11.5 }}>
+          {hint}
+        </span>
+      </span>
+    </label>
+  );
+
   return (
     <Modal
-      title={isEdit ? 'Edit run' : 'New test run'}
-      width={560}
+      title={isEdit ? 'Edit run' : `New test run — ${project?.name ?? 'project'}`}
+      width={640}
       onClose={onClose}
       footer={
         <>
@@ -369,6 +459,11 @@ export function RunEditor({
       }
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {!isEdit ? (
+          <div className="muted" style={mono}>
+            Project: <b style={{ color: 'var(--accent-cyan)' }}>{project?.name ?? '—'}</b>
+          </div>
+        ) : null}
         <label style={fieldCol}>
           Name
           <input
@@ -400,22 +495,171 @@ export function RunEditor({
                 </select>
               </label>
               <label style={fieldCol}>
-                Scope
-                <select value={scope} onChange={(e) => setScope(e.target.value)}>
-                  <option value="all">Whole suite</option>
-                  {scopeSections.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {'— '.repeat(s.depth)}
-                      {s.name}
+                Assign To
+                <select
+                  value={assignedTo}
+                  onChange={(e) => setAssignedTo(e.target.value === '' ? '' : Number(e.target.value))}
+                >
+                  <option value="">Unassigned</option>
+                  {assignOptions.map(([id, userLabel]) => (
+                    <option key={id} value={id}>
+                      {userLabel}
                     </option>
                   ))}
                 </select>
               </label>
             </div>
-            <div className="muted" style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>
-              {previewCount === null
+
+            <div style={fieldCol}>
+              Test cases
+              {radioRow('all', 'Include all test cases', 'cases added to the suite later join automatically')}
+              {radioRow('specific', 'Select specific test cases', 'pick cases per section')}
+              {radioRow('dynamic', 'Dynamic filtering', 'section / priority / owner / title filter')}
+            </div>
+
+            {mode === 'specific' ? (
+              suiteCases === null ? (
+                <div className="muted" style={mono}>
+                  loading cases…
+                </div>
+              ) : (
+                <>
+                  <input
+                    placeholder="Filter cases by title…"
+                    value={pickFilter}
+                    onChange={(e) => setPickFilter(e.target.value)}
+                  />
+                  <div
+                    style={{
+                      maxHeight: 240,
+                      overflowY: 'auto',
+                      border: '1px solid var(--border-soft)',
+                      borderRadius: 8,
+                      padding: 6,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
+                    }}
+                  >
+                    {pickGroups.map((group) => {
+                      const allOn = group.cases.every((c) => sel.has(c.id));
+                      return (
+                        <div key={group.sectionId} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <label
+                            style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, fontSize: 12.5, cursor: 'pointer' }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={allOn}
+                              onChange={(e) => toggleSection(group.cases, e.target.checked)}
+                            />
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {sectionPath(group.sectionId, sections)}
+                            </span>
+                            <span className="muted" style={{ ...mono, fontWeight: 400 }}>
+                              · {group.cases.length}
+                            </span>
+                          </label>
+                          {group.cases.map((c) => (
+                            <label
+                              key={c.id}
+                              style={{ display: 'flex', alignItems: 'center', gap: 6, paddingLeft: 22, fontSize: 12.5, cursor: 'pointer' }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={sel.has(c.id)}
+                                onChange={(e) => toggleCase(c.id, e.target.checked)}
+                              />
+                              <span className="muted" style={mono}>
+                                C{c.id}
+                              </span>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {c.title}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      );
+                    })}
+                    {pickGroups.length === 0 ? (
+                      <div className="muted" style={{ fontSize: 12, padding: 6 }}>
+                        No cases match.
+                      </div>
+                    ) : null}
+                  </div>
+                </>
+              )
+            ) : null}
+
+            {mode === 'dynamic' ? (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <label style={fieldCol}>
+                    Sections (multi-select)
+                    <select
+                      multiple
+                      size={6}
+                      value={dynSections.map(String)}
+                      onChange={(e) =>
+                        setDynSections([...e.target.selectedOptions].map((o) => Number(o.value)))
+                      }
+                    >
+                      {sections.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {'— '.repeat(s.depth)}
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <label style={fieldCol}>
+                      Priority
+                      <select
+                        value={dynPriority}
+                        onChange={(e) => setDynPriority(e.target.value === '' ? '' : Number(e.target.value))}
+                      >
+                        <option value="">Any priority</option>
+                        {(st.meta?.priorities ?? []).map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.shortName || p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label style={fieldCol}>
+                      Owner
+                      <select
+                        value={dynOwner}
+                        onChange={(e) => setDynOwner(e.target.value === '' ? '' : Number(e.target.value))}
+                      >
+                        <option value="">Any owner</option>
+                        {assignOptions.map(([id, userLabel]) => (
+                          <option key={id} value={id}>
+                            {userLabel}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label style={fieldCol}>
+                      Title contains
+                      <input value={dynTitle} onChange={(e) => setDynTitle(e.target.value)} />
+                    </label>
+                  </div>
+                </div>
+                <div className="muted" style={{ fontSize: 11.5 }}>
+                  Heads-up: dynamic filtering snapshots the matching cases at creation time — cases added to the
+                  suite later are NOT auto-added (that requires "Include all test cases").
+                </div>
+              </>
+            ) : null}
+
+            <div className="muted" style={mono}>
+              {suiteCases === null || includedCount === null
                 ? 'counting cases…'
-                : `${previewCount} case${previewCount === 1 ? '' : 's'} will be included`}
+                : mode === 'all'
+                  ? `${includedCount} case${includedCount === 1 ? '' : 's'} today — plus any future suite cases`
+                  : `${includedCount} case${includedCount === 1 ? '' : 's'} will be included`}
             </div>
           </>
         ) : null}

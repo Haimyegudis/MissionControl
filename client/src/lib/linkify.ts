@@ -13,6 +13,28 @@ const TRAILING = new Set(['.', ',', ';', ')']);
  * order of appearance (`Link 1`, `Link 2`, ...); trailing `. , ; )` are trimmed
  * off URLs and re-emitted as text. Only http/https URLs match.
  */
+/**
+ * Make raw Jira wiki text readable: `[~first.last@hp.com]` mentions become
+ * "First Last", and noise markup ({color}, {quote}, {noformat}, {code}) is
+ * stripped. Pure — unit tested.
+ */
+export function cleanJiraText(text: string | null | undefined): string {
+  const input = text ?? '';
+  if (!input) return '';
+  return input
+    .replace(/\[~([^\]]+)\]/g, (_m, id: string) => {
+      const local = id.split('@')[0] ?? '';
+      const name = local
+        .split(/[._]/)
+        .map((part: string) => part.replace(/\d+$/, ''))
+        .filter(Boolean)
+        .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+      return name ? `@${name}` : `@${id}`;
+    })
+    .replace(/\{(?:color|quote|noformat|code)(?::[^}]*)?\}/gi, '');
+}
+
 export function tokenize(text: string | null | undefined): LinkToken[] {
   const tokens: LinkToken[] = [];
   const input = text ?? '';

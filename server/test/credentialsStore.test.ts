@@ -13,6 +13,8 @@ const sample: Credentials = {
   testRailBaseUrl: 'https://testrail.example.com/',
   testRailEmail: 'user@example.com',
   testRailApiKey: 'tr-api-key',
+  confluenceBaseUrl: 'https://confluence.example.com/',
+  confluencePat: 'confluence-pat',
 };
 
 let tmpDir: string;
@@ -69,14 +71,23 @@ describe('CredentialsStore', () => {
     expect(() => store.clear()).not.toThrow();
   });
 
-  it('load() defaults TestRail fields to empty strings for legacy configs', () => {
+  it('load() defaults integration fields to empty strings for legacy configs', () => {
     const legacy = { ...sample } as Record<string, unknown>;
     delete legacy.testRailBaseUrl;
     delete legacy.testRailEmail;
     delete legacy.testRailApiKey;
+    delete legacy.confluenceBaseUrl;
+    delete legacy.confluencePat;
     fs.writeFileSync(path.join(tmpDir, 'config.json'), JSON.stringify(legacy));
     const store = new CredentialsStore();
-    expect(store.load()).toEqual({ ...sample, testRailBaseUrl: '', testRailEmail: '', testRailApiKey: '' });
+    expect(store.load()).toEqual({
+      ...sample,
+      testRailBaseUrl: '',
+      testRailEmail: '',
+      testRailApiKey: '',
+      confluenceBaseUrl: '',
+      confluencePat: '',
+    });
   });
 
   it('load() returns null on corrupt JSON', () => {

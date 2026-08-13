@@ -26,6 +26,12 @@ import type {
   SavedFilter,
   Team,
   TimeLoggedReport,
+  ConfluencePage,
+  ConfluencePageContent,
+  ConfluenceSearchOptions,
+  ConfluenceSpace,
+  ConfluenceStatus,
+  ConfluenceUser,
 } from '../types';
 
 export class ApiError extends Error {
@@ -221,7 +227,7 @@ export const create = {
   deleteDefaults: (key: string) => api.del<void>('/api/create/defaults', { key }),
 };
 
-export type MetadataKind = 'projects' | 'issuetypes' | 'statuses' | 'priorities' | 'resolutions';
+export type MetadataKind = 'projects' | 'issuetypes' | 'statuses' | 'priorities' | 'resolutions' | 'fields';
 
 export const metadata = {
   kind: (kind: MetadataKind) => api.get<string[]>(`/api/metadata/${kind}`),
@@ -235,6 +241,39 @@ export const metadata = {
 
 export const misc = {
   attachmentProxyUrl: (url: string) => withQuery('/api/misc/attachment-proxy', { url }),
+};
+
+export const confluence = {
+  status: () => api.get<ConfluenceStatus>('/api/confluence/status'),
+  test: (baseUrl: string, pat: string) => api.post<ConfluenceUser>('/api/confluence/test', { baseUrl, pat }),
+  connect: (baseUrl: string, pat: string) => api.put<ConfluenceStatus>('/api/confluence/connection', { baseUrl, pat }),
+  disconnect: () => api.del<void>('/api/confluence/connection'),
+  spaces: (fresh = false) => api.get<ConfluenceSpace[]>('/api/confluence/spaces', fresh ? { fresh: 1 } : undefined),
+  pageBatch: (spaceKey: string, start = 0, limit = 200) =>
+    api.get<{ items: ConfluencePage[]; startAt: number; nextStart: number; hasMore: boolean }>(
+      `/api/confluence/spaces/${encodeURIComponent(spaceKey)}/pages`,
+      { start, limit },
+    ),
+  treeRoots: (spaceKey: string) =>
+    api.get<ConfluencePage[]>(`/api/confluence/spaces/${encodeURIComponent(spaceKey)}/tree`),
+  children: (pageId: string) => api.get<ConfluencePage[]>(`/api/confluence/pages/${encodeURIComponent(pageId)}/children`),
+  page: (pageId: string) => api.get<ConfluencePageContent>(`/api/confluence/pages/${encodeURIComponent(pageId)}`),
+  renderUrl: (pageId: string) => `/api/confluence/pages/${encodeURIComponent(pageId)}/render`,
+  search: async (options: ConfluenceSearchOptions) => {
+    const payload = await api.get<unknown>('/api/confluence/search', options as unknown as Query);
+    if (Array.isArray(payload)) return payload as ConfluencePage[];
+    if (payload && typeof payload === 'object') {
+      const wrapped = payload as { items?: unknown; results?: unknown };
+      if (Array.isArray(wrapped.items)) return wrapped.items as ConfluencePage[];
+      if (Array.isArray(wrapped.results)) return wrapped.results as ConfluencePage[];
+    }
+    throw new ApiError(502, 'Confluence search returned an unexpected response.');
+  },
+  createPage: (body: { spaceKey: string; title: string; storageBody: string; parentId?: string | null }) =>
+    api.post<ConfluencePageContent>('/api/confluence/pages', body),
+  updatePage: (pageId: string, body: { title: string; storageBody: string; version: number; parentId?: string | null }) =>
+    api.put<ConfluencePageContent>(`/api/confluence/pages/${encodeURIComponent(pageId)}`, body),
+  proxyUrl: (url: string) => withQuery('/api/confluence/proxy', { url }),
 };
 
 // ---------------------------------------------------------------------------

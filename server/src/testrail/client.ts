@@ -69,8 +69,13 @@ export interface AddRunRequest {
   suiteId?: number | null;
   name: string;
   description?: string | null;
-  caseIds: number[];
   refs?: string | null;
+  /** TestRail assignedto_id — the run's assignee. */
+  assignedToId?: number | null;
+  /** true → include_all (case_ids omitted; future suite cases auto-included). */
+  includeAll?: boolean;
+  /** Explicit case snapshot; required unless includeAll is true. */
+  caseIds?: number[];
 }
 
 export interface UpdateRunRequest {
@@ -301,14 +306,18 @@ export class TestRailClient implements TestRailClientLike {
   }
 
   async addRun(projectId: number, request: AddRunRequest): Promise<TrRun> {
-    const body = {
+    const includeAll = request.includeAll === true;
+    const body: Record<string, unknown> = {
       suite_id: request.suiteId ?? null,
       name: request.name,
       description: request.description ?? null,
-      include_all: false,
-      case_ids: request.caseIds,
+      include_all: includeAll,
       refs: request.refs ?? null,
     };
+    if (request.assignedToId != null) body.assignedto_id = request.assignedToId;
+    // include_all=true must NOT carry case_ids — TestRail would ignore the
+    // "all + future cases" semantics in favor of the explicit snapshot.
+    if (!includeAll) body.case_ids = request.caseIds ?? [];
     return readRun(await this.http.postJson(`add_run/${projectId}`, body));
   }
 
@@ -517,6 +526,7 @@ export function readRun(element: any): TrRun {
     createdOn: getLong(element, 'created_on'),
     createdBy: getInt(element, 'created_by'),
     assignedToId: getInt(element, 'assignedto_id'),
+    refs: getString(element, 'refs'),
     passedCount: getInt(element, 'passed_count') ?? 0,
     failedCount: getInt(element, 'failed_count') ?? 0,
     blockedCount: getInt(element, 'blocked_count') ?? 0,

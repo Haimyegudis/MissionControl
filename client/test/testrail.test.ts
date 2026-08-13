@@ -7,6 +7,7 @@ import {
   filterCases,
   groupCasesBySection,
   passPct,
+  resolveRunCaseFilter,
   richText,
   sectionDescendants,
   sectionPath,
@@ -201,5 +202,39 @@ describe('run aggregates', () => {
   it('passPct rounds over all buckets and dashes the empty run', () => {
     expect(passPct(runs[0])).toBe('38%');
     expect(passPct({ passedCount: 0, failedCount: 0, blockedCount: 0, retestCount: 0, untestedCount: 0 })).toBe('—');
+  });
+});
+
+describe('resolveRunCaseFilter (dynamic run creation)', () => {
+  const cases = [
+    makeCase({ id: 1, title: 'Nozzle check', sectionId: 1, priorityId: 2, ownerId: 9 }),
+    makeCase({ id: 2, title: 'Nozzle purge', sectionId: 2, priorityId: 1, ownerId: 9 }),
+    makeCase({ id: 3, title: 'Web tension', sectionId: 3, priorityId: 2, ownerId: 5 }),
+    makeCase({ id: 4, title: 'Calibrate LUT', sectionId: 4, priorityId: 2, ownerId: null }),
+  ];
+
+  it('empty filter matches everything', () => {
+    expect(resolveRunCaseFilter(cases, SECTIONS, {}).map((c) => c.id)).toEqual([1, 2, 3, 4]);
+  });
+
+  it('section selection includes descendants', () => {
+    expect(resolveRunCaseFilter(cases, SECTIONS, { sectionIds: [2] }).map((c) => c.id)).toEqual([2, 3]);
+    expect(resolveRunCaseFilter(cases, SECTIONS, { sectionIds: [1] }).map((c) => c.id)).toEqual([1, 2, 3]);
+    expect(resolveRunCaseFilter(cases, SECTIONS, { sectionIds: [4, 3] }).map((c) => c.id)).toEqual([3, 4]);
+  });
+
+  it('priority, owner and title-contains combine as AND', () => {
+    expect(resolveRunCaseFilter(cases, SECTIONS, { priorityId: 2 }).map((c) => c.id)).toEqual([1, 3, 4]);
+    expect(resolveRunCaseFilter(cases, SECTIONS, { ownerId: 9 }).map((c) => c.id)).toEqual([1, 2]);
+    expect(resolveRunCaseFilter(cases, SECTIONS, { titleContains: '  NOZZLE ' }).map((c) => c.id)).toEqual([1, 2]);
+    expect(
+      resolveRunCaseFilter(cases, SECTIONS, { sectionIds: [1], priorityId: 2, ownerId: 9, titleContains: 'nozzle' }).map(
+        (c) => c.id,
+      ),
+    ).toEqual([1]);
+  });
+
+  it('null/empty filter fields are ignored', () => {
+    expect(resolveRunCaseFilter(cases, SECTIONS, { sectionIds: [], priorityId: null, ownerId: null, titleContains: '' })).toHaveLength(4);
   });
 });

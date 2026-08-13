@@ -154,6 +154,39 @@ export function filterCases(
 }
 
 // ---------------------------------------------------------------------------
+// run creation — dynamic case filtering
+// ---------------------------------------------------------------------------
+
+export interface RunCaseFilter {
+  /** Selected section ids; descendants are included automatically. */
+  sectionIds?: number[];
+  priorityId?: number | null;
+  ownerId?: number | null;
+  titleContains?: string;
+}
+
+/**
+ * Resolve a dynamic run filter to the matching cases. TestRail's add_run
+ * snapshots explicit case_ids at creation time, so the caller sends these ids
+ * with include_all=false — future cases are NOT auto-added.
+ */
+export function resolveRunCaseFilter(cases: TrCase[], sections: TrSection[], filter: RunCaseFilter): TrCase[] {
+  let list = cases;
+  if (filter.sectionIds && filter.sectionIds.length > 0) {
+    const ids = new Set<number>();
+    for (const sid of filter.sectionIds) {
+      for (const d of sectionDescendants(sid, sections)) ids.add(d);
+    }
+    list = list.filter((c) => c.sectionId != null && ids.has(c.sectionId));
+  }
+  if (filter.priorityId != null) list = list.filter((c) => c.priorityId === filter.priorityId);
+  if (filter.ownerId != null) list = list.filter((c) => c.ownerId === filter.ownerId);
+  const q = (filter.titleContains ?? '').trim().toLowerCase();
+  if (q) list = list.filter((c) => c.title.toLowerCase().includes(q));
+  return list;
+}
+
+// ---------------------------------------------------------------------------
 // CSV export
 // ---------------------------------------------------------------------------
 

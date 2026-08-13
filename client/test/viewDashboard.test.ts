@@ -69,13 +69,15 @@ describe('dashboardSprintJql', () => {
   it('defaults to currentUser()', () => {
     expect(dashboardSprintJql('ISW', '')).toBe(
       'project = ISW AND sprint in openSprints() AND assignee = currentUser()' +
-        ' AND statusCategory != Done ORDER BY priority DESC, updated DESC',
+        ' ORDER BY priority DESC, updated DESC',
     );
   });
 
   it('swaps in the picked user', () => {
-    expect(dashboardSprintJql('ISW', 'Jane Doe')).toContain('assignee = "Jane Doe"');
-    expect(dashboardSprintJql('ISW', 'Jane Doe')).not.toContain('currentUser()');
+    const jql = dashboardSprintJql('ISW', 'Jane Doe');
+    expect(jql).toContain('assignee = "Jane Doe"');
+    expect(jql).not.toContain('currentUser()');
+    expect(jql).not.toContain('statusCategory != Done');
   });
 });
 

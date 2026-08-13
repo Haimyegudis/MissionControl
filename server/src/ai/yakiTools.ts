@@ -193,7 +193,7 @@ ${knownContext || '(none)'}
 
 Return plain text (no JSON, no markdown fences).`;
   try {
-    const raw = await ctx.runCli(reasoningPrompt, ctx.model || 'claude-sonnet-4.6', ctx.signal);
+    const raw = await ctx.runCli(reasoningPrompt, ctx.model || 'claude-sonnet-5', ctx.signal);
     return { answer: String(raw || '').slice(0, 3000) };
   } catch (err) {
     return { error: err instanceof Error ? err.message : String(err) };
@@ -218,7 +218,7 @@ Rules:
 - DO NOT add hedging language about not finding things.
 - 1-3 short paragraphs of plain text.`;
   try {
-    const raw = await ctx.runCli(synthPrompt, ctx.model || 'claude-sonnet-4.6', ctx.signal);
+    const raw = await ctx.runCli(synthPrompt, ctx.model || 'claude-sonnet-5', ctx.signal);
     return { answer: String(raw || '').slice(0, 3000) };
   } catch (err) {
     return { error: err instanceof Error ? err.message : String(err) };

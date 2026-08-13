@@ -1,9 +1,11 @@
 // App shell (ui-parity §0.2): top bar + 220px sidebar + content host.
 
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { pinnedBoards as pinnedBoardsApi, settings as settingsApi } from '../api/client';
+import { settings as settingsApi } from '../api/client';
 import { formatClock, formatElapsed } from '../lib/format';
-import { navigate, ROUTES, TESTRAIL_ROUTES, routeStore, type RouteId } from '../router';
+import { boardHash } from '../lib/viewMyWorkJql';
+import { CONFLUENCE_ROUTES, navigate, ROUTES, TESTRAIL_ROUTES, routeStore, type RouteId } from '../router';
+import { pinnedBoardsStore, refreshPinnedBoards, unpinBoard } from '../stores/pinnedBoards';
 import { pausePomodoro, pomodoroStore, resumePomodoro, statusText, stopPomodoro } from '../stores/pomodoro';
 import { lastRefreshStore, triggerNow } from '../stores/scheduler';
 import { sessionStore } from '../stores/session';
@@ -203,7 +205,7 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
   const appSettings = useStore(settingsStore);
   const lastRefresh = useStore(lastRefreshStore);
   const [refreshRunning, setRefreshRunning] = useState(false);
-  const [pinned, setPinned] = useState<PinnedBoard[]>([]);
+  const pinned = useStore(pinnedBoardsStore);
   const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem('mc.sidebar') !== '0');
 
   const toggleSidebar = () =>
@@ -229,26 +231,19 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
     return () => window.removeEventListener('keydown', handler);
   }, [openPalette]);
 
-  // Pinned boards.
+  // Load pins on connection. Pin/unpin updates the shared store immediately,
+  // so the sidebar never needs to remount to reflect a change.
   useEffect(() => {
-    let cancelled = false;
-    pinnedBoardsApi
-      .list()
-      .then((boards) => {
-        if (!cancelled) setPinned(boards);
-      })
+    if (session.phase !== 'connected') return;
+    void refreshPinnedBoards()
       .catch(() => {
         /* server route may not be up yet; sidebar just omits the group */
       });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  }, [session.phase]);
 
   const unpin = async (board: PinnedBoard) => {
     try {
-      await pinnedBoardsApi.remove(board.id);
-      setPinned((prev) => prev.filter((b) => b.id !== board.id));
+      await unpinBoard(board.id);
     } catch (err) {
       pushToast({ title: 'Unpin failed', body: err instanceof Error ? err.message : String(err) });
     }
@@ -376,6 +371,10 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
             ))}
           </NavGroup>
 
+          <NavGroup id="confluence" label="CONFLUENCE" emphasized>
+            {CONFLUENCE_ROUTES.map((r) => <NavItem key={r.id} route={r} active={route === r.id} />)}
+          </NavGroup>
+
           <div style={{ height: 1, background: 'var(--border-soft)', margin: '10px 8px' }} />
 
           <NavItem route={{ id: 'settings', label: 'Settings' }} active={route === 'settings'} />
@@ -389,7 +388,9 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
                   style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 4px 2px 12px' }}
                 >
                   <button
-                    onClick={() => navigate('mywork')}
+                    onClick={() => {
+                      window.location.hash = boardHash(b.boardId, b.filterId, b.name);
+                    }}
                     title={b.name}
                     style={{
                       flex: 1,

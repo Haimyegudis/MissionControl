@@ -8,7 +8,7 @@ import { trStore, type TestRailState } from '../src/stores/testrail';
 import { testrailRunIdStore } from '../src/router';
 import type { TrCase, TrRun, TrSection, TrSuite } from '../src/testrailTypes';
 import { CaseLibraryView } from '../src/views/testrail/CaseLibraryView';
-import { RunsView } from '../src/views/testrail/RunsView';
+import { RunEditor, RunsView } from '../src/views/testrail/RunsView';
 import { RunDetailView } from '../src/views/testrail/RunDetailView';
 import { TestRailReportsView } from '../src/views/testrail/TestRailReportsView';
 
@@ -45,6 +45,7 @@ const run: TrRun = {
   createdOn: 1755000000,
   createdBy: 3,
   assignedToId: null,
+      refs: null,
   passedCount: 4,
   failedCount: 1,
   blockedCount: 0,
@@ -92,15 +93,29 @@ describe('TestRail views (Phase 3 smoke)', () => {
     expect(html).toContain('+ Case');
   });
 
-  it('RunsView renders search, suite filter, My runs chip and the run row', () => {
+  it('RunsView renders project picker, search, suite filter, My runs chip and the run row', () => {
     trStore.set(connectedState());
     const html = renderToString(<RunsView />);
     expect(html).toContain('Test runs');
+    expect(html).toContain('title="Project"');
+    expect(html).toContain('Indigo Press');
     expect(html).toContain('My runs');
     expect(html).toContain('Sprint 42 regression');
     expect(html).toContain('+ New run');
     expect(html).toContain('active');
     expect(html).toContain('delete');
+  });
+
+  it('RunEditor (create) shows the project, assignee default and the three case modes', () => {
+    const st = connectedState();
+    trStore.set(st);
+    const html = renderToString(<RunEditor st={st} existing={null} onClose={() => {}} />);
+    expect(html).toContain('New test run — Indigo Press');
+    expect(html).toContain('Assign To');
+    expect(html).toContain('Include all test cases');
+    expect(html).toContain('Select specific test cases');
+    expect(html).toContain('Dynamic filtering');
+    expect(html).toContain('Create run');
   });
 
   it('RunDetailView renders tiles, progress bar and chips', () => {
@@ -115,10 +130,11 @@ describe('TestRail views (Phase 3 smoke)', () => {
     expect(html).toContain('My tests');
   });
 
-  it('TestRailReportsView renders totals, distribution and per-run rows', () => {
+  it('TestRailReportsView renders project picker, totals, distribution and per-run rows', () => {
     trStore.set(connectedState());
     const html = renderToString(<TestRailReportsView />);
     expect(html).toContain('Execution report');
+    expect(html).toContain('title="Project"');
     expect(html).toContain('Overall pass rate');
     expect(html).toContain('Untested backlog');
     expect(html).toContain('Overall distribution');

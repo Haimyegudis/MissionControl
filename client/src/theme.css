@@ -751,6 +751,18 @@ tr.st-4 { background: linear-gradient(90deg, color-mix(in srgb, var(--accent-mag
 }
 .col-grip:hover { background: color-mix(in srgb, var(--accent-cyan) 30%, transparent); }
 
+/* DataGrid header grip (§12.10): 7px hit area, thin accent line on hover. */
+.dg-grip {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 7px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+}
+.dg-grip:hover { box-shadow: inset -2px 0 0 var(--accent-cyan); }
+
 .secrow td { background: var(--bg-panel-high); font-weight: 600; }
 .secrow-flex { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .secrow-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

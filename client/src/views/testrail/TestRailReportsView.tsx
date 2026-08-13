@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { aggregateCounts, fmtUnixDate, passPct, totalCount } from '../../lib/testrail';
 import { pushToast } from '../../stores/toasts';
-import { loadRuns } from '../../stores/testrail';
+import { loadRuns, selectProject } from '../../stores/testrail';
 import {
   DistBar,
   PageTitle,
@@ -25,6 +25,11 @@ export function TestRailReportsView() {
     if (st.phase !== 'connected') return;
     void loadRuns().catch((err) => pushToast({ title: 'Runs failed', body: errText(err) }));
   }, [st.phase, st.projectId]);
+
+  // Project switch → the suite filter no longer applies to the new suites.
+  useEffect(() => {
+    setSuiteFilter('');
+  }, [st.projectId]);
 
   const runs = useMemo(
     () => (suiteFilter ? st.runs.filter((r) => r.suiteId === Number(suiteFilter)) : st.runs),
@@ -61,6 +66,18 @@ export function TestRailReportsView() {
           lede={`${project?.name ?? ''} — ${runs.length} runs, ${total} test entries recorded.`}
         />
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <select
+            title="Project"
+            value={st.projectId ?? ''}
+            onChange={(e) => void selectProject(Number(e.target.value))}
+            style={{ minWidth: 150 }}
+          >
+            {st.projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
           <input placeholder="Search runs…" value={search} onChange={(e) => setSearch(e.target.value)} />
           <select value={suiteFilter} onChange={(e) => setSuiteFilter(e.target.value)} style={{ minWidth: 170 }}>
             <option value="">All suites</option>

@@ -2,7 +2,7 @@
 // open details; URLs render as numbered "Link 1", "Link 2", ... with the URL as
 // tooltip, trailing punctuation trimmed, http/https only, opened in a new tab.
 
-import { tokenize } from '../lib/linkify';
+import { cleanJiraText, tokenize } from '../lib/linkify';
 
 export interface IssueLinkTextProps {
   text: string | null | undefined;
@@ -10,7 +10,7 @@ export interface IssueLinkTextProps {
 }
 
 export function IssueLinkText({ text, onOpenIssue }: IssueLinkTextProps) {
-  const tokens = tokenize(text);
+  const tokens = tokenize(cleanJiraText(text));
   return (
     <span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
       {tokens.map((t, i) => {

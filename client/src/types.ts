@@ -82,6 +82,8 @@ export interface JiraTransitionField {
   schemaType: string;
   itemType: string | null;
   allowedValues: string[];
+  /** Current value on the issue (display string), used to prefill the dialog. */
+  currentValue?: string | null;
 }
 
 export interface JiraIssueDetails {
@@ -427,6 +429,70 @@ export interface LoginRequest {
   email: string;
   pat: string;
   instanceType: InstanceType;
+}
+
+// ---------------------------------------------------------------------------
+// Confluence (Indigo spaces only)
+// ---------------------------------------------------------------------------
+
+export interface ConfluenceUser {
+  userKey: string | null;
+  username: string | null;
+  displayName: string;
+  email: string | null;
+}
+
+export interface ConfluenceStatus {
+  configured: boolean;
+  connected: boolean;
+  baseUrl: string | null;
+  user: ConfluenceUser | null;
+}
+
+export interface ConfluenceSpace {
+  id: number | null;
+  key: string;
+  name: string;
+  type: string;
+  status: string;
+  description: string;
+  labels: string[];
+}
+
+export interface ConfluencePage {
+  id: string;
+  spaceKey: string;
+  title: string;
+  parentId: string | null;
+  status: string;
+  url: string | null;
+  createdBy: string | null;
+  createdAt: string | null;
+  lastModifiedBy: string | null;
+  lastModifiedAt: string | null;
+  excerpt: string | null;
+}
+
+export interface ConfluencePageContent extends ConfluencePage {
+  storageBody: string;
+  viewBody: string;
+  version: number;
+}
+
+export interface ConfluenceSearchOptions {
+  query?: string;
+  title?: string;
+  body?: string;
+  creator?: string;
+  contributor?: string;
+  label?: string;
+  spaceKey?: string;
+  createdAfter?: string;
+  createdBefore?: string;
+  modifiedAfter?: string;
+  modifiedBefore?: string;
+  sort?: 'modified' | 'created' | 'title';
+  limit?: number;
 }
 
 // ---------------------------------------------------------------------------
