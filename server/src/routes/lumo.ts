@@ -124,6 +124,53 @@ export function lumoRoutes(deps: AppDeps): Router {
     }
   });
 
+  // ---- fast intents: answered in ~1-2s without any LLM round-trip ----------
+
+  /** "find/get/show ... doc|document|swr|מסמך" → direct vector search. */
+  function docIntentQuery(text: string): string | null {
+    const t = text.trim();
+    if (t.length > 160) return null;
+    const docWord = /(docs?|documents?|swr|מסמך|מסמכים|דוקומנט)/i;
+    if (!docWord.test(t)) return null;
+    const cleaned = t
+      .replace(/^(please|can you|could you|find|get|show|open|bring|fetch|search( for)?|תמצא|תביא|תפתח|חפש)\s+/gi, '')
+      .replace(/\b(the|me|a|an|of|for|את|לי|של)\b/gi, ' ')
+      .replace(docWord, ' ')
+      .replace(/[?.!]+$/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return cleaned.length >= 2 ? cleaned : null;
+  }
+
+  async function tryFastIntent(text: string): Promise<{ summary: string; cards: unknown[] } | null> {
+    const q = docIntentQuery(text);
+    if (!q) return null;
+    try {
+      const vec = await import('../ai/yaki/vectors.js');
+      const result = (await vec.searchConfluenceVectors({ query: q })) as unknown;
+      const hits: Array<Record<string, any>> = Array.isArray(result)
+        ? (result as Array<Record<string, any>>)
+        : Array.isArray((result as Record<string, any>)?.results)
+          ? (result as Record<string, any>).results
+          : [];
+      if (!hits.length) return null; // fall through to the LLM
+      const top = hits.slice(0, 6);
+      const cards = top.map((h) => ({
+        source: 'confluence',
+        title: String(h.title ?? 'Untitled'),
+        url: h.sectionUrl || h.url || null,
+        summary: `${h.folder ? `${h.folder} · ` : ''}similarity ${h.similarity ?? ''}`,
+        fields: {},
+      }));
+      const lines = top.map(
+        (h, i) => `${i + 1}. [${String(h.title ?? 'Untitled')}](${h.url ?? '#'})${h.section ? ` — ${h.section}` : ''}`,
+      );
+      return { summary: `**Top documents for "${q}":**\n${lines.join('\n')}`, cards };
+    } catch {
+      return null;
+    }
+  }
+
   router.post('/ask', (req, res) => {
     const body = (req.body ?? {}) as Record<string, unknown>;
     // The client sends `messages`; `turns` is accepted as an alias.
@@ -154,20 +201,34 @@ export function lumoRoutes(deps: AppDeps): Router {
     const abort = new AbortController();
     res.on('close', () => abort.abort());
 
-    void deps
-      .askLumo({
-        turns,
-        projectKey,
-        model,
-        onStatus: (status) => sseSend(res, 'status', { status }),
-        signal: abort.signal,
-      })
-      .then((result) => sseSend(res, 'result', result))
-      .catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : String(err);
-        sseSend(res, 'error', { message });
-      })
-      .finally(() => res.end());
+    // Fast deterministic intents first — only fall back to the LLM when none hit.
+    const lastUser = [...turns].reverse().find((t) => t.role === 'user')?.content ?? '';
+    void (async () => {
+      sseSend(res, 'status', { status: 'Lumo is thinking...' });
+      const fast = await tryFastIntent(lastUser);
+      if (fast) {
+        sseSend(res, 'result', fast);
+        res.end();
+        return true;
+      }
+      return false;
+    })().then((handled) => {
+      if (handled) return;
+      void deps
+        .askLumo({
+          turns,
+          projectKey,
+          model,
+          onStatus: (status) => sseSend(res, 'status', { status }),
+          signal: abort.signal,
+        })
+        .then((result) => sseSend(res, 'result', result))
+        .catch((err: unknown) => {
+          const message = err instanceof Error ? err.message : String(err);
+          sseSend(res, 'error', { message });
+        })
+        .finally(() => res.end());
+    });
   });
 
   return router;

@@ -295,6 +295,14 @@ export function ConfluenceView() {
   const [pageLoading, setPageLoading] = useState(false);
   const [error, setError] = useState('');
   const preservePageForSpaceChange = useRef(false);
+  const [sideOpen, setSideOpen] = useState(() => {
+    try { return localStorage.getItem('mc.cf.side') !== '0'; } catch { return true; }
+  });
+  const toggleSide = () =>
+    setSideOpen((prev) => {
+      try { localStorage.setItem('mc.cf.side', prev ? '0' : '1'); } catch { /* best-effort */ }
+      return !prev;
+    });
 
   const loadSpaces = async (fresh = false) => {
     setLoading(true); setError('');
@@ -363,13 +371,15 @@ export function ConfluenceView() {
 
   return (
     <div className="cf-workspace">
+      {sideOpen && (
       <aside className="cf-sidebar">
         <div className="cf-brand"><span className="cf-brand-mark">C</span><span><b>Confluence</b><small>Indigo knowledge</small></span><button className="cf-refresh" title="Refresh spaces" onClick={() => void loadSpaces(true)}>↻</button></div>
         <div className="cf-side-section"><label>Spaces · {spaces.length}</label><SpaceDropdown spaces={spaces} value={space?.key ?? ''} onChange={(key) => { setSpace(spaces.find((item) => item.key === key) ?? null); setMode('pages'); }} /></div>
         {space ? <><div className="cf-side-section page-filter"><label>Pages · {roots.length}{treeLoading ? ' loading…' : ''}</label><input value={pageQuery} onChange={(e) => setPageQuery(e.target.value)} placeholder="Filter page tree" /></div>{treeLoading && roots.length === 0 ? <div className="cf-tree-loading">Loading {space.name} page tree…</div> : <PageTree key={space.key} pages={filteredRoots} selectedId={page?.id ?? null} onOpen={(p) => void openPage(p)} />}</> : null}
       </aside>
+      )}
       <div className="cf-main">
-        <header className="cf-topnav"><div className="cf-tabs"><button className={mode === 'pages' || mode === 'edit' ? 'active' : ''} onClick={() => setMode('pages')}>Pages</button><button className={mode === 'search' ? 'active' : ''} onClick={() => setMode('search')}>Search</button></div><button className="btn btn-primary" disabled={!space} onClick={() => setMode('create')}>＋ Create page</button></header>
+        <header className="cf-topnav"><button className="btn btn-icon" title={sideOpen ? 'Hide sidebar — full page mode' : 'Show sidebar'} onClick={toggleSide}>{sideOpen ? '⟨⟨' : '⟩⟩'}</button><div className="cf-tabs"><button className={mode === 'pages' || mode === 'edit' ? 'active' : ''} onClick={() => setMode('pages')}>Pages</button><button className={mode === 'search' ? 'active' : ''} onClick={() => setMode('search')}>Search</button></div><button className="btn btn-primary" disabled={!space} onClick={() => setMode('create')}>＋ Create page</button></header>
         <div className={`cf-content${mode === 'pages' && page ? ' cf-content-page' : ''}`}>
           {error ? <div className="cf-error cf-global-error">{error}<button onClick={() => setError('')}>×</button></div> : null}
           {mode === 'search' ? <SearchPanel spaces={spaces} currentSpaceKey={space?.key ?? ''} onOpen={(p) => void openPage(p)} /> : null}
