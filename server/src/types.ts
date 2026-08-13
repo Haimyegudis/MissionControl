@@ -84,6 +84,8 @@ export interface JiraTransitionField {
   schemaType: string;
   itemType: string | null;
   allowedValues: string[];
+  /** Current value on the issue (display string), for dialog prefill. */
+  currentValue: string | null;
 }
 
 export interface JiraIssueDetails {
@@ -412,7 +414,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   kanbanWipLimits: {},
   dashboardWidgets: ['OpenIssues', 'Critical', 'OnHold', 'UpdatedToday', 'LoggedToday', 'LoggedThisWeek'],
   aiEndpoint: 'https://api.githubcopilot.com/chat/completions',
-  aiModel: 'gpt-4o-mini',
+  aiModel: 'claude-sonnet-5[1m]',
   aiCredentialKey: null,
   useGhCopilotCli: true,
   useCopilotCliExe: false,

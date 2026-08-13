@@ -19,6 +19,7 @@ export interface TransitionDialogProps {
 /** Name heuristics that force a red required `*` even without the Jira flag. */
 const REQUIRED_NAME_HINTS = [
   'verified in build',
+  'approved build',
   'time spent',
   'reopened reason',
   'on hold reason',
@@ -55,6 +56,27 @@ export function preselectResolution(allowedValues: string[]): string {
   return allowedValues[0] ?? '';
 }
 
+/**
+ * Initial dialog value for one screen field. Prefers the issue's current
+ * value (so e.g. Task Type stays as-is on close); falls back to the
+ * resolution preselect for resolutions and today for dates.
+ */
+export function initialFieldValue(field: JiraTransitionField): string {
+  if (field.id === 'worklog' || field.id === 'assignee') return '';
+  const current = (field.currentValue ?? '').trim();
+  const kind = controlKind(field);
+  if (kind === 'select') {
+    if (current && field.allowedValues.includes(current)) return current;
+    return (field.schemaType ?? '').toLowerCase() === 'resolution' ? preselectResolution(field.allowedValues) : '';
+  }
+  if (kind === 'date') {
+    const m = current.match(/^\d{4}-\d{2}-\d{2}/);
+    return m ? m[0] : todayIso();
+  }
+  if (kind === 'timetracking') return '';
+  return current;
+}
+
 function todayIso(): string {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -73,7 +95,11 @@ function tzOffsetString(d: Date = new Date()): string {
 export function shapeFieldValue(field: JiraTransitionField, raw: string): unknown {
   const type = (field.schemaType ?? '').toLowerCase();
   const item = (field.itemType ?? '').toLowerCase();
-  const named = ['option', 'resolution', 'priority', 'user'];
+  // Cascading selects ("Parent Option object") reject {name}; they need {value}.
+  if (type === 'option-with-child') return { value: raw };
+  if (type === 'option') return { value: raw };
+  if (type === 'array' && item === 'option') return [{ value: raw }];
+  const named = ['resolution', 'priority', 'user'];
   if (named.includes(type) || named.includes(item)) return { name: raw };
   if (type === 'date') return raw; // yyyy-MM-dd from the date input
   if (type === 'datetime') return `${raw}T00:00:00.000${tzOffsetString()}`;
@@ -88,21 +114,7 @@ export function TransitionDialog({ issueKey, transition, fields, onClose, onDone
 
   const [values, setValues] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
-    for (const f of formFields) {
-      if (f.id === 'worklog' || f.id === 'assignee') {
-        initial[f.id] = '';
-        continue;
-      }
-      const kind = controlKind(f);
-      if (kind === 'select') {
-        initial[f.id] =
-          (f.schemaType ?? '').toLowerCase() === 'resolution' ? preselectResolution(f.allowedValues) : '';
-      } else if (kind === 'date') {
-        initial[f.id] = todayIso();
-      } else {
-        initial[f.id] = '';
-      }
-    }
+    for (const f of formFields) initial[f.id] = initialFieldValue(f);
     return initial;
   });
   const [comment, setComment] = useState('');

@@ -12,8 +12,10 @@ function parseTurns(raw: unknown): LumoTurn[] {
   const out: LumoTurn[] = [];
   for (const el of raw) {
     if (!el || typeof el !== 'object') continue;
-    const role = (el as Record<string, unknown>).role;
-    const content = (el as Record<string, unknown>).content;
+    const rec = el as Record<string, unknown>;
+    const role = rec.role;
+    // The client sends {role, text}; accept legacy/alternate {role, content} too.
+    const content = typeof rec.content === 'string' ? rec.content : rec.text;
     if ((role === 'user' || role === 'assistant') && typeof content === 'string') {
       out.push({ role, content });
     }
@@ -27,6 +29,17 @@ function sseSend(res: Response, event: string, data: unknown): void {
 
 export function lumoRoutes(deps: AppDeps): Router {
   const router = Router();
+
+  // Cluster picker data for the Lumo context bar (Yaki-style drill-down).
+  router.get('/clusters', async (req, res) => {
+    try {
+      const program = typeof req.query.program === 'string' ? req.query.program : 'kedem';
+      const mod = await import('../ai/yaki/configControl.js');
+      res.json(mod.listConfigClusters({ program }));
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
 
   router.post('/ask', (req, res) => {
     const body = (req.body ?? {}) as Record<string, unknown>;
@@ -44,7 +57,9 @@ export function lumoRoutes(deps: AppDeps): Router {
         // fall through to the hard default
       }
     }
-    if (!model) model = 'gpt-4o-mini';
+    // Legacy stored defaults (pre-Sonnet-5) are coerced to the current default.
+    const LEGACY_MODELS = new Set(['gpt-4o-mini', 'gpt-4.1', 'claude-sonnet-4.6', 'claude-sonnet-4-5']);
+    if (!model || LEGACY_MODELS.has(model)) model = 'claude-sonnet-5[1m]';
 
     res.status(200);
     res.setHeader('Content-Type', 'text/event-stream');

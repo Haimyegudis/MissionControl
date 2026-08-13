@@ -1,10 +1,27 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { JiraSession } from '../src/jira/session.js';
 import {
   askLumo,
   extractFirstJsonObject,
+  isOperatorHowToQuery,
+  hasAutomationTells,
+  scrubOperatorAnswer,
+  toolResultCap,
+  resetLumoConversationContexts,
   type LumoTools,
 } from '../src/ai/lumoAgent.js';
+import {
+  buildClaudeArgs,
+  isClaudeModel,
+  runClaudeCli,
+  runCopilotCli,
+  selectCliRunner,
+  CLAUDE_STDIN_TRIGGER,
+} from '../src/ai/cliRunner.js';
+import type { YakiToolset } from '../src/ai/yakiTools.js';
+import { parseEnvFile } from '../src/ai/yaki/env.js';
+import { parseCsv } from '../src/ai/yaki/configControl.js';
+import { parseConfluenceUrl } from '../src/ai/yaki/confluence.js';
 import type { JiraIssue, JiraIssueDetails, PagedResult } from '../src/types.js';
 
 // ---------------------------------------------------------------------------
@@ -477,5 +494,346 @@ describe('askLumo — card normalization', () => {
     const { tools } = makeTools();
     const result = await askLumo(baseOptions(runCli, tools));
     expect(result).toEqual({ summary: 'no cards', cards: [] });
+  });
+
+  it('filters cards to the allowed source set (jira/confluence/testrail/github/case)', async () => {
+    const response = JSON.stringify({
+      summary: 'filtered',
+      cards: [
+        { source: 'jira', title: 'ISW-1', summary: 'a' },
+        { source: 'confluence', title: 'SWR page', summary: 'b', url: 'https://c/x' },
+        { source: 'testrail', title: 'C123', summary: 'c' },
+        { source: 'case', title: 'CS555', summary: 'd' },
+        { source: 'github', title: 'PR #1', summary: 'e' },
+        { source: 'systems-kb', title: 'K200', summary: 'dropped' },
+        { source: 'reasoning', title: 'inference', summary: 'dropped' },
+      ],
+    });
+    const { runCli } = makeRunCli([response]);
+    const { tools } = makeTools();
+    const result = await askLumo(baseOptions(runCli, tools));
+    expect(result.cards.map((c) => c.source)).toEqual([
+      'jira',
+      'confluence',
+      'testrail',
+      'case',
+      'github',
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// askLumo — Yaki tool catalog dispatch
+// ---------------------------------------------------------------------------
+
+describe('askLumo — Yaki tool dispatch', () => {
+  it('dispatches unknown-to-legacy names through tools.yaki with args and ctx', async () => {
+    const seen: Array<{ name: string; args: unknown; ctx: unknown }> = [];
+    const yaki: YakiToolset = {
+      lookup_component: async (args, ctx) => {
+        seen.push({ name: 'lookup_component', args, ctx });
+        return { found: true, count: 1, results: [{ component: { id: 'EF501' } }] };
+      },
+    };
+    const round1 =
+      '{"tool_calls":[{"name":"lookup_component","arguments":{"query":"EF501"}}]}';
+    const round2 = '{"summary":"EF501 is an e-fuse.","cards":[]}';
+    const { runCli, prompts } = makeRunCli([round1, round2]);
+    const { tools } = makeTools();
+    tools.yaki = yaki;
+
+    const statuses: string[] = [];
+    const result = await askLumo({
+      ...baseOptions(runCli, tools),
+      model: 'claude-sonnet-4-5',
+      onStatus: (s) => statuses.push(s),
+    });
+
+    expect(result.summary).toBe('EF501 is an e-fuse.');
+    expect(seen).toHaveLength(1);
+    expect(seen[0].args).toEqual({ query: 'EF501' });
+    // ctx carries the runCli + model so reasoning tools can recurse
+    expect(seen[0].ctx).toMatchObject({ model: 'claude-sonnet-4-5' });
+    expect(statuses).toContain('Running lookup_component...');
+    expect(prompts[1]).toContain('--- lookup_component ---');
+    expect(prompts[1]).toContain('"EF501"');
+  });
+
+  it('yaki tool throwing surfaces as an {error} tool result, not a crash', async () => {
+    const yaki: YakiToolset = {
+      search_confluence_vectors: async () => {
+        throw new Error('ollama down');
+      },
+    };
+    const round1 =
+      '{"tool_calls":[{"name":"search_confluence_vectors","arguments":{"query":"x"}}]}';
+    const round2 = '{"summary":"handled","cards":[]}';
+    const { runCli, prompts } = makeRunCli([round1, round2]);
+    const { tools } = makeTools();
+    tools.yaki = yaki;
+
+    const result = await askLumo(baseOptions(runCli, tools));
+    expect(result.summary).toBe('handled');
+    expect(prompts[1]).toContain('ollama down');
+  });
+
+  it('still reports Unknown tool when the name is not in the yaki set either', async () => {
+    const round1 = '{"tool_calls":[{"name":"nope_tool","arguments":{}}]}';
+    const round2 = '{"summary":"ok","cards":[]}';
+    const { runCli, prompts } = makeRunCli([round1, round2]);
+    const { tools } = makeTools();
+    tools.yaki = {};
+    await askLumo(baseOptions(runCli, tools));
+    expect(prompts[1]).toContain('Unknown tool: nope_tool');
+  });
+
+  it('caps tool calls at 5 per user message across rounds', async () => {
+    const calls: string[] = [];
+    const yaki: YakiToolset = {
+      lookup_event: async (args) => {
+        calls.push(String((args as Record<string, unknown>).n));
+        return { found: false };
+      },
+    };
+    const fourCalls = JSON.stringify({
+      tool_calls: [1, 2, 3, 4].map((n) => ({ name: 'lookup_event', arguments: { n } })),
+    });
+    const threeMore = JSON.stringify({
+      tool_calls: [5, 6, 7].map((n) => ({ name: 'lookup_event', arguments: { n } })),
+    });
+    const done = '{"summary":"done","cards":[]}';
+    const { runCli, prompts } = makeRunCli([fourCalls, threeMore, done]);
+    const { tools } = makeTools();
+    tools.yaki = yaki;
+
+    const result = await askLumo(baseOptions(runCli, tools));
+    expect(result.summary).toBe('done');
+    // 4 in round 1 + only 1 of 3 in round 2 = TOOL_CALL_LIMIT (5)
+    expect(calls).toEqual(['1', '2', '3', '4', '5']);
+    expect(prompts[2]).toContain('Tool call limit reached');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Per-tool truncation caps (Yaki parity)
+// ---------------------------------------------------------------------------
+
+describe('toolResultCap', () => {
+  it('gives Yaki budgets per tool name', () => {
+    expect(toolResultCap('get_cluster_release_notes')).toBe(30_000);
+    expect(toolResultCap('search_config_control')).toBe(20_000);
+    expect(toolResultCap('search_jira')).toBe(20_000);
+    expect(toolResultCap('list_components')).toBe(60_000);
+    expect(toolResultCap('lookup_component')).toBe(60_000);
+    expect(toolResultCap('lookup_event')).toBe(60_000);
+    expect(toolResultCap('lookup_parameter')).toBe(60_000);
+    expect(toolResultCap('search_issues')).toBe(2000);
+    expect(toolResultCap('anything_else')).toBe(2000);
+  });
+
+  it('lookup_component results above 2000 chars are NOT truncated (60k budget)', async () => {
+    const big = 'X'.repeat(5000);
+    const yaki: YakiToolset = {
+      lookup_component: async () => ({ found: true, blob: big }),
+    };
+    const round1 = '{"tool_calls":[{"name":"lookup_component","arguments":{"query":"k"}}]}';
+    const round2 = '{"summary":"ok","cards":[]}';
+    const { runCli, prompts } = makeRunCli([round1, round2]);
+    const { tools } = makeTools();
+    tools.yaki = yaki;
+    await askLumo(baseOptions(runCli, tools));
+    const p2 = prompts[1];
+    expect(p2).toContain(big);
+    // Only inspect the tool-results region — the system prompt itself
+    // legitimately mentions the "[...truncated]" marker.
+    const toolBlock = p2.slice(p2.indexOf('--- lookup_component ---'));
+    expect(toolBlock).not.toContain('[...truncated]');
+  });
+
+  it('get_cluster_release_notes truncates at 30k with an explicit marker', async () => {
+    const big = 'R'.repeat(40_000);
+    const yaki: YakiToolset = {
+      get_cluster_release_notes: async () => ({ markdown: big }),
+    };
+    const round1 =
+      '{"tool_calls":[{"name":"get_cluster_release_notes","arguments":{"cluster":"C12"}}]}';
+    const round2 = '{"summary":"ok","cards":[]}';
+    const { runCli, prompts } = makeRunCli([round1, round2]);
+    const { tools } = makeTools();
+    tools.yaki = yaki;
+    await askLumo(baseOptions(runCli, tools));
+    const p2 = prompts[1];
+    expect(p2).toContain('[...truncated]');
+    const marker = '--- get_cluster_release_notes ---\n';
+    const start = p2.indexOf(marker) + marker.length;
+    const end = p2.indexOf('\n[...truncated]', start);
+    expect(end - start).toBe(30_000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Operator-answer scrubber (Yaki parity)
+// ---------------------------------------------------------------------------
+
+describe('operator-answer scrubber', () => {
+  it('classifies operator how-to queries', () => {
+    expect(isOperatorHowToQuery('how to replace BID')).toBe(true);
+    expect(isOperatorHowToQuery('how do I run the calibration wizard')).toBe(true);
+    expect(isOperatorHowToQuery('how to simulate BID replacement in automation')).toBe(false);
+    expect(isOperatorHowToQuery('what is the blanket')).toBe(false);
+  });
+
+  it('detects automation tells', () => {
+    expect(hasAutomationTells('call S6PRESS.PLC.WaitForNodeValue("x")')).toBe(true);
+    expect(hasAutomationTells('verify gInterface.BKT.Stir updates')).toBe(true);
+    expect(hasAutomationTells('per SWOFEK-746 the wizard validates')).toBe(true);
+    expect(hasAutomationTells('Open HMI, press Service, select Replace BID.')).toBe(false);
+  });
+
+  it('replaces a contaminated operator answer with the honest template', () => {
+    const scrubbed = scrubOperatorAnswer(
+      'how to replace BID',
+      'Call S6PRESS.PLC.WaitForNodeValue("OPCUAInterface.PressState","Standby") then swap the BID.',
+    );
+    expect(scrubbed).toContain('Operator procedure not in indexed Confluence docs');
+    expect(scrubbed).not.toContain('WaitForNodeValue');
+  });
+
+  it('leaves clean operator answers and non-operator questions untouched', () => {
+    const clean = 'To replace BID: 1. Open Menu. 2. Select BID Replacement. 3. Click Finished.';
+    expect(scrubOperatorAnswer('how to replace BID', clean)).toBe(clean);
+    const techy = 'Use S6PRESS.PLC.WaitForNodeValue in the test.';
+    expect(scrubOperatorAnswer('what helper waits for a node value?', techy)).toBe(techy);
+  });
+
+  it('applies the scrubber to the final summary in the agent loop', async () => {
+    const response = JSON.stringify({
+      summary: 'Call S6PRESS.PLC.WaitForNodeValue("x","Standby") then replace the unit.',
+      cards: [],
+    });
+    const { runCli } = makeRunCli([response]);
+    const { tools } = makeTools();
+    const result = await askLumo({
+      ...baseOptions(runCli, tools),
+      turns: [{ role: 'user', content: 'how to replace BID' }],
+    });
+    expect(result.summary).toContain('Operator procedure not in indexed Confluence docs');
+    expect(result.summary).not.toContain('WaitForNodeValue');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// set_context — per-conversation Active Context
+// ---------------------------------------------------------------------------
+
+describe('askLumo — set_context', () => {
+  beforeEach(() => resetLumoConversationContexts());
+
+  it('injects the assumed-default series into the prompt', async () => {
+    const { runCli, prompts } = makeRunCli(['{"summary":"ok","cards":[]}']);
+    const { tools } = makeTools();
+    await askLumo(baseOptions(runCli, tools));
+    expect(prompts[0]).toContain('## Active Context\nSeries: S6 (assumed default');
+  });
+
+  it('persists set_context across requests of the same conversation', async () => {
+    const first = [{ role: 'user' as const, content: 'unique-context-conversation' }];
+    {
+      const { runCli } = makeRunCli([
+        '{"set_context":{"project":"KEDEM","series":"S4"},"summary":"noted","cards":[]}',
+      ]);
+      const { tools } = makeTools();
+      const result = await askLumo({ ...baseOptions(runCli, tools), turns: first });
+      expect(result.summary).toBe('noted');
+    }
+    {
+      const { runCli, prompts } = makeRunCli(['{"summary":"again","cards":[]}']);
+      const { tools } = makeTools();
+      await askLumo({
+        ...baseOptions(runCli, tools),
+        turns: [
+          ...first,
+          { role: 'assistant', content: 'noted' },
+          { role: 'user', content: 'and now?' },
+        ],
+      });
+      expect(prompts[0]).toContain('## Active Context\nProject: KEDEM | Series: S4\n');
+      expect(prompts[0]).not.toContain('Series: S4 (assumed default');
+    }
+  });
+
+  it('applies set_context arriving alongside tool_calls before the next round', async () => {
+    const round1 = JSON.stringify({
+      set_context: { series: 'S3' },
+      tool_calls: [{ name: 'search_issues', arguments: { jql: 'project=ISW' } }],
+    });
+    const round2 = '{"summary":"done","cards":[]}';
+    const { runCli, prompts } = makeRunCli([round1, round2]);
+    const { tools } = makeTools();
+    await askLumo({
+      ...baseOptions(runCli, tools),
+      turns: [{ role: 'user', content: 'another-unique-conversation' }],
+    });
+    expect(prompts[1]).toContain('## Active Context\nSeries: S3\n');
+    expect(prompts[1]).not.toContain('Series: S3 (assumed default');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CLI backend selection (claude vs copilot)
+// ---------------------------------------------------------------------------
+
+describe('cliRunner backend selection', () => {
+  it('claude-* model ids select the Claude CLI runner', () => {
+    expect(isClaudeModel('claude-sonnet-4-5')).toBe(true);
+    expect(isClaudeModel('Claude-Opus-4')).toBe(true);
+    expect(isClaudeModel('gpt-4o-mini')).toBe(false);
+    expect(isClaudeModel('gpt-5')).toBe(false);
+    expect(isClaudeModel('')).toBe(false);
+    expect(selectCliRunner('claude-sonnet-4-5')).toBe(runClaudeCli);
+    expect(selectCliRunner('gpt-4o-mini')).toBe(runCopilotCli);
+  });
+
+  it('parses simple KEY=VALUE .env files without logging values', () => {
+    const parsed = parseEnvFile(
+      '# comment\nCONFLUENCE_PAT=abc123\nQUOTED="with spaces"\nSINGLE=\'sq\'\n\nBROKEN LINE\n=novalue\n',
+    );
+    expect(parsed).toEqual({ CONFLUENCE_PAT: 'abc123', QUOTED: 'with spaces', SINGLE: 'sq' });
+  });
+
+  it('parses CSV with quoted cells, embedded commas and CRLF', () => {
+    const rows = parseCsv('A,B,C\r\n1,"x, y","he said ""hi"""\r\n2,,z\r\n');
+    expect(rows).toEqual([
+      ['A', 'B', 'C'],
+      ['1', 'x, y', 'he said "hi"'],
+      ['2', '', 'z'],
+    ]);
+  });
+
+  it('extracts Confluence page ids from all URL forms', () => {
+    expect(parseConfluenceUrl('https://c/pages/viewpage.action?pageId=12345').pageId).toBe('12345');
+    expect(parseConfluenceUrl('https://c/pages/9876/Some+Title').pageId).toBe('9876');
+    expect(parseConfluenceUrl('https://c/display/SENG/My+Page')).toEqual({
+      pageId: null,
+      spaceKey: 'SENG',
+      pageTitle: 'My Page',
+    });
+  });
+
+  it('builds the Claude CLI argument list (system-prompt-file, text output, no tools)', () => {
+    const args = buildClaudeArgs('C:\\tmp\\p.txt', 'claude-sonnet-4-5');
+    expect(args).toEqual([
+      '-p',
+      '--system-prompt-file',
+      'C:\\tmp\\p.txt',
+      '--strict-mcp-config',
+      '--model',
+      'claude-sonnet-4-5',
+      '--output-format',
+      'text',
+      '--tools',
+      'none',
+    ]);
+    expect(CLAUDE_STDIN_TRIGGER).toContain('instructions and response contract');
   });
 });

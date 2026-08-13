@@ -13,11 +13,11 @@ import { LumoCardModal } from './LumoCardModal';
 import { sourceMeta } from './lumoSources';
 
 export const LUMO_MODELS = [
-  'claude-sonnet-4.6',
+  'claude-sonnet-5[1m]',
+  'claude-sonnet-5',
   'claude-opus-4.6',
   'claude-haiku-4.5',
   'gpt-5.2',
-  'gpt-4.1',
   'gemini-2.5-pro',
 ] as const;
 
@@ -208,8 +208,8 @@ export function LumoPanel({ open, onClose }: { open: boolean; onClose: () => voi
     updateSettings({ aiModel: value }).catch(() => {});
   };
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text || thinking) return;
     const userMsg: LumoMessage = { role: 'user', text, cards: [] };
     const history = [...messages, userMsg];
@@ -233,6 +233,60 @@ export function LumoPanel({ open, onClose }: { open: boolean; onClose: () => voi
     } finally {
       setStatusText(null);
     }
+  };
+
+  // Yaki-style context bar: program → cluster → HW/SW drill-down (hidden by default).
+  // localStorage is absent in SSR test renders — guard access.
+  const lsGet = (k: string) => {
+    try {
+      return localStorage.getItem(k);
+    } catch {
+      return null;
+    }
+  };
+  const [ctxOpen, setCtxOpen] = useState(() => lsGet('mc.lumo.ctx') === '1');
+  const toggleCtx = () =>
+    setCtxOpen((prev) => {
+      try {
+        localStorage.setItem('mc.lumo.ctx', prev ? '' : '1');
+      } catch {
+        /* persistence best-effort */
+      }
+      return !prev;
+    });
+  const [program, setProgram] = useState('kedem');
+  const [clusters, setClusters] = useState<string[]>([]);
+  const [cluster, setCluster] = useState('');
+  const [scope, setScope] = useState<'ALL' | 'HW' | 'SW'>('ALL');
+
+  useEffect(() => {
+    if (!ctxOpen) return;
+    let dead = false;
+    fetch(`/api/lumo/clusters?program=${encodeURIComponent(program)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (dead) return;
+        const list: string[] = Array.isArray(d?.clusters)
+          ? d.clusters.map((c: unknown) => String(c))
+          : [];
+        setClusters(list);
+        setCluster((prev) => (list.includes(prev) ? prev : list[0] ?? ''));
+      })
+      .catch(() => setClusters([]));
+    return () => {
+      dead = true;
+    };
+  }, [program, ctxOpen]);
+
+  const askContext = () => {
+    if (!cluster || thinking) return;
+    const q =
+      scope === 'HW'
+        ? `Show all HW configuration-control changes for ${program} cluster ${cluster}. Full table, every row.`
+        : scope === 'SW'
+          ? `Show the SW release-notes feature list for ${program} cluster ${cluster}.`
+          : `Show all changes for ${program} cluster ${cluster} — HW config control and SW release notes, as two separate tables.`;
+    void send(q);
   };
 
   const onCardClick = (card: LumoCard) => {
@@ -384,6 +438,46 @@ export function LumoPanel({ open, onClose }: { open: boolean; onClose: () => voi
               <span className="muted" style={{ fontSize: 11.5 }}>
                 {statusText}
               </span>
+            </div>
+          )}
+        </div>
+
+        {/* ------------------------------------------- context drill-down --- */}
+        <div style={{ padding: '0 12px', flexShrink: 0 }}>
+          <button
+            onClick={toggleCtx}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#818CF8',
+              fontSize: 11,
+              padding: '2px 0',
+            }}
+          >
+            {ctxOpen ? '▾ Hide cluster picker' : '▸ Cluster picker (project · cluster · HW/SW)'}
+          </button>
+          {ctxOpen && (
+            <div style={{ display: 'flex', gap: 6, paddingBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <select value={program} onChange={(e) => setProgram(e.target.value)} style={{ fontSize: 12 }}>
+                <option value="kedem">KEDEM</option>
+                <option value="david">DAVID</option>
+              </select>
+              <select value={cluster} onChange={(e) => setCluster(e.target.value)} style={{ fontSize: 12, minWidth: 70 }}>
+                {clusters.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <select value={scope} onChange={(e) => setScope(e.target.value as 'ALL' | 'HW' | 'SW')} style={{ fontSize: 12 }}>
+                <option value="ALL">ALL</option>
+                <option value="HW">HW</option>
+                <option value="SW">SW</option>
+              </select>
+              <button className="btn" style={{ fontSize: 12, padding: '4px 10px' }} onClick={askContext} disabled={!cluster || thinking}>
+                Ask
+              </button>
             </div>
           )}
         </div>

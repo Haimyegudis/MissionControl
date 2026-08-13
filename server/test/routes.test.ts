@@ -74,6 +74,8 @@ function connect(session: JiraSession): void {
       testRailBaseUrl: '',
       testRailEmail: '',
       testRailApiKey: '',
+      confluenceBaseUrl: '',
+      confluencePat: '',
     },
     USER,
   );
@@ -128,6 +130,7 @@ function makeDeps(): AppDeps {
       getStatuses: vi.fn(async () => []),
       getPriorities: vi.fn(async () => []),
       getResolutions: vi.fn(async () => []),
+      getFields: vi.fn(async () => []),
       getVersions: vi.fn(async () => []),
       getComponents: vi.fn(async () => []),
       getAssignableUsers: vi.fn(async () => []),
@@ -636,7 +639,7 @@ describe('lumo SSE route', () => {
       body: JSON.stringify({
         messages: [{ role: 'user', content: 'hi' }],
         projectKey: 'ISW',
-        model: 'gpt-4o-mini',
+        model: 'claude-sonnet-5[1m]',
       }),
     });
     expect(res.status).toBe(200);
@@ -648,7 +651,7 @@ describe('lumo SSE route', () => {
       expect.objectContaining({
         turns: [{ role: 'user', content: 'hi' }],
         projectKey: 'ISW',
-        model: 'gpt-4o-mini',
+        model: 'claude-sonnet-5[1m]',
       }),
     );
   });

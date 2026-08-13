@@ -13,6 +13,7 @@ import { LumoPanel } from '../src/dialogs/LumoPanel';
 import { sourceMeta } from '../src/dialogs/lumoSources';
 import {
   TransitionDialog,
+  initialFieldValue,
   isHeuristicallyRequired,
   preselectResolution,
   shapeFieldValue,
@@ -37,6 +38,7 @@ describe('TransitionDialog helpers (§10.5)', () => {
   it('required = flag OR name heuristic', () => {
     expect(isHeuristicallyRequired(tf({ required: true }))).toBe(true);
     expect(isHeuristicallyRequired(tf({ name: 'Verified in Build' }))).toBe(true);
+    expect(isHeuristicallyRequired(tf({ name: 'Approved Build' }))).toBe(true);
     expect(isHeuristicallyRequired(tf({ name: 'Resolution' }))).toBe(true);
     expect(isHeuristicallyRequired(tf({ name: 'Reject Reason' }))).toBe(true);
     expect(isHeuristicallyRequired(tf({ name: 'Some Field' }))).toBe(false);
@@ -50,9 +52,38 @@ describe('TransitionDialog helpers (§10.5)', () => {
     expect(preselectResolution([])).toBe('');
   });
 
+  it('initial value keeps the issue current value (e.g. Task Type on close)', () => {
+    const taskType = tf({
+      id: 'customfield_11000',
+      name: 'Task Type',
+      schemaType: 'option',
+      allowedValues: ['Development', 'Support'],
+    });
+    // current value in the allowed list → prefilled, no re-pick needed
+    expect(initialFieldValue({ ...taskType, currentValue: 'Support' })).toBe('Support');
+    // no / unknown current value → empty as before
+    expect(initialFieldValue(taskType)).toBe('');
+    expect(initialFieldValue({ ...taskType, currentValue: 'Bogus' })).toBe('');
+    // resolution: current wins, otherwise the Fixed→Done→Resolved preselect
+    const res = tf({ id: 'resolution', schemaType: 'resolution', allowedValues: ['Fixed', "Won't Fix"] });
+    expect(initialFieldValue({ ...res, currentValue: "Won't Fix" })).toBe("Won't Fix");
+    expect(initialFieldValue(res)).toBe('Fixed');
+    // text keeps the current value; dates trim datetime to yyyy-MM-dd
+    expect(initialFieldValue(tf({ schemaType: 'string', currentValue: 'note' }))).toBe('note');
+    expect(initialFieldValue(tf({ schemaType: 'date', currentValue: '2026-08-01T10:00:00.000+02:00' }))).toBe(
+      '2026-08-01',
+    );
+    expect(initialFieldValue(tf({ schemaType: 'date' }))).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // worklog / assignee always start empty
+    expect(initialFieldValue(tf({ id: 'worklog', currentValue: '2h' }))).toBe('');
+    expect(initialFieldValue(tf({ id: 'assignee', currentValue: 'jdoe' }))).toBe('');
+  });
+
   it('value shaping per schema type', () => {
     expect(shapeFieldValue(tf({ schemaType: 'resolution' }), 'Fixed')).toEqual({ name: 'Fixed' });
-    expect(shapeFieldValue(tf({ schemaType: 'option' }), 'Yes')).toEqual({ name: 'Yes' });
+    expect(shapeFieldValue(tf({ schemaType: 'option' }), 'Yes')).toEqual({ value: 'Yes' });
+    expect(shapeFieldValue(tf({ schemaType: 'option-with-child' }), 'Yes')).toEqual({ value: 'Yes' });
+    expect(shapeFieldValue(tf({ schemaType: 'array', itemType: 'option' }), 'Yes')).toEqual([{ value: 'Yes' }]);
     expect(shapeFieldValue(tf({ schemaType: 'priority' }), 'High')).toEqual({ name: 'High' });
     expect(shapeFieldValue(tf({ schemaType: 'user' }), 'jdoe')).toEqual({ name: 'jdoe' });
     expect(shapeFieldValue(tf({ schemaType: 'date' }), '2026-08-12')).toBe('2026-08-12');
@@ -233,7 +264,7 @@ describe('Lumo (§10.10)', () => {
     const html = renderToString(<LumoPanel open onClose={noop} />);
     expect(html).toContain('Lumo');
     expect(html).toContain('powered by');
-    expect(html).toContain('claude-sonnet-4.6');
+    expect(html).toContain('claude-sonnet-5[1m]');
     expect(html).toContain('gemini-2.5-pro');
     expect(html).toContain('Ask Lumo anything...');
   });
