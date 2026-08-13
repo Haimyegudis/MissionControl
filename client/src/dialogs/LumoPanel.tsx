@@ -10,6 +10,7 @@ import { useStore } from '../stores/useStore';
 import type { LumoCard, LumoTurn } from '../types';
 import { useDialogs } from './DialogHost';
 import { LumoCardModal } from './LumoCardModal';
+import { LumoMarkdown } from '../components/LumoMarkdown';
 import { sourceMeta } from './lumoSources';
 
 export const LUMO_MODELS = [
@@ -290,10 +291,21 @@ export function LumoPanel({ open, onClose }: { open: boolean; onClose: () => voi
   };
 
   const onCardClick = (card: LumoCard) => {
-    if ((card.source ?? '').toLowerCase() === 'jira') {
+    const source = (card.source ?? '').toLowerCase();
+    if (source === 'jira') {
       const match = ISSUE_KEY_IN_TITLE.exec(card.title ?? '');
       if (match) {
         dialogs.openIssueDetails(match[0]);
+        return;
+      }
+    }
+    // Confluence cards open in Mission Control's Confluence view (deep link);
+    // the card modal still offers "Open in browser" for the real site.
+    if (source === 'confluence' && card.url) {
+      const m = card.url.match(/pageId=(\d+)/) ?? card.url.match(/pages\/(\d+)/);
+      if (m) {
+        window.location.hash = `#/confluence/${m[1]}`;
+        onClose();
         return;
       }
     }
@@ -420,12 +432,12 @@ export function LumoPanel({ open, onClose }: { open: boolean; onClose: () => voi
                       borderRadius: '6px 18px 18px 18px',
                       padding: '8px 12px',
                       fontSize: 12.5,
-                      whiteSpace: 'pre-wrap',
                       overflowWrap: 'anywhere',
                       minWidth: 0,
+                      flex: 1,
                     }}
                   >
-                    {m.text}
+                    <LumoMarkdown text={m.text} />
                   </div>
                 </div>
                 {m.cards.length > 0 && <CardGroup cards={m.cards} onCardClick={onCardClick} />}
