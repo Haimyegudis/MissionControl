@@ -264,7 +264,7 @@ describe('Lumo (§10.10)', () => {
     const html = renderToString(<LumoPanel open onClose={noop} />);
     expect(html).toContain('Lumo');
     expect(html).toContain('powered by');
-    expect(html).toContain('claude-sonnet-5[1m]');
+    expect(html).toContain('claude-sonnet-4.6');
     expect(html).toContain('gemini-2.5-pro');
     expect(html).toContain('Ask Lumo anything...');
   });

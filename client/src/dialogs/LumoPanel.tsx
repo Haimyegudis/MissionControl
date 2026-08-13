@@ -14,11 +14,11 @@ import { LumoMarkdown } from '../components/LumoMarkdown';
 import { sourceMeta } from './lumoSources';
 
 export const LUMO_MODELS = [
-  'claude-sonnet-5[1m]',
-  'claude-sonnet-5',
+  'claude-sonnet-4.6',
   'claude-opus-4.6',
   'claude-haiku-4.5',
   'gpt-5.2',
+  'gpt-4.1',
   'gemini-2.5-pro',
 ] as const;
 

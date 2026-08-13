@@ -639,7 +639,7 @@ describe('lumo SSE route', () => {
       body: JSON.stringify({
         messages: [{ role: 'user', content: 'hi' }],
         projectKey: 'ISW',
-        model: 'claude-sonnet-5[1m]',
+        model: 'claude-sonnet-4.6',
       }),
     });
     expect(res.status).toBe(200);
@@ -651,7 +651,7 @@ describe('lumo SSE route', () => {
       expect.objectContaining({
         turns: [{ role: 'user', content: 'hi' }],
         projectKey: 'ISW',
-        model: 'claude-sonnet-5[1m]',
+        model: 'claude-sonnet-4.6',
       }),
     );
   });

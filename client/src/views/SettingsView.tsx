@@ -20,6 +20,7 @@ import {
   type WidgetToggle,
 } from '../lib/viewWidgets';
 import { TestRailSettings } from './testrail/TestRailSettings';
+import { ConfluenceSettings } from './confluence/ConfluenceSettings';
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -31,6 +32,166 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 }
 
 const row: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 10 };
+
+const REMINDER_DAYS = [
+  ['SUN', 'Sun'],
+  ['MON', 'Mon'],
+  ['TUE', 'Tue'],
+  ['WED', 'Wed'],
+  ['THU', 'Thu'],
+  ['FRI', 'Fri'],
+  ['SAT', 'Sat'],
+] as const;
+
+/** In-app GitHub Copilot CLI login (device flow) — powers Lumo. */
+function CopilotSettings() {
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+  const [code, setCode] = useState<string | null>(null);
+  const [url, setUrl] = useState<string | null>(null);
+  const [active, setActive] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  const refreshStatus = () => {
+    fetch('/api/copilot/status')
+      .then((r) => r.json())
+      .then((s) => setLoggedIn(s.loggedIn === true))
+      .catch(() => setLoggedIn(null));
+  };
+  useEffect(refreshStatus, []);
+
+  const startLogin = async () => {
+    setMsg('');
+    setCode(null);
+    setUrl(null);
+    try {
+      const r = await fetch('/api/copilot/login', { method: 'POST' });
+      const s = await r.json();
+      if (!r.ok || s?.error) throw new Error(String(s?.error ?? `HTTP ${r.status}`));
+      setActive(true);
+      const poll = setInterval(async () => {
+        try {
+          const st = await fetch('/api/copilot/login/state').then((x) => x.json());
+          if (st.code) setCode(st.code);
+          if (st.url) setUrl(st.url);
+          if (!st.active) {
+            clearInterval(poll);
+            setActive(false);
+            if (st.done) {
+              setMsg('✓ Copilot connected — Lumo is ready.');
+              setCode(null);
+              refreshStatus();
+            } else if (st.error) {
+              setMsg(`✕ ${st.error}`);
+            }
+          }
+        } catch {
+          clearInterval(poll);
+          setActive(false);
+        }
+      }, 2000);
+    } catch (e) {
+      setMsg(`✕ ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  return (
+    <Card title="GitHub Copilot (Lumo engine)">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span
+          style={{
+            width: 9,
+            height: 9,
+            borderRadius: '50%',
+            display: 'inline-block',
+            background: loggedIn ? 'var(--accent-green)' : 'var(--accent-red)',
+          }}
+        />
+        <span className="muted">{loggedIn ? 'Copilot CLI connected' : loggedIn === false ? 'Not connected' : 'Checking…'}</span>
+        <button className="btn btn-primary" disabled={active} onClick={() => void startLogin()}>
+          {active ? 'Waiting for GitHub…' : loggedIn ? 'Re-login' : 'Login to Copilot'}
+        </button>
+      </div>
+      {code ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span>Enter this code:</span>
+          <code style={{ fontSize: 22, fontWeight: 700, letterSpacing: 2, padding: '4px 10px', background: 'var(--bg-panel-high)', borderRadius: 8 }}>{code}</code>
+          <a className="btn" href={url ?? 'https://github.com/login/device'} target="_blank" rel="noreferrer">
+            Open github.com/login/device ↗
+          </a>
+        </div>
+      ) : null}
+      {msg ? <div className="muted" style={{ fontSize: 12 }}>{msg}</div> : null}
+    </Card>
+  );
+}
+
+/** Log-work reminder — Windows scheduled task, fires even when the app is closed. */
+function ReminderSettings() {
+  const [enabled, setEnabled] = useState(false);
+  const [days, setDays] = useState<string[]>(['SUN', 'MON', 'TUE', 'WED', 'THU']);
+  const [time, setTime] = useState('16:30');
+  const [status, setStatus] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/reminders')
+      .then((r) => r.json())
+      .then((c) => {
+        if (typeof c?.enabled === 'boolean') setEnabled(c.enabled);
+        if (Array.isArray(c?.days)) setDays(c.days);
+        if (typeof c?.time === 'string') setTime(c.time);
+      })
+      .catch(() => {});
+  }, []);
+
+  const toggleDay = (d: string) =>
+    setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+
+  const save = async () => {
+    setBusy(true);
+    setStatus('');
+    try {
+      const r = await fetch('/api/reminders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled, days, time }),
+      });
+      const data = await r.json();
+      if (!r.ok || data?.error) throw new Error(String(data?.error ?? `HTTP ${r.status}`));
+      setStatus(enabled ? `✓ Scheduled — ${days.join(', ')} at ${time} (works even when the app is closed)` : '✓ Reminder disabled');
+    } catch (e) {
+      setStatus(`✕ ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card title="Log-work reminder">
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+        Remind me to log work in Jira (Windows notification — fires even when Mission Control is closed)
+      </label>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        {REMINDER_DAYS.map(([value, label]) => (
+          <button
+            key={value}
+            className="btn"
+            onClick={() => toggleDay(value)}
+            style={days.includes(value) ? { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)' } : undefined}
+          >
+            {label}
+          </button>
+        ))}
+        <input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={{ width: 110 }} />
+        <button className="btn btn-primary" disabled={busy} onClick={() => void save()}>
+          {busy ? 'Saving…' : 'Save'}
+        </button>
+      </div>
+      {status ? <div className="muted" style={{ fontSize: 12 }}>{status}</div> : null}
+    </Card>
+  );
+}
 
 export function SettingsView() {
   const session = useStore(sessionStore);
@@ -292,7 +453,10 @@ export function SettingsView() {
           </label>
         </Card>
 
+        <CopilotSettings />
+        <ReminderSettings />
         <TestRailSettings />
+        <ConfluenceSettings />
       </div>
 
       <div

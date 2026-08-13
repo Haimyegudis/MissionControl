@@ -784,14 +784,18 @@ describe('askLumo — set_context', () => {
 // ---------------------------------------------------------------------------
 
 describe('cliRunner backend selection', () => {
-  it('claude-* model ids select the Claude CLI runner', () => {
+  it('everything runs on Copilot; Claude CLI only behind LUMO_USE_CLAUDE_CLI=1', () => {
     expect(isClaudeModel('claude-sonnet-4-5')).toBe(true);
-    expect(isClaudeModel('Claude-Opus-4')).toBe(true);
     expect(isClaudeModel('gpt-4o-mini')).toBe(false);
-    expect(isClaudeModel('gpt-5')).toBe(false);
-    expect(isClaudeModel('')).toBe(false);
-    expect(selectCliRunner('claude-sonnet-4-5')).toBe(runClaudeCli);
-    expect(selectCliRunner('gpt-4o-mini')).toBe(runCopilotCli);
+    // Default: Copilot for every model id (Copilot hosts the claude-* roster).
+    delete process.env.LUMO_USE_CLAUDE_CLI;
+    expect(selectCliRunner('claude-sonnet-4.6')).toBe(runCopilotCli);
+    expect(selectCliRunner('gpt-5.2')).toBe(runCopilotCli);
+    // Dev escape hatch.
+    process.env.LUMO_USE_CLAUDE_CLI = '1';
+    expect(selectCliRunner('claude-sonnet-4.6')).toBe(runClaudeCli);
+    expect(selectCliRunner('gpt-5.2')).toBe(runCopilotCli);
+    delete process.env.LUMO_USE_CLAUDE_CLI;
   });
 
   it('parses simple KEY=VALUE .env files without logging values', () => {

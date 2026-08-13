@@ -68,16 +68,67 @@ function PageTree({ pages, selectedId, onOpen }: { pages: ConfluencePage[]; sele
 
 function PageViewer({ page, baseUrl, onEdit }: { page: ConfluencePageContent; baseUrl: string | null; onEdit: () => void }) {
   const openUrl = absoluteConfluenceUrl(baseUrl, page.url);
+
+  // Ctrl+wheel over the page zooms ONLY the rendered Confluence page (the
+  // iframe is scaled; the rest of the app is untouched). Persisted.
+  const [zoom, setZoom] = useState(() => {
+    try {
+      const z = Number(localStorage.getItem('mc.cf.zoom'));
+      return z >= 0.4 && z <= 2.5 ? z : 1;
+    } catch {
+      return 1;
+    }
+  });
+  const zoomWrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = zoomWrapRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      setZoom((z) => {
+        const next = Math.min(2.5, Math.max(0.4, Math.round((z + (e.deltaY < 0 ? 0.1 : -0.1)) * 10) / 10));
+        try {
+          localStorage.setItem('mc.cf.zoom', String(next));
+        } catch {
+          /* best-effort */
+        }
+        return next;
+      });
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+
   return (
     <section className="cf-page-panel">
       <div className="cf-page-heading cf-page-actions">
         <div className="cf-breadcrumb">{page.spaceKey} <span>/</span> {page.title}</div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {zoom !== 1 ? (
+            <button className="btn" title="Reset zoom (Ctrl+wheel to zoom)" onClick={() => { setZoom(1); try { localStorage.setItem('mc.cf.zoom', '1'); } catch { /* ignore */ } }}>
+              {Math.round(zoom * 100)}% ↺
+            </button>
+          ) : null}
           <button className="btn btn-primary" onClick={onEdit}>Edit</button>
           {openUrl ? <a className="btn" href={openUrl} target="_blank" rel="noreferrer">Open in Confluence ↗</a> : null}
         </div>
       </div>
-      <iframe className="cf-page-frame cf-original-page" title={page.title} src={confluence.renderUrl(page.id)} sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" />
+      <div ref={zoomWrapRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <iframe
+          className="cf-page-frame cf-original-page"
+          title={page.title}
+          src={confluence.renderUrl(page.id)}
+          sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+          style={{
+            width: `${100 / zoom}%`,
+            height: `${100 / zoom}%`,
+            transform: `scale(${zoom})`,
+            transformOrigin: '0 0',
+            border: 0,
+          }}
+        />
+      </div>
     </section>
   );
 }
@@ -131,15 +182,142 @@ function EditorToolbar({ editor }: { editor: React.RefObject<HTMLDivElement> }) 
       <button title="Link" onClick={link}>🔗</button><button title="Remove link" onClick={() => exec('unlink')}>Unlink</button><button title="Image" onClick={image}>Image</button><button title="Table" onClick={table}>Table</button><button title="Horizontal line" onClick={() => exec('insertHorizontalRule')}>―</button>
       <span className="cf-tool-sep" />
       <button title="One-column layout" onClick={() => layout('single')}>▣</button><button title="Two-column layout" onClick={() => layout('two_equal')}>▣▣</button><button title="Three-column layout" onClick={() => layout('three_equal')}>▣▣▣</button>
+      <span className="cf-tool-sep" />
+      <select aria-label="Text color" defaultValue="" onChange={(e) => { if (e.target.value) { exec('foreColor', e.target.value); e.target.value = ''; } }}>
+        <option value="">A color</option><option value="#e8eefa">Default</option><option value="#ef4444">Red</option><option value="#22d38f">Green</option><option value="#4f9cf9">Blue</option><option value="#ffd23a">Yellow</option><option value="#ff4ecd">Magenta</option><option value="#8aa0bf">Gray</option>
+      </select>
+      <select aria-label="Highlight" defaultValue="" onChange={(e) => { if (e.target.value) { exec('hiliteColor', e.target.value); e.target.value = ''; } }}>
+        <option value="">Highlight</option><option value="#fff3bf">Yellow</option><option value="#d3f9d8">Green</option><option value="#ffe3e3">Red</option><option value="#d0ebff">Blue</option><option value="transparent">None</option>
+      </select>
+      <button title="Inline code" onClick={() => exec('insertHTML', `<code style="background:rgba(120,140,180,.18);padding:1px 5px;border-radius:4px">${window.getSelection()?.toString() || 'code'}</code>&nbsp;`)}>{'</>'}</button>
+      <span className="cf-tool-sep" />
+      <select aria-label="Status lozenge" defaultValue="" onChange={(e) => { const v = e.target.value; if (v) { const [bg, fg, label] = v.split(','); exec('insertHTML', `<span style="background:${bg};color:${fg};padding:1px 7px;border-radius:3px;font-size:11px;font-weight:700;text-transform:uppercase">${label}</span>&nbsp;`); e.target.value = ''; } }}>
+        <option value="">Status</option><option value="#dff3e4,#1d7a46,DONE">DONE</option><option value="#ffe9e6,#b3271e,BLOCKED">BLOCKED</option><option value="#fff3cd,#8a6d00,IN PROGRESS">IN PROGRESS</option><option value="#e7eefc,#2b5bd7,TODO">TODO</option>
+      </select>
+      <select aria-label="Panel" defaultValue="" onChange={(e) => { const v = e.target.value; if (v) { const [color, bg, label] = v.split(','); exec('insertHTML', `<div style="border-left:4px solid ${color};background:${bg};padding:8px 12px;margin:6px 0;border-radius:4px"><p><b>${label}:</b> type here…</p></div><p><br></p>`); e.target.value = ''; } }}>
+        <option value="">Panel</option><option value="#2b5bd7,#eef3fd,Info">Info</option><option value="#8a6d00,#fff8e1,Note">Note</option><option value="#b3271e,#fdecea,Warning">Warning</option><option value="#1d7a46,#eaf7ee,Success">Success</option>
+      </select>
+      <button title="Expand section" onClick={() => exec('insertHTML', '<details style="border:1px solid rgba(120,140,180,.3);border-radius:6px;padding:6px 10px;margin:6px 0"><summary style="cursor:pointer;font-weight:600">Click to expand</summary><p>Details…</p></details><p><br></p>')}>⌄ Expand</button>
+      <button title="Task list" onClick={() => exec('insertHTML', '<ul style="list-style:none;padding-left:4px"><li><input type="checkbox"> Task 1</li><li><input type="checkbox"> Task 2</li></ul><p><br></p>')}>☑ Tasks</button>
+      <span className="cf-tool-sep" />
       <button title="Undo" onClick={() => exec('undo')}>↶</button><button title="Redo" onClick={() => exec('redo')}>↷</button><button title="Clear formatting" onClick={() => exec('removeFormat')}>Clear</button>
     </div>
   );
 }
 
-function PageEditor({ mode, space, roots, initial, onCancel, onSaved }: { mode: 'create' | 'edit'; space: ConfluenceSpace; roots: ConfluencePage[]; initial: ConfluencePageContent | null; onCancel: () => void; onSaved: (page: ConfluencePageContent) => void }) {
+/**
+ * Parent location picker: space dropdown + expandable page tree. Click a page
+ * to make it the parent; "Space root" clears the parent. Any depth reachable.
+ */
+function ParentPicker({ spaces, spaceKey, onSpaceChange, value, onChange, excludeId }: {
+  spaces: ConfluenceSpace[];
+  spaceKey: string;
+  onSpaceChange: (key: string) => void;
+  value: string;
+  onChange: (parentId: string, title: string) => void;
+  excludeId?: string | null;
+}) {
+  const [roots, setRoots] = useState<ConfluencePage[]>([]);
+  const [kids, setKids] = useState<Record<string, ConfluencePage[]>>({});
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let dead = false;
+    setRoots([]); setKids({}); setOpen({}); setLoading(true);
+    confluence.treeRoots(spaceKey)
+      .then((p) => { if (!dead) setRoots(p.filter((x) => x.spaceKey.toLowerCase() === spaceKey.toLowerCase())); })
+      .catch(() => { /* tree unavailable */ })
+      .finally(() => { if (!dead) setLoading(false); });
+    return () => { dead = true; };
+  }, [spaceKey]);
+
+  const toggle = async (page: ConfluencePage) => {
+    if (open[page.id]) { setOpen((o) => ({ ...o, [page.id]: false })); return; }
+    if (!kids[page.id]) {
+      setBusyId(page.id);
+      try {
+        const c = await confluence.children(page.id);
+        setKids((k) => ({ ...k, [page.id]: c }));
+      } catch { setKids((k) => ({ ...k, [page.id]: [] })); }
+      finally { setBusyId(null); }
+    }
+    setOpen((o) => ({ ...o, [page.id]: true }));
+  };
+
+  const row = (page: ConfluencePage, depth: number): React.ReactNode => {
+    if (excludeId && page.id === excludeId) return null;
+    const selected = value === page.id;
+    return (
+      <div key={page.id}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, paddingLeft: depth * 14 }}>
+          <button
+            onClick={() => void toggle(page)}
+            title="Expand children"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', width: 18 }}
+          >
+            {busyId === page.id ? '…' : open[page.id] ? '⌄' : '›'}
+          </button>
+          <button
+            onClick={() => onChange(page.id, page.title)}
+            title={`Insert under "${page.title}"`}
+            style={{
+              background: selected ? 'var(--bg-panel-high)' : 'none',
+              border: selected ? '1px solid var(--accent-cyan)' : '1px solid transparent',
+              borderRadius: 6,
+              cursor: 'pointer',
+              color: selected ? 'var(--accent-cyan)' : 'var(--text-primary)',
+              padding: '2px 8px',
+              textAlign: 'left',
+              flex: 1,
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {page.title}
+          </button>
+        </div>
+        {open[page.id] ? (kids[page.id] ?? []).map((c) => row(c, depth + 1)) : null}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ border: '1px solid var(--border-soft)', borderRadius: 8, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <label style={{ whiteSpace: 'nowrap' }}>Space</label>
+        <select value={spaceKey} onChange={(e) => onSpaceChange(e.target.value)} style={{ flex: 1, minWidth: 0 }}>
+          {spaces.map((s) => <option key={s.key} value={s.key}>{s.name} ({s.key})</option>)}
+        </select>
+      </div>
+      <button
+        onClick={() => onChange('', '')}
+        style={{
+          background: value === '' ? 'var(--bg-panel-high)' : 'none',
+          border: value === '' ? '1px solid var(--accent-cyan)' : '1px solid transparent',
+          borderRadius: 6, cursor: 'pointer', color: value === '' ? 'var(--accent-cyan)' : 'var(--muted)',
+          padding: '2px 8px', textAlign: 'left',
+        }}
+      >
+        — Space root (no parent) —
+      </button>
+      <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+        {loading ? <div className="muted" style={{ padding: 6 }}>Loading page tree…</div> : roots.map((p) => row(p, 0))}
+      </div>
+    </div>
+  );
+}
+
+function PageEditor({ mode, space, spaces, initial, onCancel, onSaved }: { mode: 'create' | 'edit'; space: ConfluenceSpace; spaces: ConfluenceSpace[]; initial: ConfluencePageContent | null; onCancel: () => void; onSaved: (page: ConfluencePageContent) => void }) {
   const editor = useRef<HTMLDivElement>(null);
   const [title, setTitle] = useState(initial?.title ?? '');
   const [parentId, setParentId] = useState<string>(initial?.parentId ?? '');
+  const [parentTitle, setParentTitle] = useState<string>('');
+  const [targetSpaceKey, setTargetSpaceKey] = useState(space.key);
+  const [pickerOpen, setPickerOpen] = useState(mode === 'create');
   const [sourceMode, setSourceMode] = useState(false);
   const [source, setSource] = useState(initial?.storageBody ?? '<p><br /></p>');
   const [busy, setBusy] = useState(false);
@@ -158,7 +336,7 @@ function PageEditor({ mode, space, roots, initial, onCancel, onSaved }: { mode: 
     setBusy(true);
     try {
       const saved = mode === 'create'
-        ? await confluence.createPage({ spaceKey: space.key, title: title.trim(), storageBody, parentId: parentId || null })
+        ? await confluence.createPage({ spaceKey: targetSpaceKey, title: title.trim(), storageBody, parentId: parentId || null })
         : await confluence.updatePage(initial!.id, { title: title.trim(), storageBody, version: initial!.version, parentId: parentId || null });
       onSaved(saved);
     } catch (e) { setError(message(e)); }
@@ -171,7 +349,25 @@ function PageEditor({ mode, space, roots, initial, onCancel, onSaved }: { mode: 
         <div style={{ display: 'flex', gap: 8 }}><button className="btn" onClick={onCancel}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={() => void save()}>{busy ? 'Publishing…' : mode === 'create' ? 'Publish' : 'Update'}</button></div>
       </div>
       <input className="cf-title-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Page title" autoFocus />
-      <div className="cf-editor-meta"><label>Parent page <select value={parentId} onChange={(e) => setParentId(e.target.value)}><option value="">No parent (space root)</option>{roots.filter((p) => p.id !== initial?.id).map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label><button className="btn" onClick={toggleSource}>{sourceMode ? 'Visual editor' : 'Storage source'}</button></div>
+      <div className="cf-editor-meta">
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          Location
+          <button className="btn" onClick={() => setPickerOpen((v) => !v)} title="Choose exactly where to insert the page">
+            {targetSpaceKey} / {parentTitle || (parentId ? `#${parentId}` : 'space root')} {pickerOpen ? '▾' : '▸'}
+          </button>
+        </label>
+        <button className="btn" onClick={toggleSource}>{sourceMode ? 'Visual editor' : 'Storage source'}</button>
+      </div>
+      {pickerOpen ? (
+        <ParentPicker
+          spaces={spaces}
+          spaceKey={targetSpaceKey}
+          onSpaceChange={(key) => { setTargetSpaceKey(key); setParentId(''); setParentTitle(''); }}
+          value={parentId}
+          onChange={(id, t) => { setParentId(id); setParentTitle(t); }}
+          excludeId={initial?.id ?? null}
+        />
+      ) : null}
       {!sourceMode ? <><EditorToolbar editor={editor} /><div ref={editor} className="cf-editor-surface wiki-content" contentEditable suppressContentEditableWarning /></> : <textarea className="cf-source-editor" value={source} onChange={(e) => setSource(e.target.value)} spellCheck={false} />}
       {error ? <div className="cf-error">{error}</div> : null}
     </section>
@@ -383,8 +579,8 @@ export function ConfluenceView() {
         <div className={`cf-content${mode === 'pages' && page ? ' cf-content-page' : ''}`}>
           {error ? <div className="cf-error cf-global-error">{error}<button onClick={() => setError('')}>×</button></div> : null}
           {mode === 'search' ? <SearchPanel spaces={spaces} currentSpaceKey={space?.key ?? ''} onOpen={(p) => void openPage(p)} /> : null}
-          {mode === 'create' && space ? <PageEditor mode="create" space={space} roots={roots} initial={null} onCancel={() => setMode('pages')} onSaved={(saved) => { setRoots((items) => [saved, ...items.filter((item) => item.id !== saved.id)]); setPage(saved); setMode('pages'); }} /> : null}
-          {mode === 'edit' && space && page ? <PageEditor mode="edit" space={space} roots={roots} initial={page} onCancel={() => setMode('pages')} onSaved={(saved) => { setPage(saved); setRoots((x) => x.map((p) => p.id === saved.id ? saved : p)); setMode('pages'); }} /> : null}
+          {mode === 'create' && space ? <PageEditor mode="create" space={space} spaces={spaces} initial={null} onCancel={() => setMode('pages')} onSaved={(saved) => { setRoots((items) => [saved, ...items.filter((item) => item.id !== saved.id)]); setPage(saved); setMode('pages'); }} /> : null}
+          {mode === 'edit' && space && page ? <PageEditor mode="edit" space={space} spaces={spaces} initial={page} onCancel={() => setMode('pages')} onSaved={(saved) => { setPage(saved); setRoots((x) => x.map((p) => p.id === saved.id ? saved : p)); setMode('pages'); }} /> : null}
           {mode === 'pages' ? pageLoading ? <div className="cf-empty">Loading page…</div> : page ? <PageViewer page={page} baseUrl={status?.baseUrl ?? null} onEdit={() => setMode('edit')} /> : <div className="cf-welcome"><div className="cf-welcome-icon">▤</div><h2>{space ? space.name : 'Indigo Confluence'}</h2><p>{space?.description || 'Choose a page from the tree, search all Indigo content, or create a new page.'}</p><div><button className="btn btn-primary" disabled={!space} onClick={() => setMode('create')}>Create a page</button><button className="btn" onClick={() => setMode('search')}>Search pages</button></div></div> : null}
         </div>
       </div>

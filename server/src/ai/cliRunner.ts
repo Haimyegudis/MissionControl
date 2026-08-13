@@ -358,11 +358,16 @@ export async function runClaudeCli(
   }
 }
 
-/** Pick the CLI runner for a model id: claude-* → Claude CLI, else Copilot. */
+/**
+ * All Lumo/LLM traffic runs on GitHub Copilot CLI (Copilot hosts the claude-*
+ * roster itself). The Claude Code CLI backend stays available only behind
+ * LUMO_USE_CLAUDE_CLI=1 for development experiments.
+ */
 export function selectCliRunner(
   model: string,
 ): (prompt: string, model: string, signal?: AbortSignal) => Promise<string> {
-  return isClaudeModel(model) ? runClaudeCli : runCopilotCli;
+  if (process.env.LUMO_USE_CLAUDE_CLI === '1' && isClaudeModel(model)) return runClaudeCli;
+  return runCopilotCli;
 }
 
 /** Backend-selecting runner — drop-in RunCliFn for the Lumo agent loop. */

@@ -414,7 +414,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   kanbanWipLimits: {},
   dashboardWidgets: ['OpenIssues', 'Critical', 'OnHold', 'UpdatedToday', 'LoggedToday', 'LoggedThisWeek'],
   aiEndpoint: 'https://api.githubcopilot.com/chat/completions',
-  aiModel: 'claude-sonnet-5[1m]',
+  aiModel: 'claude-sonnet-4.6',
   aiCredentialKey: null,
   useGhCopilotCli: true,
   useCopilotCliExe: false,
