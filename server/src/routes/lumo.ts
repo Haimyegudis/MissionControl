@@ -30,6 +30,89 @@ function sseSend(res: Response, event: string, data: unknown): void {
 export function lumoRoutes(deps: AppDeps): Router {
   const router = Router();
 
+  // Deterministic cluster report — no LLM round-trips, answers in seconds.
+  // Release-notes fetches are cached in-memory for 10 minutes.
+  const relCache = new Map<string, { at: number; data: any }>();
+  const REL_TTL_MS = 10 * 60 * 1000;
+
+  router.get('/cluster-report', async (req, res) => {
+    try {
+      const program = String(req.query.program || 'kedem').toLowerCase();
+      const cluster = String(req.query.cluster || '').trim().toUpperCase();
+      const scope = String(req.query.scope || 'ALL').toUpperCase();
+      if (!cluster) {
+        res.status(400).json({ error: 'cluster required' });
+        return;
+      }
+
+      const parts: string[] = [];
+      const cards: Array<Record<string, unknown>> = [];
+
+      if (scope === 'HW' || scope === 'ALL') {
+        const cc = await import('../ai/yaki/configControl.js');
+        const hw = cc.searchConfigControl({ program, cluster, limit: 500 }) as Record<string, any>;
+        if (hw.error) {
+          parts.push(`**HW (Config Control):** ${hw.error}`);
+        } else {
+          const rows: Array<Record<string, any>> = hw.rows ?? [];
+          const cell = (v: unknown) => String(v ?? '').replace(/\|/g, '/').replace(/\s+/g, ' ').trim() || '—';
+          parts.push(`**HW CHANGES (CONFIG CONTROL) — ${program} ${cluster}: ${rows.length} rows**`);
+          if (rows.length) {
+            parts.push('| NO. | IPRG | Feature | WTL | LP1 | LP2 | LP3 | LP4 | Remarks |');
+            parts.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+            for (const r of rows) {
+              parts.push(
+                `| ${cell(r['NO.'])} | ${cell(r['ID'])} | ${cell(r['Feature name'])} | ${cell(r['WTL'])} | ${cell(r['LP1'])} | ${cell(r['LP2'])} | ${cell(r['LP3'])} | ${cell(r['LP4'])} | ${cell(r['Remarks'])} |`,
+              );
+            }
+          }
+        }
+      }
+
+      if ((scope === 'SW' || scope === 'ALL') && program === 'kedem') {
+        const key = `rel:${cluster}`;
+        const hit = relCache.get(key);
+        let rel: Record<string, any>;
+        if (hit && Date.now() - hit.at < REL_TTL_MS) {
+          rel = hit.data;
+        } else {
+          const cf = await import('../ai/yaki/confluence.js');
+          rel = (await cf.getClusterReleaseNotes({ cluster })) as Record<string, any>;
+          if (!rel.error) relCache.set(key, { at: Date.now(), data: rel });
+        }
+        if (rel.error) {
+          parts.push(`\n**SW (Release Notes):** ${rel.error}`);
+        } else {
+          const features: Array<Record<string, any>> = rel.features ?? [];
+          const cell = (v: unknown) => String(v ?? '').replace(/\|/g, '/').replace(/\s+/g, ' ').trim() || '—';
+          parts.push(`\n**SW RELEASE NOTES — ${cluster}: ${features.length} features** ([${cell(rel.title)}](${rel.url}))`);
+          if (features.length) {
+            parts.push('| Key | Summary | Assignee | Resolution |');
+            parts.push('| --- | --- | --- | --- |');
+            for (const f of features) {
+              parts.push(`| ${cell(f.key)} | ${cell(f.summary)} | ${cell(f.assignee)} | ${cell(f.resolution)} |`);
+            }
+          }
+          if (rel.url) {
+            cards.push({
+              source: 'confluence',
+              title: String(rel.title ?? `Release notes for ${cluster}`),
+              url: String(rel.url),
+              summary: `SW release notes page for ${cluster} (${features.length} features).`,
+              fields: {},
+            });
+          }
+        }
+      } else if ((scope === 'SW' || scope === 'ALL') && program !== 'kedem') {
+        parts.push(`\n**SW (Release Notes):** available for KEDEM clusters only.`);
+      }
+
+      res.json({ summary: parts.join('\n'), cards });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
   // Cluster picker data for the Lumo context bar (Yaki-style drill-down).
   router.get('/clusters', async (req, res) => {
     try {

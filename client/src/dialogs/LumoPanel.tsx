@@ -279,15 +279,33 @@ export function LumoPanel({ open, onClose }: { open: boolean; onClose: () => voi
     };
   }, [program, ctxOpen]);
 
-  const askContext = () => {
+  // Deterministic fast path: cluster reports skip the LLM entirely.
+  const askContext = async () => {
     if (!cluster || thinking) return;
-    const q =
+    const label =
       scope === 'HW'
-        ? `Show all HW configuration-control changes for ${program} cluster ${cluster}. Full table, every row.`
+        ? `HW config-control changes for ${program} ${cluster}`
         : scope === 'SW'
-          ? `Show the SW release-notes feature list for ${program} cluster ${cluster}.`
-          : `Show all changes for ${program} cluster ${cluster} — HW config control and SW release notes, as two separate tables.`;
-    void send(q);
+          ? `SW release notes for ${program} ${cluster}`
+          : `All changes (HW + SW) for ${program} ${cluster}`;
+    setMessages((prev) => [...prev, { role: 'user', text: label, cards: [] }]);
+    setStatusText('Building cluster report...');
+    try {
+      const r = await fetch(
+        `/api/lumo/cluster-report?program=${encodeURIComponent(program)}&cluster=${encodeURIComponent(cluster)}&scope=${scope}`,
+      );
+      const data = await r.json();
+      if (!r.ok) throw new Error(String(data?.error ?? `HTTP ${r.status}`));
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', text: String(data.summary ?? ''), cards: Array.isArray(data.cards) ? data.cards : [] },
+      ]);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setMessages((prev) => [...prev, { role: 'assistant', text: `Cluster report failed: ${msg}`, cards: [] }]);
+    } finally {
+      setStatusText(null);
+    }
   };
 
   const onCardClick = (card: LumoCard) => {
