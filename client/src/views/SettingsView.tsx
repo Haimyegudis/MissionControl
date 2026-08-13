@@ -19,6 +19,7 @@ import {
   toggleWidget,
   type WidgetToggle,
 } from '../lib/viewWidgets';
+import { TestRailSettings } from './testrail/TestRailSettings';
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -290,6 +291,8 @@ export function SettingsView() {
             />
           </label>
         </Card>
+
+        <TestRailSettings />
       </div>
 
       <div

@@ -1,0 +1,88 @@
+// Section create/rename dialog (Railbook sectionEditorModal). Deletion runs
+// through the typed-name ConfirmDialog from the section actions toolbar.
+
+import { useState } from 'react';
+import { trApi } from '../../api/testrail';
+import { Modal } from '../../components/Modal';
+import { pushToast } from '../../stores/toasts';
+import type { TestRailState } from '../../stores/testrail';
+import type { TrSection } from '../../testrailTypes';
+import { errText } from './common';
+
+export interface SectionDialogProps {
+  st: TestRailState;
+  /** Section to rename; null → create. */
+  existing: TrSection | null;
+  /** Parent for a new subsection (create mode only). */
+  parentId: number | null;
+  onClose: () => void;
+  /** Called after a successful save so the view refetches fresh sections. */
+  onSaved: () => void;
+}
+
+export function SectionDialog({ st, existing, parentId, onClose, onSaved }: SectionDialogProps) {
+  const [name, setName] = useState(existing?.name ?? '');
+  const [description, setDescription] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    if (!name.trim()) {
+      pushToast({ title: 'TestRail', body: 'Name is required.' });
+      return;
+    }
+    setBusy(true);
+    try {
+      if (existing) {
+        await trApi.updateSection(existing.id, name.trim(), description.trim() || null);
+        pushToast({ title: 'TestRail', body: 'Section renamed.' });
+      } else {
+        if (st.projectId == null || st.selSuiteId === 'all' || st.selSuiteId == null) {
+          pushToast({ title: 'TestRail', body: 'Pick a specific suite first to create a section.' });
+          return;
+        }
+        await trApi.addSection(st.projectId, {
+          suiteId: st.selSuiteId,
+          parentId: parentId ?? st.selSectionId ?? null,
+          name: name.trim(),
+          description: description.trim() || null,
+        });
+        pushToast({ title: 'TestRail', body: 'Section created.' });
+      }
+      onClose();
+      onSaved();
+    } catch (err) {
+      pushToast({ title: existing ? 'Rename failed' : 'Create failed', body: errText(err) });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={existing ? 'Rename section' : parentId != null ? 'New subsection' : 'New section'}
+      width={460}
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn btn-primary" disabled={busy} onClick={() => void save()}>
+            {busy ? '…' : existing ? 'Rename' : 'Create'}
+          </button>
+        </>
+      }
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          Name
+          <input value={name} autoFocus onChange={(e) => setName(e.target.value)} />
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          Description (optional)
+          <textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+        </label>
+      </div>
+    </Modal>
+  );
+}

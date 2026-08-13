@@ -5,8 +5,9 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { issues as issuesApi } from '../api/client';
 import { Modal } from '../components/Modal';
-import { navigate, ROUTES, type RouteId } from '../router';
+import { navigate, ROUTES, TESTRAIL_ROUTES, type RouteId } from '../router';
 import { settingsStore } from '../stores/settings';
+import { allLoadedCases, openCase, trStore } from '../stores/testrail';
 import { useStore } from '../stores/useStore';
 import { useDialogs } from './DialogHost';
 
@@ -53,6 +54,7 @@ export function CommandPalette({ mode = 'default', onClose, onPickIssue }: Comma
     const q = query.trim().toLowerCase();
     const entries: Array<{ id: RouteId | 'help'; label: string }> = [
       ...ROUTES,
+      ...TESTRAIL_ROUTES.map((r) => ({ id: r.id, label: `TestRail ${r.label}` })),
       { id: 'help', label: 'Help' },
     ];
     return entries
@@ -68,6 +70,31 @@ export function CommandPalette({ mode = 'default', onClose, onPickIssue }: Comma
         },
       }));
   }, [mode, query, onClose, dialogs]);
+
+  // TESTRAIL group — cached cases of the loaded suites, by title or C-id.
+  const trState = useStore(trStore);
+  const testrailRows = useMemo<PaletteRow[]>(() => {
+    if (mode === 'pomodoro') return [];
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    const idQ = q.replace(/^c/i, '');
+    const rows: PaletteRow[] = [];
+    for (const { suiteId, c } of allLoadedCases(trState)) {
+      if (c.title.toLowerCase().includes(q) || String(c.id) === idQ) {
+        rows.push({
+          group: 'TESTRAIL',
+          key: `C${c.id}`,
+          label: c.title,
+          action: () => {
+            openCase(c.id, c.suiteId ?? suiteId);
+            navigate('testrail-cases');
+          },
+        });
+        if (rows.length >= 8) break;
+      }
+    }
+    return rows;
+  }, [mode, query, trState]);
 
   // RECENT group.
   const recentRows = useMemo<PaletteRow[]>(() => {
@@ -116,7 +143,10 @@ export function CommandPalette({ mode = 'default', onClose, onPickIssue }: Comma
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  const rows = useMemo(() => [...navRows, ...jiraRows, ...recentRows], [navRows, jiraRows, recentRows]);
+  const rows = useMemo(
+    () => [...navRows, ...jiraRows, ...testrailRows, ...recentRows],
+    [navRows, jiraRows, testrailRows, recentRows],
+  );
 
   useEffect(() => {
     setSelected((s) => (rows.length === 0 ? -1 : Math.min(Math.max(s, -1), rows.length - 1)));

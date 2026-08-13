@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { pinnedBoards as pinnedBoardsApi, settings as settingsApi } from '../api/client';
 import { formatClock, formatElapsed, trimRecentSummary } from '../lib/format';
-import { activePageName, navigate, ROUTES, routeStore, type RouteId } from '../router';
+import { activePageName, navigate, ROUTES, TESTRAIL_ROUTES, routeStore, type RouteId } from '../router';
 import { pausePomodoro, pomodoroStore, resumePomodoro, statusText, stopPomodoro } from '../stores/pomodoro';
 import { lastRefreshStore, triggerNow } from '../stores/scheduler';
 import { sessionStore } from '../stores/session';
@@ -302,8 +302,18 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
       {/* ---------------------------------------------------- body -------- */}
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <nav style={sidebarStyle}>
+          <GroupLabel>JIRA</GroupLabel>
           {ROUTES.filter((r) => r.id !== 'settings').map((r) => (
             <NavItem key={r.id} route={r} active={route === r.id} />
+          ))}
+
+          <GroupLabel>TESTRAIL</GroupLabel>
+          {TESTRAIL_ROUTES.map((r) => (
+            <NavItem
+              key={r.id}
+              route={r}
+              active={route === r.id || (r.id === 'testrail-runs' && route === 'testrail-run')}
+            />
           ))}
 
           <div style={{ height: 1, background: 'var(--border-soft)', margin: '10px 8px' }} />

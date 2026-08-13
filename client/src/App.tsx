@@ -22,6 +22,10 @@ import { TimeLoggedView } from './views/TimeLoggedView';
 import { DashboardsView } from './views/DashboardsView';
 import { TeamView } from './views/TeamView';
 import { SettingsView } from './views/SettingsView';
+import { CaseLibraryView } from './views/testrail/CaseLibraryView';
+import { RunsView } from './views/testrail/RunsView';
+import { RunDetailView } from './views/testrail/RunDetailView';
+import { TestRailReportsView } from './views/testrail/TestRailReportsView';
 
 function ComingSoon({ title }: { title: string }) {
   return (
@@ -57,6 +61,14 @@ function ActiveView() {
       return <TeamView />;
     case 'settings':
       return <SettingsView />;
+    case 'testrail-cases':
+      return <CaseLibraryView />;
+    case 'testrail-runs':
+      return <RunsView />;
+    case 'testrail-run':
+      return <RunDetailView />;
+    case 'testrail-reports':
+      return <TestRailReportsView />;
     default:
       return <ComingSoon title={activePageName(route)} />;
   }
