@@ -688,7 +688,7 @@ export function CaseLibraryView() {
           </div>
 
           <div style={{ overflowX: 'auto' }}>
-            <table className="tr-tbl" style={{ width: tableWidth }}>
+            <table className="tr-tbl" style={{ width: tableWidth, tableLayout: 'fixed' }}>
               <thead>
                 <tr>
                   <th style={{ width: 26 }}>

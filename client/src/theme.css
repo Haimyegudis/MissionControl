@@ -735,7 +735,9 @@ tr.st-4 { background: linear-gradient(90deg, color-mix(in srgb, var(--accent-mag
   position: relative;
   white-space: nowrap;
 }
-.tr-tbl td { padding: 7px 10px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+.tr-tbl td { padding: 7px 10px; border-bottom: 1px solid var(--border-soft); vertical-align: top; overflow-wrap: anywhere; }
+/* Fixed-layout case table: headers clip instead of pushing neighbours. */
+.tr-tbl th { overflow: hidden; text-overflow: ellipsis; }
 .tr-tbl tr.clickable { cursor: pointer; }
 .tr-tbl tr.clickable:hover td { background: color-mix(in srgb, var(--accent-cyan) 5%, transparent); }
 .tr-tbl tr.selected td { background: color-mix(in srgb, var(--accent-cyan) 9%, transparent); }
@@ -743,7 +745,7 @@ tr.st-4 { background: linear-gradient(90deg, color-mix(in srgb, var(--accent-mag
 .col-grip {
   position: absolute;
   top: 0;
-  right: -4px;
+  right: 0;
   width: 9px;
   height: 100%;
   cursor: col-resize;
