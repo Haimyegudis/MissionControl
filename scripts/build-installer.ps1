@@ -1,11 +1,11 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 Builds a ONE-CLICK OFFLINE Windows installer for Mission Control (JiraWeb).
 
 Output: dist-installer\MissionControlSetup.exe  (IExpress self-extractor that
         extracts install.cmd + MissionControl.zip and runs install.cmd)
 Fallback (if IExpress is unavailable/fails): dist-installer\MissionControlSetup.cmd
-        + dist-installer\MissionControl.zip (run the .cmd — still one click).
+        + dist-installer\MissionControl.zip (run the .cmd - still one click).
 
 Payload (staged to build\installer\payload\):
   install.cmd            installer entry point ([/norun] [/quiet], MC_INSTALL_DIR env override)
@@ -21,6 +21,7 @@ Usage: powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 [-Sk
 #>
 [CmdletBinding()]
 param(
+  [switch]$IncludeKnowledge, # bundle the Yaki knowledge pack (~2GB: vector DBs + brain JSONs + config control)
   [switch]$SkipAppBuild,  # reuse existing client/dist + server/dist
   [switch]$SkipExe        # skip IExpress; emit the cmd+zip pair only
 )
@@ -34,7 +35,7 @@ $Out     = Join-Path $Root 'dist-installer'
 $Assets  = Join-Path $PSScriptRoot 'installer'
 
 # ---------------------------------------------------------------------------
-# EXPLICIT EXCLUSION LIST — files that must NEVER end up in the payload.
+# EXPLICIT EXCLUSION LIST - files that must NEVER end up in the payload.
 # The build FAILS if any file matching these names is found after staging.
 # ---------------------------------------------------------------------------
 $ForbiddenNames = @(
@@ -109,6 +110,25 @@ Copy-Item (Join-Path $Assets 'Uninstall.cmd')               (Join-Path $App 'Uni
 Copy-Item (Join-Path $Assets 'README.txt')                  (Join-Path $App 'README.txt')
 Copy-Item (Join-Path $Assets 'install.cmd')                 (Join-Path $Payload 'install.cmd')
 
+# optional: Yaki knowledge pack (vector DBs + brain + config control; no uploads, no .env)
+if ($IncludeKnowledge) {
+  $YakiRoot = 'C:\APPS\Yaki'
+  Step "Bundling knowledge pack from $YakiRoot (this is ~2GB)"
+  $KDb = Join-Path $App 'yaki\DB'
+  $KData = Join-Path $App 'yaki\data'
+  New-Item -ItemType Directory -Force -Path $KDb, (Join-Path $KData 'brain') | Out-Null
+  Copy-Item (Join-Path $YakiRoot 'DB\*.db')  $KDb -ErrorAction SilentlyContinue
+  Copy-Item (Join-Path $YakiRoot 'DB\*.db-wal') $KDb -ErrorAction SilentlyContinue
+  Copy-Item (Join-Path $YakiRoot 'DB\*.db-shm') $KDb -ErrorAction SilentlyContinue
+  Copy-Item (Join-Path $YakiRoot 'data\brain\*') (Join-Path $KData 'brain') -Recurse -ErrorAction SilentlyContinue
+  foreach ($pat in '*.xlsx', '*.csv', '*.json') {
+    Copy-Item (Join-Path $YakiRoot "data\$pat") $KData -ErrorAction SilentlyContinue
+  }
+  $kCount = (Get-ChildItem $KDb, $KData -Recurse -File | Measure-Object).Count
+  if ($kCount -lt 5) { Fail "Knowledge pack looks empty ($kCount files) - is $YakiRoot present?" }
+  Step "Knowledge pack staged: $kCount files"
+}
+
 # --- 3. verify: no secrets / no sources in payload --------------------------
 Step 'Verifying payload contains no secrets'
 $allFiles = Get-ChildItem -LiteralPath $Payload -Recurse -Force -File
@@ -116,8 +136,13 @@ $nameMatches = $allFiles | Where-Object {
   $n = $_.Name
   ($ForbiddenNames | Where-Object { $n -like $_ }).Count -gt 0
 }
+$knowledgeDir = Join-Path $App 'yaki'
 $hits = @()
 foreach ($m in $nameMatches) {
+  if ($IncludeKnowledge -and $m.FullName.StartsWith($knowledgeDir, [System.StringComparison]::OrdinalIgnoreCase) -and (@('.db', '.db-wal', '.db-shm') -contains $m.Extension)) {
+    # Knowledge-pack vector DBs are data, not secrets (only *.db under app\yaki).
+    continue
+  }
   if (Test-IsCompiledAppFile -File $m -PayloadRoot $Payload -RepoRoot $Root) {
     Write-Host "  tolerated (verified compiled app module, hash-matched to server\dist): $($m.FullName)"
   } else {
