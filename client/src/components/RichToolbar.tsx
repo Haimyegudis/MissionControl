@@ -17,10 +17,27 @@ const TABLE_HTML =
   '<tbody><tr><td>Cell 1</td><td>Cell 2</td></tr><tr><td>Cell 3</td><td>Cell 4</td></tr></tbody></table><div><br></div>';
 
 export function RichToolbar({ target }: { target: RichTarget }) {
+  // Selection inside the editor, captured before a <select> steals focus.
+  const savedRange = useRef<Range | null>(null);
+
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    const el = target.current;
+    if (sel && sel.rangeCount > 0 && el && el.contains(sel.anchorNode)) {
+      savedRange.current = sel.getRangeAt(0).cloneRange();
+    }
+  };
+
   const exec = (command: string, arg?: string) => {
     const el = target.current;
     if (!el || !document.contains(el)) return;
     el.focus();
+    if (savedRange.current) {
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(savedRange.current);
+      savedRange.current = null;
+    }
     document.execCommand(command, false, arg);
     // execCommand mutates the DOM without firing onInput — nudge the editor
     // so it re-serializes its markdown.
@@ -65,8 +82,47 @@ export function RichToolbar({ target }: { target: RichTarget }) {
           {b.label}
         </button>
       ))}
+      <select
+        title="Text color — visible here while editing; TestRail stores plain text"
+        defaultValue=""
+        style={{ padding: '2px 4px', fontSize: 12, width: 64 }}
+        onMouseDown={saveSelection}
+        onChange={(e) => {
+          if (e.target.value) exec('foreColor', e.target.value);
+          e.target.value = '';
+        }}
+      >
+        <option value="" disabled>
+          A color
+        </option>
+        <option value="#e5484d" style={{ color: '#e5484d' }}>■ Red</option>
+        <option value="#e8890c" style={{ color: '#e8890c' }}>■ Orange</option>
+        <option value="#0f9d6a" style={{ color: '#0f9d6a' }}>■ Green</option>
+        <option value="#2f81f7" style={{ color: '#2f81f7' }}>■ Blue</option>
+        <option value="#b558f6" style={{ color: '#b558f6' }}>■ Purple</option>
+        <option value="inherit">Default</option>
+      </select>
+      <select
+        title="Highlight — visible here while editing; TestRail stores plain text"
+        defaultValue=""
+        style={{ padding: '2px 4px', fontSize: 12, width: 78 }}
+        onMouseDown={saveSelection}
+        onChange={(e) => {
+          if (e.target.value) exec('hiliteColor', e.target.value);
+          e.target.value = '';
+        }}
+      >
+        <option value="" disabled>
+          Highlight
+        </option>
+        <option value="#fde84766">Yellow</option>
+        <option value="#22d38f55">Green</option>
+        <option value="#4f9cf955">Blue</option>
+        <option value="#ff4ecd44">Pink</option>
+        <option value="transparent">None</option>
+      </select>
       <span className="muted" style={{ fontSize: 10.5, marginLeft: 4 }}>
-        Formats the focused field — saved as TestRail markdown
+        Formats the focused field — colors show here only; TestRail gets plain text
       </span>
     </div>
   );
