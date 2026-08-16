@@ -50,6 +50,21 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
     () => [...currentSections(st)].sort((a, b) => a.displayOrder - b.displayOrder),
     [st],
   );
+  // Full breadcrumb per section ("ISW-xxx / Manual") — the flat name alone is
+  // ambiguous once subsections exist.
+  const sectionPath = useMemo(() => {
+    const byId = new Map(sections.map((s) => [s.id, s]));
+    const path = new Map<number, string>();
+    for (const s of sections) {
+      const names: string[] = [];
+      for (let cur: typeof s | undefined = s; cur; cur = cur.parentId != null ? byId.get(cur.parentId) : undefined) {
+        names.unshift(cur.name);
+        if (names.length > 10) break; // cycle guard
+      }
+      path.set(s.id, names.join(' / '));
+    }
+    return path;
+  }, [sections]);
   const defaultSection = existing?.sectionId ?? st.selSectionId ?? sections[0]?.id ?? null;
 
   // Pristine values (what the form shows with no draft and no edits) — the
@@ -188,12 +203,11 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
 
         {!isEdit ? (
           <label style={fieldCol}>
-            Section
+            Section / Subsection
             <select value={sectionId ?? ''} onChange={(e) => setSectionId(Number(e.target.value) || null)}>
               {sections.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {'— '.repeat(s.depth)}
-                  {s.name}
+                  {sectionPath.get(s.id) ?? s.name}
                 </option>
               ))}
             </select>

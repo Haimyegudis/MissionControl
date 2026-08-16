@@ -10,7 +10,7 @@ import { Modal } from '../../components/Modal';
 import { clearDraft, draftKey, loadDraft } from '../../lib/drafts';
 import { useDraftAutosave } from '../../lib/useDraftAutosave';
 import { pushToast } from '../../stores/toasts';
-import type { TestRailState } from '../../stores/testrail';
+import { currentSections, type TestRailState } from '../../stores/testrail';
 import type { TrSection } from '../../testrailTypes';
 import { errText } from './common';
 
@@ -109,6 +109,16 @@ export function SectionDialog({ st, existing, parentId, onClose, onSaved }: Sect
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {banner !== null ? <DraftBanner savedAt={banner} onDiscard={discardDraft} /> : null}
+        {!existing && parentId != null ? (
+          <div className="muted" style={{ fontSize: 12 }}>
+            Inside section: <b>{currentSections(st).find((s) => s.id === parentId)?.name ?? `#${parentId}`}</b>
+          </div>
+        ) : null}
+        {!existing && parentId == null ? (
+          <div className="muted" style={{ fontSize: 12 }}>
+            Top-level section. To add a subsection, hover a section in the tree and click +.
+          </div>
+        ) : null}
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           Name
           <input value={name} autoFocus onChange={(e) => setName(e.target.value)} />

@@ -556,6 +556,16 @@ export function CaseLibraryView() {
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {s.name}
                       </span>
+                      <button
+                        className="btn tr-sec-add"
+                        title={`Add subsection inside "${s.name}"`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSectionDialog({ existing: null, parentId: s.id });
+                        }}
+                      >
+                        +
+                      </button>
                       <span className="cnt">{countBySection.get(s.id) ?? ''}</span>
                     </div>
                   ))
@@ -667,7 +677,7 @@ export function CaseLibraryView() {
                   style={{ padding: '2px 8px', fontSize: 11 }}
                   onClick={() => setSectionDialog({ existing: null, parentId: selSection.id })}
                 >
-                  + sub
+                  + subsection
                 </button>
                 <button
                   className="btn"

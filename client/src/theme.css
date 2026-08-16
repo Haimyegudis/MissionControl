@@ -860,6 +860,9 @@ pre.blocktext {
 .tr-sec:hover { background: var(--bg-panel-high); }
 .tr-sec.active { background: var(--bg-panel-high); color: var(--accent-cyan); font-weight: 600; }
 .tr-sec .cnt { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+/* Per-row "add subsection" button — appears on hover only. */
+.tr-sec .tr-sec-add { display: none; padding: 0 7px; font-size: 12px; line-height: 1.4; flex-shrink: 0; }
+.tr-sec:hover .tr-sec-add { display: inline-flex; }
 
 .tr-kicker {
   font-family: var(--font-mono);
