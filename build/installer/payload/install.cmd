@@ -45,6 +45,23 @@ if errorlevel 1 goto :fail
 goto :installed
 
 :installed
+rem -- Ollama (semantic search engine) + embedding model, when bundled -------
+if not exist "%DEST%\ollama\OllamaSetup.exe" goto :afterollama
+echo Installing Ollama (semantic search engine)...
+where ollama >nul 2>&1
+if %errorlevel%==0 goto :ollamamodel
+if exist "%LOCALAPPDATA%\Programs\Ollama\ollama.exe" goto :ollamamodel
+start /wait "" "%DEST%\ollama\OllamaSetup.exe" /VERYSILENT /NORESTART /SP-
+:ollamamodel
+echo Installing the embedding model (mxbai-embed-large)...
+if not exist "%USERPROFILE%\.ollama\models" mkdir "%USERPROFILE%\.ollama\models"
+robocopy "%DEST%\ollama\models" "%USERPROFILE%\.ollama\models" /E /XC /XN /XO /NFL /NDL /NJH /NJS /NP >nul
+rem -- make sure the Ollama service is up (it also auto-starts at login)
+start "" /min "%LOCALAPPDATA%\Programs\Ollama\ollama app.exe" >nul 2>&1
+rem -- free the disk: the model+setup stay installed, drop the staging copy
+rd /s /q "%DEST%\ollama" >nul 2>&1
+:afterollama
+
 rem -- Desktop + Start Menu shortcuts
 powershell -NoProfile -ExecutionPolicy Bypass -File "%DEST%\launcher\setup-helper.ps1" -Action shortcuts -InstallDir "%DEST%"
 if errorlevel 1 goto :fail

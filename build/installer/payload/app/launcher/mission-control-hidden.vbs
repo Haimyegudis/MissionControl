@@ -17,6 +17,10 @@ Next
 
 If Not IsListening() Then
   sh.CurrentDirectory = base
+  ' If a bundled knowledge pack exists, point the Yaki tools at it.
+  If fso.FolderExists(base & "\yaki") Then
+    sh.Environment("PROCESS")("YAKI_ROOT") = base & "\yaki"
+  End If
   sh.Run """" & base & "\node\node.exe"" """ & base & "\server\dist\main.js""", 0, False
   ' give the server a moment to come up before opening the browser
   tries = 0

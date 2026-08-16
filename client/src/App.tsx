@@ -3,6 +3,7 @@
 
 import { useEffect } from 'react';
 import { Shell } from './components/Shell';
+import { pruneDrafts } from './lib/drafts';
 import { ToastHost } from './components/Toast';
 import { DialogHost, useDialogs } from './dialogs/DialogHost';
 import { activePageName, routeStore } from './router';
@@ -130,6 +131,9 @@ export default function App() {
   const session = useStore(sessionStore);
   useThemeSync();
   useSplashDismiss();
+
+  // Expired editor drafts (unsaved case/page work) are swept once per load.
+  useEffect(() => pruneDrafts(), []);
 
   // Once connected: load settings, then start the refresh scheduler.
   useEffect(() => {

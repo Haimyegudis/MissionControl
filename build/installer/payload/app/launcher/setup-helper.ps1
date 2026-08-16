@@ -20,7 +20,9 @@ switch ($Action) {
       $s.TargetPath = Join-Path $env:WINDIR 'System32\wscript.exe'
       $s.Arguments = '"' + (Join-Path $InstallDir 'launcher\mission-control-hidden.vbs') + '"'
       $s.WorkingDirectory = $InstallDir
-      $s.IconLocation = (Join-Path $InstallDir 'node\node.exe') + ',0'
+      $ico = Join-Path $InstallDir 'mission-control.ico'
+      if (Test-Path $ico) { $s.IconLocation = $ico + ',0' }
+      else { $s.IconLocation = (Join-Path $InstallDir 'node\node.exe') + ',0' }
       $s.Description = 'Mission Control'
       $s.Save()
     }

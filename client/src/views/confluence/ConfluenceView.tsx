@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { confluence } from '../../api/client';
+import { DraftBanner } from '../../components/DraftBanner';
+import { clearDraft, draftKey, loadDraft } from '../../lib/drafts';
+import { useDraftAutosave } from '../../lib/useDraftAutosave';
 import { updateSettings } from '../../stores/settings';
 import type { ConfluencePage, ConfluencePageContent, ConfluenceSearchOptions, ConfluenceSpace, ConfluenceStatus } from '../../types';
 
@@ -346,22 +349,86 @@ function ParentPicker({ spaces, spaceKey, onSpaceChange, value, onChange, exclud
   );
 }
 
+/** Everything typed into the page editor — persisted between sessions. */
+interface PageDraft {
+  title: string;
+  parentId: string;
+  parentTitle: string;
+  targetSpaceKey: string;
+  sourceMode: boolean;
+  /** Editor-format HTML (visual mode) or storage source (source mode). */
+  body: string;
+}
+
 function PageEditor({ mode, space, spaces, initial, onCancel, onSaved }: { mode: 'create' | 'edit'; space: ConfluenceSpace; spaces: ConfluenceSpace[]; initial: ConfluencePageContent | null; onCancel: () => void; onSaved: (page: ConfluencePageContent) => void }) {
   const editor = useRef<HTMLDivElement>(null);
-  const [title, setTitle] = useState(initial?.title ?? '');
-  const [parentId, setParentId] = useState<string>(initial?.parentId ?? '');
-  const [parentTitle, setParentTitle] = useState<string>('');
-  const [targetSpaceKey, setTargetSpaceKey] = useState(space.key);
+  const dKey = mode === 'edit' ? draftKey('cfpage', 'edit', initial!.id) : draftKey('cfpage', 'new', space.key);
+  // Read once on mount; interrupted work (refresh, timeout, crash) restores.
+  const restored = useMemo(() => loadDraft<PageDraft>(dKey), [dKey]);
+  const [title, setTitle] = useState(restored?.data.title ?? initial?.title ?? '');
+  const [parentId, setParentId] = useState<string>(restored?.data.parentId ?? initial?.parentId ?? '');
+  const [parentTitle, setParentTitle] = useState<string>(restored?.data.parentTitle ?? '');
+  const [targetSpaceKey, setTargetSpaceKey] = useState(restored?.data.targetSpaceKey ?? space.key);
   const [pickerOpen, setPickerOpen] = useState(mode === 'create');
   const [sourceMode, setSourceMode] = useState(false);
   const [source, setSource] = useState(initial?.storageBody ?? '<p><br /></p>');
+  const [bodyHtml, setBodyHtml] = useState('');
+  const [banner, setBanner] = useState<number | null>(restored?.savedAt ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const baselineBody = useRef<string | null>(null);
 
-  useEffect(() => { if (editor.current) editor.current.innerHTML = storageToEditor(initial?.storageBody ?? '<p><br></p>'); }, [initial]);
+  useEffect(() => {
+    if (!editor.current) return;
+    // Pristine content first — its browser-normalized innerHTML is the draft
+    // baseline — then overlay the restored draft body when one exists.
+    editor.current.innerHTML = storageToEditor(initial?.storageBody ?? '<p><br></p>');
+    baselineBody.current = editor.current.innerHTML;
+    if (restored) {
+      if (restored.data.sourceMode) {
+        setSource(restored.data.body);
+        setSourceMode(true);
+      } else if (restored.data.body) {
+        editor.current.innerHTML = restored.data.body;
+      }
+    }
+    setBodyHtml(editor.current.innerHTML);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial]);
+
+  const currentBody = sourceMode ? source : bodyHtml;
+  const pristine =
+    banner === null &&
+    title === (initial?.title ?? '') &&
+    parentId === (initial?.parentId ?? '') &&
+    targetSpaceKey === space.key &&
+    !sourceMode &&
+    (baselineBody.current === null || bodyHtml === baselineBody.current);
+  useDraftAutosave(
+    dKey,
+    { title, parentId, parentTitle, targetSpaceKey, sourceMode, body: currentBody } satisfies PageDraft,
+    pristine,
+  );
+
+  const discardDraft = () => {
+    clearDraft(dKey);
+    setBanner(null);
+    setTitle(initial?.title ?? '');
+    setParentId(initial?.parentId ?? '');
+    setParentTitle('');
+    setTargetSpaceKey(space.key);
+    setSourceMode(false);
+    setSource(initial?.storageBody ?? '<p><br /></p>');
+    if (editor.current) {
+      editor.current.innerHTML = storageToEditor(initial?.storageBody ?? '<p><br></p>');
+      baselineBody.current = editor.current.innerHTML;
+      setBodyHtml(editor.current.innerHTML);
+    }
+  };
+
   const toggleSource = () => {
     if (!sourceMode && editor.current) setSource(editorToStorage(editor.current));
-    if (sourceMode && editor.current) editor.current.innerHTML = storageToEditor(source);
+    if (sourceMode && editor.current) { editor.current.innerHTML = storageToEditor(source); setBodyHtml(editor.current.innerHTML); }
     setSourceMode((x) => !x);
   };
   const save = async () => {
@@ -373,6 +440,7 @@ function PageEditor({ mode, space, spaces, initial, onCancel, onSaved }: { mode:
       const saved = mode === 'create'
         ? await confluence.createPage({ spaceKey: targetSpaceKey, title: title.trim(), storageBody, parentId: parentId || null })
         : await confluence.updatePage(initial!.id, { title: title.trim(), storageBody, version: initial!.version, parentId: parentId || null });
+      clearDraft(dKey);
       onSaved(saved);
     } catch (e) { setError(message(e)); }
     finally { setBusy(false); }
@@ -383,6 +451,7 @@ function PageEditor({ mode, space, spaces, initial, onCancel, onSaved }: { mode:
         <div><div className="cf-breadcrumb">{space.name} <span>/</span> {mode === 'create' ? 'New page' : 'Edit page'}</div><h2>{mode === 'create' ? 'Create a page' : 'Edit page'}</h2></div>
         <div style={{ display: 'flex', gap: 8 }}><button className="btn" onClick={onCancel}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={() => void save()}>{busy ? 'Publishing…' : mode === 'create' ? 'Publish' : 'Update'}</button></div>
       </div>
+      {banner !== null ? <DraftBanner savedAt={banner} onDiscard={discardDraft} /> : null}
       <input className="cf-title-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Page title" autoFocus />
       <div className="cf-editor-meta">
         <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -403,7 +472,7 @@ function PageEditor({ mode, space, spaces, initial, onCancel, onSaved }: { mode:
           excludeId={initial?.id ?? null}
         />
       ) : null}
-      {!sourceMode ? <><EditorToolbar editor={editor} /><div ref={editor} className="cf-editor-surface wiki-content" contentEditable suppressContentEditableWarning /></> : <textarea className="cf-source-editor" value={source} onChange={(e) => setSource(e.target.value)} spellCheck={false} />}
+      {!sourceMode ? <><EditorToolbar editor={editor} /><div ref={editor} className="cf-editor-surface wiki-content" contentEditable suppressContentEditableWarning onInput={() => setBodyHtml(editor.current?.innerHTML ?? '')} /></> : <textarea className="cf-source-editor" value={source} onChange={(e) => setSource(e.target.value)} spellCheck={false} />}
       {error ? <div className="cf-error">{error}</div> : null}
     </section>
   );

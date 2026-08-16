@@ -4,7 +4,10 @@
 
 import { useMemo, useState } from 'react';
 import { trApi } from '../../api/testrail';
+import { DraftBanner } from '../../components/DraftBanner';
 import { Modal } from '../../components/Modal';
+import { clearDraft, draftKey, loadDraft } from '../../lib/drafts';
+import { useDraftAutosave } from '../../lib/useDraftAutosave';
 import { stepsToText } from '../../lib/testrail';
 import { pushToast } from '../../stores/toasts';
 import { currentSections, userName, type TestRailState } from '../../stores/testrail';
@@ -14,6 +17,20 @@ import { errText } from './common';
 interface StepRow {
   action: string;
   expected: string;
+}
+
+/** Everything the user can type — persisted as a draft between sessions. */
+interface CaseDraft {
+  title: string;
+  sectionId: number | null;
+  typeId: string;
+  priorityId: string;
+  estimate: string;
+  refs: string;
+  ownerId: string;
+  preconds: string;
+  expected: string;
+  steps: StepRow[];
 }
 
 export interface CaseEditorProps {
@@ -35,21 +52,64 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
   );
   const defaultSection = existing?.sectionId ?? st.selSectionId ?? sections[0]?.id ?? null;
 
-  const [title, setTitle] = useState(existing?.title ?? '');
-  const [sectionId, setSectionId] = useState<number | null>(defaultSection);
-  const [typeId, setTypeId] = useState<string>(existing?.typeId ? String(existing.typeId) : '');
-  const [priorityId, setPriorityId] = useState<string>(existing?.priorityId ? String(existing.priorityId) : '');
-  const [estimate, setEstimate] = useState(existing?.estimate ?? '');
-  const [refs, setRefs] = useState(existing?.refs ?? '');
-  const [ownerId, setOwnerId] = useState<string>(existing?.ownerId ? String(existing.ownerId) : '');
-  const [preconds, setPreconds] = useState(existing?.preconds ?? '');
-  const [expected, setExpected] = useState(existing?.expected ?? '');
-  const [steps, setSteps] = useState<StepRow[]>(
-    existing?.stepsSeparated.length
-      ? existing.stepsSeparated.map((s) => ({ action: s.action, expected: s.expected }))
-      : [{ action: '', expected: '' }],
+  // Pristine values (what the form shows with no draft and no edits) — the
+  // draft baseline: while the form matches this, no draft is kept.
+  const baseline = useMemo<CaseDraft>(
+    () => ({
+      title: existing?.title ?? '',
+      sectionId: defaultSection,
+      typeId: existing?.typeId ? String(existing.typeId) : '',
+      priorityId: existing?.priorityId ? String(existing.priorityId) : '',
+      estimate: existing?.estimate ?? '',
+      refs: existing?.refs ?? '',
+      ownerId: existing?.ownerId ? String(existing.ownerId) : '',
+      preconds: existing?.preconds ?? '',
+      expected: existing?.expected ?? '',
+      steps: existing?.stepsSeparated.length
+        ? existing.stepsSeparated.map((s) => ({ action: s.action, expected: s.expected }))
+        : [{ action: '', expected: '' }],
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
   );
+
+  const dKey = isEdit
+    ? draftKey('case', 'edit', (existing as TrCase).id)
+    : draftKey('case', 'new', st.projectId ?? 0, String(st.selSuiteId ?? 0));
+  // Read once on mount; interrupted work (refresh, timeout, crash) restores.
+  const restored = useMemo(() => loadDraft<CaseDraft>(dKey), [dKey]);
+  const init = restored?.data ?? baseline;
+
+  const [title, setTitle] = useState(init.title);
+  const [sectionId, setSectionId] = useState<number | null>(init.sectionId);
+  const [typeId, setTypeId] = useState<string>(init.typeId);
+  const [priorityId, setPriorityId] = useState<string>(init.priorityId);
+  const [estimate, setEstimate] = useState(init.estimate);
+  const [refs, setRefs] = useState(init.refs);
+  const [ownerId, setOwnerId] = useState<string>(init.ownerId);
+  const [preconds, setPreconds] = useState(init.preconds);
+  const [expected, setExpected] = useState(init.expected);
+  const [steps, setSteps] = useState<StepRow[]>(init.steps);
+  const [banner, setBanner] = useState<number | null>(restored?.savedAt ?? null);
   const [busy, setBusy] = useState(false);
+
+  const current: CaseDraft = { title, sectionId, typeId, priorityId, estimate, refs, ownerId, preconds, expected, steps };
+  useDraftAutosave(dKey, current, JSON.stringify(current) === JSON.stringify(baseline));
+
+  const discardDraft = () => {
+    clearDraft(dKey);
+    setBanner(null);
+    setTitle(baseline.title);
+    setSectionId(baseline.sectionId);
+    setTypeId(baseline.typeId);
+    setPriorityId(baseline.priorityId);
+    setEstimate(baseline.estimate);
+    setRefs(baseline.refs);
+    setOwnerId(baseline.ownerId);
+    setPreconds(baseline.preconds);
+    setExpected(baseline.expected);
+    setSteps(baseline.steps);
+  };
 
   // Owner options: known people plus meta users (people names win).
   const ownerOptions = useMemo(() => {
@@ -89,6 +149,7 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
         await trApi.addCase(sectionId, payload);
         pushToast({ title: 'TestRail', body: 'Case created.' });
       }
+      clearDraft(dKey);
       onClose();
       onSaved();
     } catch (err) {
@@ -115,6 +176,7 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
       }
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {banner !== null ? <DraftBanner savedAt={banner} onDiscard={discardDraft} /> : null}
         <label style={fieldCol}>
           Title
           <input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
