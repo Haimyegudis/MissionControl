@@ -914,6 +914,11 @@ pre.blocktext {
 .tr-sec:hover { background: var(--bg-panel-high); }
 .tr-sec.active { background: var(--bg-panel-high); color: var(--accent-cyan); font-weight: 600; }
 .tr-sec .cnt { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+/* Clickable KPI cards (dashboard) — lift on hover so they read as buttons. */
+.kpi-card { transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease; }
+.kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); border-color: var(--border-strong); }
+.kpi-card:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+
 /* Per-row "add subsection" button — appears on hover only. */
 .tr-sec .tr-sec-add { display: none; padding: 0 7px; font-size: 12px; line-height: 1.4; flex-shrink: 0; }
 .tr-sec:hover .tr-sec-add { display: inline-flex; }

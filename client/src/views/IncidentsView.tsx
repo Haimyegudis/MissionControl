@@ -10,6 +10,7 @@ import { api, incidents as incidentsApi, issues as issuesApi } from '../api/clie
 import { ContextMenu, type MenuEntry } from '../components/ContextMenu';
 import type { GridColumn } from '../components/DataGrid';
 import { PagedGrid } from '../components/PagedGrid';
+import { PageHeader } from '../components/PageHeader';
 import { statusSubmenu } from '../components/StatusMenu';
 import { dialogs } from '../dialogs/DialogHost';
 import { priorityColor, statusColor } from '../lib/colors';
@@ -508,28 +509,25 @@ export function IncidentsView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 16, fontWeight: 700 }}>Indigo SW Incidents Dashboard</div>
-        <span
-          style={{
-            border: '1px solid var(--border-soft)',
-            borderRadius: 999,
-            padding: '2px 12px',
-            fontSize: 11.5,
-          }}
-        >
-          Active filters:{' '}
-          <span style={{ color: 'var(--accent-cyan)', fontWeight: 700 }}>{activeCount}</span>
-        </span>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <button className="btn" style={{ padding: '3px 12px', fontSize: 11.5 }} onClick={openInJira}>
-            Open in Jira
-          </button>
-          <button className="btn" style={{ padding: '3px 12px', fontSize: 11.5 }} onClick={clearAll}>
-            Clear All
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        kicker="Jira · Incidents"
+        title="Indigo SW Incidents"
+        subtitle={
+          <>
+            Active filters: <span style={{ color: 'var(--accent-cyan)', fontWeight: 700 }}>{activeCount}</span>
+          </>
+        }
+        right={
+          <>
+            <button className="btn" style={{ padding: '3px 12px', fontSize: 11.5 }} onClick={openInJira}>
+              Open in Jira
+            </button>
+            <button className="btn" style={{ padding: '3px 12px', fontSize: 11.5 }} onClick={clearAll}>
+              Clear All
+            </button>
+          </>
+        }
+      />
 
       {/* Active-filter chips */}
       {activeChips.length > 0 ? (

@@ -213,7 +213,7 @@ export function RunsView() {
                   <td>
                     <DistBar r={r} />
                   </td>
-                  <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{passPct(r)}</td>
+                  <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{passPct(r)}</td>
                   <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
                     {!r.isCompleted ? (
                       <>

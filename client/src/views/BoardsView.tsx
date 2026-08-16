@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { boards as boardsApi } from '../api/client';
 import { DataGrid } from '../components/DataGrid';
 import type { GridColumn } from '../components/DataGrid';
+import { PageHeader } from '../components/PageHeader';
 import {
   filterIndigoBoards,
   formatBoardDiagnostics,
@@ -105,11 +106,16 @@ export function BoardsView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-        <h2 style={{ fontSize: 18 }}>Boards Search</h2>
-        <span className="muted">Total: {filtered.length}</span>
-        {busy ? <span className="accent-cyan">…</span> : null}
-      </div>
+      <PageHeader
+        kicker="Jira · Agile"
+        title="Boards"
+        subtitle={
+          <>
+            Total: {filtered.length}
+            {busy ? ' · loading…' : ''} — pin a board to open it from the sidebar.
+          </>
+        }
+      />
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <input

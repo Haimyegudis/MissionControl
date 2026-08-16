@@ -67,6 +67,10 @@ export function statusColor(status: string | null | undefined): string {
   if (s.includes('done') || s.includes('closed') || s.includes('delivered')) return 'var(--accent-green, #22D38F)';
   if (s.includes('blocked') || s.includes('rejected')) return 'var(--accent-red, #EF4444)';
   if (s.includes('progress') || s.includes('review')) return 'var(--accent-cyan, #1FE0E0)';
+  // Open/queued states get a real color — muted gray read as "disabled".
+  if (s.includes('open') || s.includes('to do') || s.includes('ready') || s.includes('new')) {
+    return 'var(--accent-blue, #4F9CF9)';
+  }
   return 'var(--muted, #8AA0BF)';
 }
 

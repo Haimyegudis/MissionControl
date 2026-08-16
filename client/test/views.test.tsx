@@ -116,7 +116,7 @@ describe('MyWorkView (§2)', () => {
 describe('IncidentsView (§3)', () => {
   it('renders header verbatim, pills, expander and the three sections', () => {
     const html = renderToString(<IncidentsView />);
-    expect(html).toContain('Indigo SW Incidents Dashboard');
+    expect(html).toContain('Indigo SW Incidents');
     expect(html).toContain('Active filters:');
     expect(html).toContain('Open in Jira');
     expect(html).toContain('Clear All');

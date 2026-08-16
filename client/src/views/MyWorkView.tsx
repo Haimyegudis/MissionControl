@@ -11,6 +11,7 @@ import { api, boards as boardsApi, issues as issuesApi, metadataExtra } from '..
 import { ContextMenu, type MenuEntry } from '../components/ContextMenu';
 import { DataGrid, type GridColumn } from '../components/DataGrid';
 import { Modal } from '../components/Modal';
+import { PageHeader } from '../components/PageHeader';
 import { Kanban } from '../components/Kanban';
 import { statusSubmenu } from '../components/StatusMenu';
 import { useTextPrompt } from '../components/TextPrompt';
@@ -671,8 +672,11 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <PageHeader
+        kicker={board ? 'Jira · Board' : 'Jira · Issues'}
+        title={board?.name ? board.name : 'Backlog'}
+      />
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 16, fontWeight: 700 }}>{board?.name ? board.name : 'Backlog'}</div>
         <input
           value={keyContains}
           onChange={(e) => setKeyContains(e.target.value)}

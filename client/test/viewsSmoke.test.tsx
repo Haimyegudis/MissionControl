@@ -54,7 +54,7 @@ import { TeamEditor } from '../src/views/team/TeamEditor';
 describe('BoardsView (§4)', () => {
   it('renders header, toolbar and verbatim empty state', () => {
     const html = renderToString(<BoardsView />);
-    expect(html).toContain('Boards Search');
+    expect(html).toContain('Boards');
     expect(html).toContain('Total:');
     expect(html).toContain('Reload');
     expect(html).toContain('Force refresh');

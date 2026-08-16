@@ -94,7 +94,7 @@ describe('statusColor (ui-parity §12.8)', () => {
   });
 
   it('default gray-blue', () => {
-    expect(statusColor('Open')).toBe('var(--muted, #8AA0BF)');
+    expect(statusColor('Open')).toBe('var(--accent-blue, #4F9CF9)');
     expect(statusColor(null)).toBe('var(--muted, #8AA0BF)');
   });
 });

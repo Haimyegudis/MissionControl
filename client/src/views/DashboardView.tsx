@@ -14,6 +14,7 @@ import { TextPrompt } from '../components/TextPrompt';
 import { UserSearchPicker } from '../components/UserSearchPicker';
 import { dialogs } from '../dialogs/DialogHost';
 import { KpiDrilldown } from '../dialogs/KpiDrilldown';
+import { PageHeader } from '../components/PageHeader';
 import { priorityColor, starColor, statusColor } from '../lib/colors';
 import { formatDateTime } from '../lib/format';
 import {
@@ -274,13 +275,18 @@ export function DashboardView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <PageHeader
+        kicker="Jira · Sprint"
+        title="Dashboard"
+        subtitle="Click any KPI card to see the issues behind the number."
+      />
       {/* KPI widget row */}
       {widgets.length > 0 ? (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {widgets.map((w) => (
             <div
               key={w.id}
-              className="card"
+              className="card kpi-card"
               role="button"
               tabIndex={0}
               title="Click to see the issues behind this number"
@@ -288,10 +294,18 @@ export function DashboardView() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') setDrillKpi({ id: w.id, title: w.title });
               }}
-              style={{ minWidth: 120, borderRadius: 6, padding: '10px 14px', flex: '0 1 auto', cursor: 'pointer' }}
+              style={{
+                minWidth: 132,
+                borderRadius: 8,
+                padding: '10px 14px',
+                flex: '0 1 auto',
+                cursor: 'pointer',
+                borderLeft: `3px solid ${w.color}`,
+              }}
             >
-              <div className="muted" style={{ fontSize: 10, letterSpacing: '0.05em' }}>
-                {w.title}
+              <div className="muted" style={{ fontSize: 10, letterSpacing: '0.05em', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                <span>{w.title}</span>
+                <span aria-hidden style={{ opacity: 0.6 }}>›</span>
               </div>
               <div style={{ fontSize: 18, fontWeight: 700, color: w.color, marginTop: 2 }}>
                 {kpiValue(w.id, snapshot, sprintIssues)}
