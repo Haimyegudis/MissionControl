@@ -236,10 +236,10 @@ export function RunDetailView() {
     }
     return c;
   }, [tests, run]);
-  const passRate =
-    counts.passed + counts.failed + counts.blocked + counts.retest > 0
-      ? `${Math.round((counts.passed / (counts.passed + counts.failed + counts.blocked + counts.retest)) * 100)}%`
-      : passPct(run);
+  // Pass rate over ALL tests in the run — 17 passed of 3377 is ~1%, not the
+  // "100% of what happened to be executed" illusion.
+  const allTotal = counts.passed + counts.failed + counts.blocked + counts.retest + counts.untested;
+  const passRate = allTotal > 0 ? `${Math.round((counts.passed / allTotal) * 100)}%` : passPct(run);
 
   const selectedTests = all.filter((t) => sel.has(t.id));
   const shown = visible.slice(0, PAINT_CAP);
