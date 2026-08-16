@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { issues as issuesApi } from '../api/client';
 import { trApi } from '../api/testrail';
-import { openCase, selectProject, trStore } from '../stores/testrail';
+import { IssueTestRailPanel } from './IssueTestRailPanel';
 import type { TrRun } from '../testrailTypes';
 import { Modal } from '../components/Modal';
 import { IssueLinkText } from '../components/IssueLinkText';
@@ -428,64 +428,15 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
               </SectionCard>
             )}
 
-            {trRuns.length > 0 && (
-              <SectionCard title={`TestRail runs (${trRuns.length})`}>
-                {trRuns.map((r) => {
-                  const total = r.passedCount + r.failedCount + r.blockedCount + r.retestCount + r.untestedCount;
-                  const done = total - r.untestedCount;
-                  return (
-                    <div key={r.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '4px 0', fontSize: 12.5 }}>
-                      <a
-                        href={`#/testrail/run/${r.id}`}
-                        onClick={onClose}
-                        style={{ color: 'var(--accent-cyan)', textDecoration: 'underline', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                      >
-                        {r.name}
-                      </a>
-                      <span className="muted" style={{ whiteSpace: 'nowrap' }}>
-                        {r.isCompleted ? 'closed' : 'active'} · {done}/{total} · ✓{r.passedCount} ✗{r.failedCount}
-                      </span>
-                    </div>
-                  );
-                })}
-              </SectionCard>
-            )}
-
-            {trCases.length > 0 && (
-              <SectionCard title={`TestRail cases (${trCases.length})`}>
-                {trCases.map((c) => (
-                  <div
-                    key={c.id}
-                    style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '4px 0', fontSize: 12.5 }}
-                  >
-                    <a
-                      href="#/testrail/cases"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        onClose();
-                        window.location.hash = '#/testrail/cases';
-                        void (async () => {
-                          if (trStore.get().projectId !== c.projectId) await selectProject(c.projectId);
-                          openCase(c.id, c.suiteId);
-                        })();
-                      }}
-                      style={{
-                        color: 'var(--accent-cyan)',
-                        textDecoration: 'underline',
-                        flex: 1,
-                        minWidth: 0,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      C{c.id} — {c.title}
-                    </a>
-                    <span className="muted" style={{ whiteSpace: 'nowrap' }}>
-                      {c.suiteName}
-                    </span>
-                  </div>
-                ))}
+            {(trRuns.length > 0 || trCases.length > 0) && (
+              <SectionCard title="TestRail">
+                <IssueTestRailPanel
+                  issueKey={issue.key}
+                  issueSummary={issue.summary}
+                  runs={trRuns}
+                  cases={trCases}
+                  onNavigate={onClose}
+                />
               </SectionCard>
             )}
 
