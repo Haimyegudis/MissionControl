@@ -114,6 +114,12 @@ export interface CaseFilterSpec {
   coverage?: ReadonlySet<number> | null;
   /** Restrict to these section ids (typically a section + its descendants). */
   sectionIds?: ReadonlySet<number> | null;
+  /**
+   * Lower-cased full section path per section id ("isw-7554 ... / manual").
+   * When given, the title query also matches cases whose section path
+   * contains it — searching a section name surfaces the whole section.
+   */
+  sectionPathById?: ReadonlyMap<number, string> | null;
 }
 
 export function filterCases(
@@ -141,13 +147,15 @@ export function filterCases(
   const q = (spec.title ?? '').trim().toLowerCase();
   if (q) {
     const idQ = q.replace(/^c/i, '');
+    const paths = spec.sectionPathById;
     list = list.filter(
       (c) =>
         c.title.toLowerCase().includes(q) ||
         String(c.id) === idQ ||
         (c.refs ?? '').toLowerCase().includes(q) ||
         (c.steps ?? '').toLowerCase().includes(q) ||
-        c.stepsSeparated.some((s) => `${s.action} ${s.expected}`.toLowerCase().includes(q)),
+        c.stepsSeparated.some((s) => `${s.action} ${s.expected}`.toLowerCase().includes(q)) ||
+        (paths != null && c.sectionId != null && (paths.get(c.sectionId) ?? '').includes(q)),
     );
   }
   return list;

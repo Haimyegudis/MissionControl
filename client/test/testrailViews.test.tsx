@@ -80,7 +80,7 @@ describe('TestRail views (Phase 3 smoke)', () => {
     const html = renderToString(<CaseLibraryView />);
     expect(html).toContain('Case library');
     expect(html).toContain('★ All suites — entire project');
-    expect(html).toContain('Title contains…');
+    expect(html).toContain('Title, section, steps…');
     expect(html).toContain('Owner…');
     expect(html).toContain('Assigned to…');
     expect(html).toContain('Never-ran check');

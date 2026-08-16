@@ -176,6 +176,14 @@ export function CaseLibraryView() {
     [st.selSectionId, sections],
   );
 
+  // Lower-cased full path per section — the title filter also matches these,
+  // so searching a section/subsection name surfaces its whole subtree.
+  const sectionPathLower = useMemo(() => {
+    const out = new Map<number, string>();
+    for (const s of sections) out.set(s.id, sectionPath(s.id, sections).toLowerCase());
+    return out;
+  }, [sections]);
+
   const visible = useMemo(
     () =>
       filterCases(
@@ -187,10 +195,11 @@ export function CaseLibraryView() {
           neverRan: st.filters.showNeverRan && Boolean(coverage),
           coverage: coverage?.covered ?? null,
           sectionIds: sectionScope,
+          sectionPathById: sectionPathLower,
         },
         nameOf,
       ),
-    [cases, st.filters, coverage, sectionScope, st.people, st.meta], // eslint-disable-line react-hooks/exhaustive-deps
+    [cases, st.filters, coverage, sectionScope, sectionPathLower, st.people, st.meta], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const groups = useMemo(() => groupCasesBySection(visible, sections), [visible, sections]);
@@ -604,7 +613,7 @@ export function CaseLibraryView() {
               </select>
             ) : null}
             <input
-              placeholder="Title contains…"
+              placeholder="Title, section, steps…"
               value={st.filters.titleContains}
               onChange={(e) => setFilters({ titleContains: e.target.value })}
               style={{ minWidth: 170 }}

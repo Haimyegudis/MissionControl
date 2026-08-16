@@ -152,6 +152,19 @@ describe('filterCases', () => {
     expect(filterCases(cases, { assigneeText: 'cohen' }, names).map((c) => c.id)).toEqual([200]);
   });
 
+  it('title query also matches the section path when provided', () => {
+    const paths = new Map([
+      [2, 'root / child'],
+      [4, 'root / manual'],
+    ]);
+    expect(filterCases(cases, { title: 'manual', sectionPathById: paths }, names).map((c) => c.id)).toEqual([
+      200, 300,
+    ]);
+    expect(filterCases(cases, { title: 'child', sectionPathById: paths }, names).map((c) => c.id)).toEqual([100]);
+    // without the map, section names do not match
+    expect(filterCases(cases, { title: 'manual' }, names)).toEqual([]);
+  });
+
   it('restricts to section ids and applies never-ran coverage', () => {
     expect(filterCases(cases, { sectionIds: new Set([4]) }, names).map((c) => c.id)).toEqual([200, 300]);
     expect(
