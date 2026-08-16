@@ -88,19 +88,27 @@ export function RichToolbar({ target }: { target: RichTarget }) {
         style={{ padding: '2px 4px', fontSize: 12, width: 64 }}
         onMouseDown={saveSelection}
         onChange={(e) => {
-          if (e.target.value) exec('foreColor', e.target.value);
+          const v = e.target.value;
+          if (v === '__default__') {
+            // Reset to the theme's normal text color (execCommand needs a
+            // concrete color — 'inherit' silently does nothing).
+            const el = target.current;
+            exec('foreColor', el ? getComputedStyle(el).color : '#000000');
+          } else if (v) {
+            exec('foreColor', v);
+          }
           e.target.value = '';
         }}
       >
         <option value="" disabled>
           A color
         </option>
+        <option value="__default__">Default</option>
         <option value="#e5484d" style={{ color: '#e5484d' }}>■ Red</option>
         <option value="#e8890c" style={{ color: '#e8890c' }}>■ Orange</option>
         <option value="#0f9d6a" style={{ color: '#0f9d6a' }}>■ Green</option>
         <option value="#2f81f7" style={{ color: '#2f81f7' }}>■ Blue</option>
         <option value="#b558f6" style={{ color: '#b558f6' }}>■ Purple</option>
-        <option value="inherit">Default</option>
       </select>
       <select
         title="Highlight — visible here while editing; TestRail stores plain text"
