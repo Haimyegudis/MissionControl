@@ -5,6 +5,7 @@
 import { useMemo, useState } from 'react';
 import { trApi } from '../../api/testrail';
 import { DraftBanner } from '../../components/DraftBanner';
+import { MdToolbar, useMdFields } from '../../components/MdToolbar';
 import { Modal } from '../../components/Modal';
 import { clearDraft, draftKey, loadDraft } from '../../lib/drafts';
 import { useDraftAutosave } from '../../lib/useDraftAutosave';
@@ -107,6 +108,7 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
   const [steps, setSteps] = useState<StepRow[]>(init.steps);
   const [banner, setBanner] = useState<number | null>(restored?.savedAt ?? null);
   const [busy, setBusy] = useState(false);
+  const mdFields = useMdFields();
 
   const current: CaseDraft = { title, sectionId, typeId, priorityId, estimate, refs, ownerId, preconds, expected, steps };
   useDraftAutosave(dKey, current, JSON.stringify(current) === JSON.stringify(baseline));
@@ -261,9 +263,11 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
           </label>
         </div>
 
+        <MdToolbar fields={mdFields} />
+
         <label style={fieldCol}>
           Preconditions
-          <textarea rows={2} value={preconds} onChange={(e) => setPreconds(e.target.value)} />
+          <textarea rows={2} value={preconds} onChange={(e) => setPreconds(e.target.value)} {...mdFields.register(setPreconds)} />
         </label>
 
         <div>
@@ -288,6 +292,9 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
                 onChange={(e) =>
                   setSteps((prev) => prev.map((row, j) => (j === i ? { ...row, action: e.target.value } : row)))
                 }
+                {...mdFields.register((v) =>
+                  setSteps((prev) => prev.map((row, j) => (j === i ? { ...row, action: v } : row))),
+                )}
               />
               <textarea
                 rows={2}
@@ -296,6 +303,9 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
                 onChange={(e) =>
                   setSteps((prev) => prev.map((row, j) => (j === i ? { ...row, expected: e.target.value } : row)))
                 }
+                {...mdFields.register((v) =>
+                  setSteps((prev) => prev.map((row, j) => (j === i ? { ...row, expected: v } : row))),
+                )}
               />
               <button
                 className="btn btn-icon"
@@ -313,7 +323,7 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
 
         <label style={fieldCol}>
           Expected (overall, optional)
-          <textarea rows={2} value={expected} onChange={(e) => setExpected(e.target.value)} />
+          <textarea rows={2} value={expected} onChange={(e) => setExpected(e.target.value)} {...mdFields.register(setExpected)} />
         </label>
       </div>
     </Modal>
