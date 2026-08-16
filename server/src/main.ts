@@ -75,6 +75,7 @@ function getDistinct(projectKey: string, fieldName: string, maxIssues: number): 
 const lumoTools = {
   searchIssues: issueService.searchIssues.bind(issueService),
   getIssueDetails: issueService.getIssueDetails.bind(issueService),
+  getIssueTimeline: issueService.getIssueTimeline.bind(issueService),
   addComment: issueService.addComment.bind(issueService),
   yaki: buildYakiTools({ session, testrail: testRail }),
 };

@@ -43,6 +43,20 @@ export function applyAssigneeFilter(jql: string, user: string): string {
   return orderBy ? `${next} ${orderBy}` : next;
 }
 
+const SPRINT_CLAUSE_RE = /\s+AND\s+sprint\s+in\s+openSprints\(\)/gi;
+
+/**
+ * Board scope: add/remove `AND sprint in openSprints()` (before ORDER BY).
+ * Boards default to current-sprint-only — the board filter itself usually
+ * matches the whole backlog.
+ */
+export function applySprintOnly(jql: string, on: boolean): string {
+  const { body, orderBy } = splitOrderBy(jql);
+  let next = body.replace(SPRINT_CLAUSE_RE, '').trim();
+  if (on) next += ' AND sprint in openSprints()';
+  return orderBy ? `${next} ${orderBy}` : next;
+}
+
 /**
  * Quick-filter swap (§2): remove the previously appended quick clause
  * (tracked by the caller), then append `AND ({query})` before ORDER BY.

@@ -1,7 +1,11 @@
 // App shell (ui-parity §0.2): top bar + 220px sidebar + content host.
 
-import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { settings as settingsApi } from '../api/client';
+import { Modal } from './Modal';
+
+// Lazy — keeps the JQL editor + results grid out of the entry chunk.
+const FiltersView = lazy(() => import('../views/FiltersView').then((m) => ({ default: m.FiltersView })));
 import { formatClock, formatElapsed } from '../lib/format';
 import { boardHash } from '../lib/viewMyWorkJql';
 import { CONFLUENCE_ROUTES, navigate, ROUTES, TESTRAIL_ROUTES, routeStore, type RouteId } from '../router';
@@ -209,6 +213,7 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
   const [refreshRunning, setRefreshRunning] = useState(false);
   const pinned = useStore(pinnedBoardsStore);
   const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem('mc.sidebar') !== '0');
+  const [jqlOpen, setJqlOpen] = useState(false);
 
   const toggleSidebar = () =>
     setSidebarOpen((prev) => {
@@ -347,6 +352,14 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
           🔍
         </button>
 
+        <button
+          className="btn btn-icon"
+          title="JQL search — saved filters + free JQL, results from anywhere"
+          onClick={() => setJqlOpen(true)}
+        >
+          ⚡
+        </button>
+
         <NotificationBell />
 
         <button
@@ -458,6 +471,14 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
 
         <main style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: 16 }}>{children}</main>
       </div>
+
+      {jqlOpen && (
+        <Modal title="JQL search & saved filters" width={1150} maxHeight="90vh" onClose={() => setJqlOpen(false)}>
+          <Suspense fallback={<div className="muted">Loading…</div>}>
+            <FiltersView />
+          </Suspense>
+        </Modal>
+      )}
     </div>
   );
 }

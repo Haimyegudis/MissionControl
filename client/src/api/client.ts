@@ -12,6 +12,7 @@ import type {
   JiraDashboardSummary,
   JiraIssue,
   JiraIssueDetails,
+  JiraTimelineEvent,
   JiraQuickFilter,
   JiraSprint,
   JiraTransition,
@@ -124,6 +125,7 @@ export const issues = {
   search: (jql: string, startAt = 0, maxResults = 100) =>
     api.post<PagedResult<JiraIssue>>('/api/issues/search', { jql, startAt, maxResults }),
   details: (key: string) => api.get<JiraIssueDetails>(`/api/issues/${encodeURIComponent(key)}`),
+  timeline: (key: string) => api.get<JiraTimelineEvent[]>(`/api/issues/${encodeURIComponent(key)}/timeline`),
   transitions: (key: string) => api.get<JiraTransition[]>(`/api/issues/${encodeURIComponent(key)}/transitions`),
   transitionScreen: (key: string, id: string) =>
     api.get<JiraTransitionField[]>(`/api/issues/${encodeURIComponent(key)}/transitions/${encodeURIComponent(id)}/screen`),

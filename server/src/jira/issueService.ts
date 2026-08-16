@@ -34,6 +34,7 @@ import type {
   JiraComment,
   JiraIssue,
   JiraIssueDetails,
+  JiraTimelineEvent,
   JiraTransition,
   JiraTransitionField,
   JiraUser,
@@ -354,11 +355,17 @@ export class JiraIssueService {
   // -------------------------------------------------------------------------
 
   async getIssueDetails(issueKey: string): Promise<JiraIssueDetails> {
-    const resp = await this.fetchFn(
-      this.session,
-      `${this.prefix}/issue/${encodeURIComponent(issueKey)}`,
-      { query: { fields: '*all', expand: 'renderedFields,names,changelog' } },
-    );
+    // Transitions are an independent Jira call — run it alongside the main
+    // fetch instead of after it (was ~0.9s of serial latency per dialog).
+    // No `changelog` expand here: on old epics it is the slowest part of the
+    // request (~1.1s / 400KB+); the collapsed-by-default timeline loads it on
+    // demand via getIssueTimeline.
+    const [resp, transitions] = await Promise.all([
+      this.fetchFn(this.session, `${this.prefix}/issue/${encodeURIComponent(issueKey)}`, {
+        query: { fields: '*all', expand: 'renderedFields,names' },
+      }),
+      this.getTransitions(issueKey).catch(() => [] as JiraTransition[]),
+    ]);
     const fields: Record<string, unknown> = (resp?.fields ?? {}) as Record<string, unknown>;
     const names: Record<string, string> = (resp?.names ?? {}) as Record<string, string>;
 
@@ -374,13 +381,6 @@ export class JiraIssueService {
       : [];
     const worklogs = rawWorklogs.map((el) => mapWorklog(issueKey, el));
 
-    let transitions: JiraTransition[] = [];
-    try {
-      transitions = await this.getTransitions(issueKey);
-    } catch {
-      // transitions are best-effort in the details view
-    }
-
     const parent = extractParent(fields, names);
     const description =
       typeof fields.description === 'string'
@@ -391,9 +391,6 @@ export class JiraIssueService {
     const renderedDescription = resp?.renderedFields?.description;
 
     const baseUrl = (this.session.profile?.jiraBaseUrl ?? '').trim().replace(/\/+$/, '');
-    const histories: unknown[] = Array.isArray(resp?.changelog?.histories)
-      ? resp.changelog.histories
-      : [];
 
     return {
       issue,
@@ -409,8 +406,40 @@ export class JiraIssueService {
       parentKey: parent.parentKey,
       parentSummary: parent.parentSummary,
       parentFieldLabel: parent.parentFieldLabel,
-      timeline: buildTimeline({ histories, comments, worklogs }),
+      // Status-change events arrive lazily (getIssueTimeline); comment and
+      // worklog events are already known, so the collapsed header count is
+      // still meaningful.
+      timeline: buildTimeline({ histories: [], comments, worklogs }),
     };
+  }
+
+  /**
+   * Full activity timeline including changelog histories. Split from
+   * getIssueDetails because the `changelog` expand dominates the details
+   * latency on long-lived issues; the dialog fetches this only when the
+   * (collapsed-by-default) timeline section is expanded.
+   */
+  async getIssueTimeline(issueKey: string): Promise<JiraTimelineEvent[]> {
+    const resp = await this.fetchFn(
+      this.session,
+      `${this.prefix}/issue/${encodeURIComponent(issueKey)}`,
+      { query: { fields: 'comment,worklog', expand: 'changelog' } },
+    );
+    const fields: Record<string, unknown> = (resp?.fields ?? {}) as Record<string, unknown>;
+    const rawComments: any[] = Array.isArray((fields.comment as any)?.comments)
+      ? (fields.comment as any).comments
+      : [];
+    const rawWorklogs: any[] = Array.isArray((fields.worklog as any)?.worklogs)
+      ? (fields.worklog as any).worklogs
+      : [];
+    const histories: unknown[] = Array.isArray(resp?.changelog?.histories)
+      ? resp.changelog.histories
+      : [];
+    return buildTimeline({
+      histories,
+      comments: rawComments.map(mapComment),
+      worklogs: rawWorklogs.map((el) => mapWorklog(issueKey, el)),
+    });
   }
 
   /**

@@ -17,7 +17,7 @@ import { priorityColor, statusColor } from '../lib/colors';
 import { descriptionCss, prepareDescriptionHtml } from '../lib/descriptionHtml';
 import { formatDateTime, formatTimeSpan } from '../lib/format';
 import { getSettings, updateSettings } from '../stores/settings';
-import type { JiraIssueDetails, JiraTransition } from '../types';
+import type { JiraIssueDetails, JiraTimelineEvent, JiraTransition } from '../types';
 import { useDialogs } from './DialogHost';
 
 export interface IssueDetailsProps {
@@ -30,6 +30,20 @@ const DESC_SCOPE = 'jw-issue-desc';
 
 /** Shared across dialog mounts — the status list never changes mid-session. */
 let statusMapPromise: Promise<Record<string, string>> | null = null;
+
+/**
+ * Session-lived details cache (stale-while-revalidate): reopening an issue
+ * paints the last-known details instantly while a fresh fetch runs. Cap 30.
+ */
+const detailsCache = new Map<string, JiraIssueDetails>();
+function cacheDetails(key: string, details: JiraIssueDetails): void {
+  detailsCache.delete(key);
+  detailsCache.set(key, details);
+  if (detailsCache.size > 30) {
+    const oldest = detailsCache.keys().next().value;
+    if (oldest !== undefined) detailsCache.delete(oldest);
+  }
+}
 
 /** MRU (ui-parity §10.1): dedup newest-first, cap 10, mirror recentIssueKeys. */
 function recordMru(key: string, summary: string): void {
@@ -87,6 +101,10 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
   const [transitionStatus, setTransitionStatus] = useState('');
   const [commentText, setCommentText] = useState('');
   const [timelineOpen, setTimelineOpen] = useState(false);
+  // Full timeline (incl. status changes) loads lazily — the changelog expand
+  // is the slowest part of the details fetch, and the section starts closed.
+  const [fullTimeline, setFullTimeline] = useState<JiraTimelineEvent[] | null>(null);
+  const timelineReqRef = useRef<string | null>(null);
   const [trRuns, setTrRuns] = useState<TrRun[]>([]);
   const [trCases, setTrCases] = useState<
     Array<{ id: number; title: string; suiteId: number; suiteName: string; projectId: number }>
@@ -144,15 +162,24 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
 
   const load = useCallback(async (key: string): Promise<JiraIssueDetails | null> => {
     const seq = ++loadSeq.current;
-    setState((prev) => ({ ...prev, loading: true, error: null }));
+    // Stale-while-revalidate: paint the last-known details immediately and
+    // refresh in the background — reopening an issue feels instant.
+    const stale = detailsCache.get(key) ?? null;
+    setState({ loading: stale === null, error: null, details: stale });
     try {
       const details = await issuesApi.details(key);
       if (loadSeq.current !== seq) return null;
+      cacheDetails(key, details);
       setState({ loading: false, error: null, details });
       recordMru(details.issue.key, details.issue.summary);
       return details;
     } catch (err) {
       if (loadSeq.current !== seq) return null;
+      if (stale !== null) {
+        // Keep showing the stale copy rather than replacing it with an error.
+        setState({ loading: false, error: null, details: stale });
+        return stale;
+      }
       setState({ loading: false, error: err instanceof Error ? err.message : String(err), details: null });
       return null;
     }
@@ -162,8 +189,24 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
     setTransitionStatus('');
     setCommentStatus('');
     setCommentText('');
+    setTimelineOpen(false);
+    setFullTimeline(null);
+    timelineReqRef.current = null;
     void load(currentKey);
   }, [currentKey, load]);
+
+  const loadTimeline = useCallback(async () => {
+    if (timelineReqRef.current === currentKey) return; // already loaded/loading
+    timelineReqRef.current = currentKey;
+    try {
+      const events = await issuesApi.timeline(currentKey);
+      if (timelineReqRef.current === currentKey) setFullTimeline(events);
+    } catch {
+      // Fall back to the comment/worklog-only timeline already in details.
+      if (timelineReqRef.current === currentKey) setFullTimeline(null);
+      timelineReqRef.current = null;
+    }
+  }, [currentKey]);
 
   const details = state.details;
   const issue = details?.issue ?? null;
@@ -444,16 +487,25 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
               )}
             </SectionCard>
 
-            {details.timeline.length > 0 && (
-              <SectionCard title="Activity timeline">
+            <SectionCard title="Activity timeline">
                 <button
                   className="btn"
                   style={{ marginBottom: 6 }}
-                  onClick={() => setTimelineOpen((v) => !v)}
+                  onClick={() => {
+                    setTimelineOpen((v) => !v);
+                    void loadTimeline();
+                  }}
                 >
-                  {timelineOpen ? '▾ Hide' : `▸ Show ${details.timeline.length} events`}
+                  {timelineOpen
+                    ? '▾ Hide'
+                    : `▸ Show${fullTimeline ? ` ${fullTimeline.length}` : ''} events`}
                 </button>
-                {timelineOpen && details.timeline.map((ev, i) => (
+                {timelineOpen && fullTimeline === null && (
+                  <div className="muted" style={{ padding: '4px 0' }}>
+                    Loading history…
+                  </div>
+                )}
+                {timelineOpen && (fullTimeline ?? details.timeline).map((ev, i) => (
                   <div key={i} style={{ display: 'flex', gap: 10, padding: '4px 0', fontSize: 12.5 }}>
                     <div
                       style={{
@@ -472,8 +524,7 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
                     </div>
                   </div>
                 ))}
-              </SectionCard>
-            )}
+            </SectionCard>
 
             {(trRuns.length > 0 || trCases.length > 0) && (
               <SectionCard title="TestRail">

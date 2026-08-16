@@ -82,8 +82,7 @@ function JiraTab() {
         </Item>
         <Item name="Incidents">sticky incident filters with dashboard links.</Item>
         <Item name="Boards">sprint boards with Jira quick filters.</Item>
-        <Item name="Filters">saved JQL filters with an editor and preview.</Item>
-        <Item name="Recent Updates">change feed across your project.</Item>
+        <Item name="JQL search (⚡ in the top bar)">saved JQL filters with an editor and results preview — available from every page.</Item>
         <Item name="Time Spent">worklog reports by period/sprint/range, weekly timesheet, 13-week heatmap, CSV + PNG export.</Item>
         <Item name="Team">workload and logged hours per member of a saved team.</Item>
       </Section>

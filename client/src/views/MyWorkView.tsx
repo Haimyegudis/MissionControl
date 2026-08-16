@@ -31,6 +31,7 @@ import {
 import {
   applyAssigneeFilter,
   applyQuickFilter,
+  applySprintOnly,
   boardHash,
   boardModeJql,
   defaultMyWorkJql,
@@ -215,6 +216,9 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
   const [bulkAssign, setBulkAssign] = useState<{ keys: string[] } | null>(null);
   /** Days back for the "Updated" filter (0 = any time). */
   const [updatedWithin, setUpdatedWithin] = useState(0);
+  /** Board mode: scope to the open sprint (default on — boards show the
+   *  current sprint, not the whole backlog the board filter matches). */
+  const [sprintOnly, setSprintOnly] = useState(true);
 
   const { element: promptElement, prompt } = useTextPrompt();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -295,6 +299,10 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
           /* fall back to filter = N */
         }
       }
+      // Boards open scoped to the current sprint — the saved board filter
+      // matches the whole backlog, which is not what a sprint board shows.
+      setSprintOnly(true);
+      nextJql = applySprintOnly(nextJql, true);
       jqlRef.current = nextJql;
       setJql(nextJql);
       void load(nextJql);
@@ -350,6 +358,15 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
       setJql(next);
       void load(next);
     })();
+  };
+
+  // Board sprint scope toggle → JQL clause add/remove + reload.
+  const toggleSprintOnly = (on: boolean) => {
+    setSprintOnly(on);
+    const next = applySprintOnly(jqlRef.current, on);
+    jqlRef.current = next;
+    setJql(next);
+    void load(next);
   };
 
   // Quick-filter chip → clause swap reload (trimmed so add/remove match).
@@ -777,6 +794,29 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
         <>
           {/* Quick-filter chip row (kanban mode only) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            {board && (
+              <label
+                title="Only issues in the open sprint (uncheck for the board's full backlog)"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: 11.5,
+                  cursor: 'pointer',
+                  color: sprintOnly ? 'var(--accent-cyan)' : 'var(--muted)',
+                  border: '1px solid var(--border-soft)',
+                  borderRadius: 8,
+                  padding: '2px 8px',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={sprintOnly}
+                  onChange={(e) => toggleSprintOnly(e.target.checked)}
+                />
+                Current sprint only
+              </label>
+            )}
             <span className="muted" style={{ fontSize: 11, letterSpacing: '0.05em' }}>
               QUICK FILTERS:
             </span>

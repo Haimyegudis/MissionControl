@@ -23,6 +23,7 @@ import type {
   JiraDashboardSummary,
   JiraIssue,
   JiraIssueDetails,
+  JiraTimelineEvent,
   JiraTransition,
   JiraTransitionField,
   JiraUser,
@@ -47,6 +48,7 @@ export interface CredentialsDep {
 export interface IssuesDep {
   searchIssues(jql: string, startAt?: number, maxResults?: number): Promise<PagedResult<JiraIssue>>;
   getIssueDetails(issueKey: string): Promise<JiraIssueDetails>;
+  getIssueTimeline(issueKey: string): Promise<JiraTimelineEvent[]>;
   getTransitions(issueKey: string): Promise<JiraTransition[]>;
   getTransitionScreen(issueKey: string, transitionId: string): Promise<JiraTransitionField[]>;
   performTransition(issueKey: string, transitionId: string): Promise<void>;

@@ -392,9 +392,11 @@ describe('JiraIssueService details + epic enrichment', () => {
 
     const details = await svc.getIssueDetails('ISW-1');
     const detailsCall = calls.find((c) => c.path === 'rest/api/2/issue/ISW-1');
+    // No changelog expand — the timeline's history loads lazily via
+    // getIssueTimeline (changelog dominates details latency on old issues).
     expect(detailsCall!.opts.query).toEqual({
       fields: '*all',
-      expand: 'renderedFields,names,changelog',
+      expand: 'renderedFields,names',
     });
     expect(details.issue.epicKey).toBe('ISW-100');
     expect(details.issue.epicName).toBe('The Epic');

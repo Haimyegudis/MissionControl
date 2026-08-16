@@ -25,7 +25,8 @@ export const ROUTES: Array<{ id: RouteId; label: string }> = [
   { id: 'mywork', label: 'Backlog' },
   { id: 'incidents', label: 'Incidents' },
   { id: 'boards', label: 'Boards' },
-  { id: 'filters', label: 'Filters' },
+  // 'filters' removed from the nav — JQL saved filters live in the top-bar
+  // ⚡ dialog now (route stays reachable via #/filters).
   // 'recent' removed from the nav — the Backlog's "Updated" filter covers it
   // (route stays reachable via #/recent).
   { id: 'timelogged', label: 'Time Spent' },
@@ -54,6 +55,10 @@ const HASH_BY_TESTRAIL_ROUTE: Partial<Record<RouteId, string>> = {
 
 const VALID = new Set<string>(ROUTES.map((r) => r.id));
 VALID.add('confluence');
+// Routes removed from the nav stay deep-linkable.
+VALID.add('filters');
+VALID.add('recent');
+VALID.add('dashboards');
 const DEFAULT_ROUTE: RouteId = 'dashboard';
 
 /** Run id for the `#/testrail/run/:id` route (null elsewhere). */

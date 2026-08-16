@@ -107,6 +107,13 @@ export function issueRoutes(deps: AppDeps): Router {
   );
 
   router.get(
+    '/:key/timeline',
+    h(async (req, res) => {
+      res.json(await deps.issues.getIssueTimeline(req.params.key));
+    }),
+  );
+
+  router.get(
     '/:key/transitions',
     h(async (req, res) => {
       res.json(await deps.issues.getTransitions(req.params.key));

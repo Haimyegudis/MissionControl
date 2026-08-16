@@ -12,6 +12,7 @@ import {
 import {
   applyAssigneeFilter,
   applyQuickFilter,
+  applySprintOnly,
   boardHash,
   boardModeJql,
   defaultMyWorkJql,
@@ -115,6 +116,25 @@ describe('applyAssigneeFilter (§2 JQL rewrite)', () => {
 
   it('works on JQL without ORDER BY', () => {
     expect(applyAssigneeFilter('project = ISW', 'X')).toBe('project = ISW AND assignee = "X"');
+  });
+});
+
+describe('applySprintOnly (board current-sprint scope)', () => {
+  const base = 'project = ISW AND statusCategory != Done ORDER BY updated DESC';
+
+  it('appends the openSprints clause before ORDER BY', () => {
+    expect(applySprintOnly(base, true)).toBe(
+      'project = ISW AND statusCategory != Done AND sprint in openSprints() ORDER BY updated DESC',
+    );
+  });
+
+  it('removes the clause when toggled off', () => {
+    expect(applySprintOnly(applySprintOnly(base, true), false)).toBe(base);
+  });
+
+  it('is idempotent when already applied', () => {
+    const once = applySprintOnly(base, true);
+    expect(applySprintOnly(once, true)).toBe(once);
   });
 });
 
