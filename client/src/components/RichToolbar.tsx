@@ -2,7 +2,7 @@
 // (visible bold/lists/tables) to the focused editor via execCommand.
 // Serialization to TestRail markdown happens in RichTextArea.
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 export interface RichTarget {
   current: HTMLElement | null;
@@ -12,13 +12,34 @@ export function useRichTarget(): RichTarget {
   return useRef<HTMLElement | null>(null);
 }
 
-const TABLE_HTML =
-  '<table><thead><tr><th>Header 1</th><th>Header 2</th></tr></thead>' +
-  '<tbody><tr><td>Cell 1</td><td>Cell 2</td></tr><tr><td>Cell 3</td><td>Cell 4</td></tr></tbody></table><div><br></div>';
+function tableHtml(rows: number, cols: number): string {
+  const head =
+    '<thead><tr>' + Array.from({ length: cols }, (_, c) => `<th>Header ${c + 1}</th>`).join('') + '</tr></thead>';
+  const body =
+    '<tbody>' +
+    Array.from(
+      { length: Math.max(1, rows - 1) },
+      () => '<tr>' + Array.from({ length: cols }, () => '<td><br></td>').join('') + '</tr>',
+    ).join('') +
+    '</tbody>';
+  return `<table>${head}${body}</table><div><br></div>`;
+}
+
+/** Cell containing the caret (inside the given editor), if any. */
+function caretCell(editor: HTMLElement | null): HTMLTableCellElement | null {
+  const sel = window.getSelection();
+  const node = sel?.anchorNode;
+  if (!node || !editor || !editor.contains(node)) return null;
+  const el = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
+  return (el?.closest('td,th') as HTMLTableCellElement | null) ?? null;
+}
 
 export function RichToolbar({ target }: { target: RichTarget }) {
   // Selection inside the editor, captured before a <select> steals focus.
   const savedRange = useRef<Range | null>(null);
+  const [tableOpen, setTableOpen] = useState(false);
+  const [tRows, setTRows] = useState(3);
+  const [tCols, setTCols] = useState(3);
 
   const saveSelection = () => {
     const sel = window.getSelection();
@@ -55,13 +76,67 @@ export function RichToolbar({ target }: { target: RichTarget }) {
     if (url) exec('createLink', url);
   };
 
+  const notifyInput = () => target.current?.dispatchEvent(new Event('input', { bubbles: true }));
+
+  /** Run a structural table op on the cell the caret is in. */
+  const withCell = (fn: (cell: HTMLTableCellElement, row: HTMLTableRowElement, table: HTMLTableElement) => void) => {
+    const cell = caretCell(target.current);
+    const row = cell?.parentElement as HTMLTableRowElement | null;
+    const table = cell?.closest('table') as HTMLTableElement | null;
+    if (!cell || !row || !table) return;
+    fn(cell, row, table);
+    notifyInput();
+  };
+
+  const addRow = () =>
+    withCell((_cell, row, table) => {
+      const cols = row.cells.length;
+      const tr = document.createElement('tr');
+      for (let i = 0; i < cols; i++) {
+        const td = document.createElement('td');
+        td.innerHTML = '<br>';
+        tr.appendChild(td);
+      }
+      if (row.parentElement?.tagName === 'THEAD') {
+        const tbody = table.querySelector('tbody') ?? table.appendChild(document.createElement('tbody'));
+        tbody.insertBefore(tr, tbody.firstChild);
+      } else {
+        row.after(tr);
+      }
+    });
+
+  const addCol = () =>
+    withCell((cell, _row, table) => {
+      const idx = cell.cellIndex;
+      for (const tr of table.querySelectorAll('tr')) {
+        const ref = tr.cells[Math.min(idx, tr.cells.length - 1)];
+        const isHead = ref?.tagName === 'TH';
+        const neu = document.createElement(isHead ? 'th' : 'td');
+        neu.innerHTML = isHead ? 'Header' : '<br>';
+        ref ? ref.after(neu) : tr.appendChild(neu);
+      }
+    });
+
+  const delRow = () =>
+    withCell((...args) => {
+      const [, row, table] = args;
+      row.remove();
+      if (table.querySelectorAll('tr').length === 0) table.remove();
+    });
+
+  const delCol = () =>
+    withCell((cell, _row, table) => {
+      const idx = cell.cellIndex;
+      for (const tr of table.querySelectorAll('tr')) tr.cells[idx]?.remove();
+      if ([...table.querySelectorAll('tr')].every((tr) => tr.cells.length === 0)) table.remove();
+    });
+
   const buttons: Array<{ label: string; title: string; run: () => void; style?: React.CSSProperties }> = [
     { label: 'B', title: 'Bold', run: () => exec('bold'), style: { fontWeight: 800 } },
     { label: 'I', title: 'Italic', run: () => exec('italic'), style: { fontStyle: 'italic' } },
     { label: '</>', title: 'Inline code', run: insertCode },
     { label: '1.', title: 'Numbered list — Enter adds the next number', run: () => exec('insertOrderedList') },
     { label: '•', title: 'Bullet list', run: () => exec('insertUnorderedList') },
-    { label: '⊞', title: 'Insert table', run: () => exec('insertHTML', TABLE_HTML) },
     { label: '🔗', title: 'Link', run: insertLink },
     { label: '⌫fmt', title: 'Clear formatting', run: () => exec('removeFormat') },
   ];
@@ -82,6 +157,94 @@ export function RichToolbar({ target }: { target: RichTarget }) {
           {b.label}
         </button>
       ))}
+      <span style={{ position: 'relative', display: 'inline-flex' }}>
+        <button
+          type="button"
+          className="btn"
+          title="Table — insert any size, add/remove rows and columns"
+          style={{ padding: '2px 9px', fontSize: 12, minWidth: 30 }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            saveSelection();
+          }}
+          onClick={() => setTableOpen((v) => !v)}
+        >
+          ⊞ ▾
+        </button>
+        {tableOpen ? (
+          <div
+            className="card card-high"
+            style={{
+              position: 'absolute',
+              top: '110%',
+              left: 0,
+              zIndex: 50,
+              padding: 10,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+              width: 230,
+            }}
+          >
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12 }}>
+              <input
+                type="number"
+                min={1}
+                max={30}
+                value={tRows}
+                onChange={(e) => setTRows(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+                style={{ width: 56, padding: '3px 6px' }}
+              />
+              ×
+              <input
+                type="number"
+                min={1}
+                max={12}
+                value={tCols}
+                onChange={(e) => setTCols(Math.max(1, Math.min(12, Number(e.target.value) || 1)))}
+                style={{ width: 56, padding: '3px 6px' }}
+              />
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ padding: '2px 10px', fontSize: 12 }}
+                onClick={() => {
+                  setTableOpen(false);
+                  exec('insertHTML', tableHtml(tRows, tCols));
+                }}
+              >
+                Insert
+              </button>
+            </div>
+            <div className="muted" style={{ fontSize: 10.5 }}>
+              rows × columns (first row is the header)
+            </div>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {[
+                { label: '+ row', title: 'Add row below the caret', run: addRow },
+                { label: '+ col', title: 'Add column right of the caret', run: addCol },
+                { label: '− row', title: 'Delete the caret row', run: delRow },
+                { label: '− col', title: 'Delete the caret column', run: delCol },
+              ].map((b) => (
+                <button
+                  key={b.label}
+                  type="button"
+                  className="btn"
+                  title={b.title}
+                  style={{ padding: '2px 8px', fontSize: 11.5 }}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={b.run}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+            <div className="muted" style={{ fontSize: 10.5 }}>
+              Click inside a table cell first, then use + / −
+            </div>
+          </div>
+        ) : null}
+      </span>
       <select
         title="Text color — visible here while editing; TestRail stores plain text"
         defaultValue=""
