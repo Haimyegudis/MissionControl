@@ -191,7 +191,29 @@ $addon = Join-Path $App 'server\node_modules\better-sqlite3\build\Release\better
 if (-not (Test-Path $addon)) { Fail 'better_sqlite3.node native addon missing from payload' }
 Write-Host "  OK: native addon present ($addon)"
 
-# --- 4. zip the app ---------------------------------------------------------
+# --- 4a. preferred: single-file installer via Inno Setup 6 -------------------
+$iscc = @(
+  (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe'),
+  'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+) | Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($iscc) {
+  Step "Building single-file MissionControlSetup.exe with Inno Setup ($iscc)"
+  New-Item -ItemType Directory -Force -Path $Out | Out-Null
+  foreach ($stale in 'MissionControlSetup.exe', 'MissionControlSetup.cmd', 'MissionControl.zip', 'install.cmd') {
+    $p = Join-Path $Out $stale
+    if (Test-Path $p) { Remove-Item $p -Force }
+  }
+  & $iscc "/DPayloadApp=$App" "/O$Out" (Join-Path $Assets 'mission-control.iss') | Select-Object -Last 4
+  if ($LASTEXITCODE -ne 0) { Fail "ISCC exited with $LASTEXITCODE" }
+  $innoExe = Join-Path $Out 'MissionControlSetup.exe'
+  if (-not (Test-Path $innoExe)) { Fail 'Inno build reported success but exe is missing' }
+  Step 'Done'
+  Write-Host ("Artifact: {0} ({1} MB)" -f $innoExe, [Math]::Round((Get-Item $innoExe).Length / 1MB, 1))
+  Write-Host "Staged payload: $Payload"
+  exit 0
+}
+
+# --- 4. zip the app (fallback when Inno Setup is unavailable) ----------------
 Step 'Zipping payload (MissionControl.zip)'
 $zip = Join-Path $Stage 'MissionControl.zip'
 if (Test-Path $zip) { Remove-Item $zip -Force }
