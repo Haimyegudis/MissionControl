@@ -84,20 +84,18 @@ describe('RecentUpdatesView (§6)', () => {
   });
 });
 
-describe('TimeLoggedView (§7)', () => {
-  it('renders toolbar, expanders, timesheet and sticky total', () => {
+describe('TimeLoggedView (redesigned)', () => {
+  it('renders toolbar chips, hero summary, timesheet and heatmap', () => {
     const html = renderToString(<TimeLoggedView />);
     expect(html).toContain('Time Spent');
-    expect(html).toContain('Export to Excel/PNG');
-    expect(html).toContain('Export PDF');
-    expect(html).toContain('Log work');
-    expect(html).toContain('Logged vs Estimated chart');
-    expect(html).toContain('Logging per day in sprint');
-    expect(html).toContain('Activity heatmap (last 13 weeks)');
+    expect(html).toContain('⬇ CSV');
+    expect(html).toContain('⬇ PDF');
+    expect(html).toContain('Total logged');
+    expect(html).toContain('Weekly timesheet');
+    expect(html).toContain('Activity — last 13 weeks');
     expect(html).toContain('This week');
-    expect(html).toContain('Total Work Logged:');
-    // All six periods offered.
-    for (const p of ['Today', 'Yesterday', 'ThisWeek', 'PreviousWeek', 'ThisMonth', 'CustomRange']) {
+    // All six periods offered as chips.
+    for (const p of ['Today', 'Yesterday', 'This week', 'Last week', 'This month', 'Custom…']) {
       expect(html).toContain(p);
     }
   });

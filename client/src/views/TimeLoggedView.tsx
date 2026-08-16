@@ -1,16 +1,18 @@
-// Time Spent view (ui-parity-contract.md §7): toolbar exports (CSV + PNG,
-// PDF via window.print of a print-styled section — accepted web equivalent of
-// the WPF QuestPDF export), Log work expander, three chart expanders
-// (logged-vs-estimated, per-day sprint stack, 13-week heatmap fed from
-// /api/timelogged/range over the last 91 days), weekly timesheet card, issues
-// grid 'TimeLogged.Issues', sticky footer total, period selector + user
-// picker. Refresh: session change ONLY — no scheduler tick.
+// Time Spent view — redesigned for at-a-glance clarity, zero duplication:
+//   · period chips + user picker + ONE export menu (CSV / PDF)
+//   · hero strip: total logged for the period + logged-hours-per-STATUS chips
+//     (every task's state visible instantly)
+//   · one issues panel: status pill, bold logged-this-period, and an inline
+//     Estimated↔Logged progress bar per row (replaces the old separate
+//     "Logged vs Estimated" chart) + per-row Log work button (replaces the
+//     old select-then-expander flow)
+//   · weekly timesheet (unique per-day × per-issue) + 13-week heatmap
+// The old sprint-per-day chart duplicated timesheet+heatmap and is gone.
+// Refresh: session change ONLY — no scheduler tick.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { metadata as metadataApi, timelogged as timeloggedApi } from '../api/client';
-import { Bars } from '../charts/Bars';
 import { Heatmap } from '../charts/Heatmap';
-import { StackedBarsH } from '../charts/StackedBarsH';
 import { DataGrid } from '../components/DataGrid';
 import type { GridColumn } from '../components/DataGrid';
 import { UserSearchPicker } from '../components/UserSearchPicker';
@@ -23,8 +25,6 @@ import { addDays, formatDMmmYy, hoursDisplay, startOfWeekSunday, ymd } from '../
 import {
   ISSUES_CSV_HEADERS,
   aggregateDailyHours,
-  buildLoggedVsEstimated,
-  buildSprintDailyChart,
   buildTimesheet,
   dailyCsvRows,
   issuesCsvRow,
@@ -38,57 +38,87 @@ import type { JiraIssue, TimeLoggedReport } from '../types';
 const PERIODS = [
   { id: 'today', label: 'Today' },
   { id: 'yesterday', label: 'Yesterday' },
-  { id: 'thisWeek', label: 'ThisWeek' },
-  { id: 'previousWeek', label: 'PreviousWeek' },
-  { id: 'thisMonth', label: 'ThisMonth' },
-  { id: 'customRange', label: 'CustomRange' },
+  { id: 'thisWeek', label: 'This week' },
+  { id: 'previousWeek', label: 'Last week' },
+  { id: 'thisMonth', label: 'This month' },
+  { id: 'customRange', label: 'Custom…' },
 ] as const;
 
 type PeriodId = (typeof PERIODS)[number]['id'];
 
-/** Serialize the first <svg> under `container` and download it as a PNG (best-effort). */
-async function exportSvgPng(container: HTMLElement | null, filename: string, width = 1400, height = 700): Promise<void> {
-  const svg = container?.querySelector('svg');
-  if (!svg) return;
-  try {
-    const clone = svg.cloneNode(true) as SVGSVGElement;
-    clone.setAttribute('width', String(width));
-    clone.setAttribute('height', String(height));
-    const xml = new XMLSerializer().serializeToString(clone);
-    const url = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml;charset=utf-8' }));
-    try {
-      const img = new Image();
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error('SVG rasterize failed'));
-        img.src = url;
-      });
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0, width, height);
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-      if (!blob) return;
-      const pngUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = pngUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(pngUrl);
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  } catch (err) {
-    // Theme CSS variables inside the SVG may not resolve off-document; the
-    // CSVs are the canonical export — but tell the user instead of a no-op.
-    pushToast({ title: 'PNG export failed', body: errText(err), severity: 'error' });
+/** Hours logged per status across the period — the hero strip's chips. */
+export function loggedByStatus(issues: JiraIssue[]): Array<{ status: string; seconds: number; count: number }> {
+  const map = new Map<string, { seconds: number; count: number }>();
+  for (const i of issues) {
+    const status = i.status || '—';
+    const entry = map.get(status) ?? { seconds: 0, count: 0 };
+    entry.seconds += i.workLoggedForPeriod ?? 0;
+    entry.count += 1;
+    map.set(status, entry);
   }
+  return [...map.entries()]
+    .map(([status, v]) => ({ status, ...v }))
+    .sort((a, b) => b.seconds - a.seconds);
+}
+
+/** Inline Estimated↔Logged bar: green fill while under, red overflow beyond. */
+function EstBar({ issue }: { issue: JiraIssue }) {
+  const est = issue.originalEstimate ?? 0;
+  const logged = issue.timeSpent ?? 0;
+  if (est <= 0 && logged <= 0) return <span className="muted">—</span>;
+  const scale = Math.max(est, logged, 1);
+  const estPct = (est / scale) * 100;
+  const underPct = (Math.min(logged, est) / scale) * 100;
+  const overPct = logged > est ? ((logged - est) / scale) * 100 : 0;
+  return (
+    <div
+      title={`Estimated ${formatTimeSpan(est)} · Logged ${formatTimeSpan(logged)}${logged > est ? ' — OVER estimate' : ''}`}
+      style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+    >
+      <div style={{ position: 'relative', flex: 1, height: 10, borderRadius: 5, background: 'var(--border-soft)', overflow: 'hidden' }}>
+        {est > 0 ? (
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: `${estPct}%`,
+              borderRight: '2px solid var(--border-strong)',
+            }}
+          />
+        ) : null}
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${underPct}%`, background: 'var(--accent-green)', opacity: 0.85 }} />
+        {overPct > 0 ? (
+          <div style={{ position: 'absolute', left: `${underPct}%`, top: 0, bottom: 0, width: `${overPct}%`, background: 'var(--accent-red)' }} />
+        ) : null}
+      </div>
+      <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', color: logged > est ? 'var(--accent-red)' : 'var(--muted)' }}>
+        {est > 0 ? `${Math.round((logged / est) * 100)}%` : '—'}
+      </span>
+    </div>
+  );
+}
+
+function StatusPill({ status }: { status: string | null | undefined }) {
+  const color = statusColor(status);
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        padding: '1px 9px',
+        borderRadius: 999,
+        fontSize: 11.5,
+        fontWeight: 600,
+        color,
+        border: `1px solid ${color}`,
+        background: `color-mix(in srgb, ${color} 10%, transparent)`,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {status ?? '—'}
+    </span>
+  );
 }
 
 export function TimeLoggedView() {
@@ -104,40 +134,14 @@ export function TimeLoggedView() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const [selectedIssue, setSelectedIssue] = useState<JiraIssue | null>(null);
-  const [logStatus, setLogStatus] = useState('');
-
-  const [availableSprints, setAvailableSprints] = useState<string[]>([]);
-  const [selectedSprint, setSelectedSprint] = useState('');
-  const [sprintReport, setSprintReport] = useState<TimeLoggedReport | null>(null);
   const [heatmapHours, setHeatmapHours] = useState<Record<string, number>>({});
-
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeekSunday(new Date()));
   const [weekReport, setWeekReport] = useState<TimeLoggedReport | null>(null);
 
-  const chart1Ref = useRef<HTMLDivElement>(null);
-  const chart2Ref = useRef<HTMLDivElement>(null);
   const loadSeq = useRef(0);
-
-  const loadSprint = async (name: string) => {
-    try {
-      const r = await timeloggedApi.sprint(name);
-      setSprintReport(r);
-      setAvailableSprints((prev) => {
-        if (prev.length === 0 && r.availableSprints.length > 0) {
-          if (!name) setSelectedSprint(r.availableSprints[0]);
-          return r.availableSprints;
-        }
-        return prev;
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  };
 
   const loadHeatmap = async () => {
     try {
-      // §7 (JiraWeb): 13-week heatmap from the range report over the last 91 days.
       const today = new Date();
       const r = await timeloggedApi.range(ymd(addDays(today, -91)), ymd(addDays(today, 1)));
       setHeatmapHours(aggregateDailyHours(r.dailyByIssue));
@@ -166,9 +170,6 @@ export function TimeLoggedView() {
         opts.from = customFrom;
         opts.to = customTo;
       }
-      // ?user= makes the server swap in the §7 JQL verbatim:
-      // project = {X} AND sprint in openSprints() AND assignee = "{user}"
-      //   AND issuetype != Incident ORDER BY updated DESC
       if (userFilter.trim()) opts.user = userFilter;
       const r = await timeloggedApi.report(period, opts);
       if (seq !== loadSeq.current) return;
@@ -187,12 +188,11 @@ export function TimeLoggedView() {
       if (seq !== loadSeq.current) return;
       setUsers([...roster].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })));
 
-      void loadSprint(selectedSprint);
       void loadHeatmap();
       void loadTimesheet(weekStart);
     } catch (err) {
       if (seq !== loadSeq.current) return;
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errText(err));
     } finally {
       if (seq === loadSeq.current) setBusy(false);
     }
@@ -201,43 +201,27 @@ export function TimeLoggedView() {
   const loadRef = useRef(load);
   loadRef.current = load;
 
-  // §7: session change reload ONLY (no scheduler tick); period/user reload too.
   useEffect(() => {
     if (connected) void loadRef.current();
   }, [connected, period, customFrom, customTo, userFilter]);
-
-  const onSprintChange = (name: string) => {
-    setSelectedSprint(name);
-    void loadSprint(name);
-  };
 
   const changeWeek = (start: Date) => {
     setWeekStart(start);
     void loadTimesheet(start);
   };
 
-  // Derived chart/timesheet data.
-  const lveGroups = useMemo(() => buildLoggedVsEstimated(report?.issues ?? []), [report]);
-  const sprintChart = useMemo(() => buildSprintDailyChart(sprintReport?.dailyByIssue ?? []), [sprintReport]);
   const timesheet = useMemo(
     () => (weekReport ? buildTimesheet(weekStart, weekReport) : null),
     [weekReport, weekStart],
   );
   const weekHeaders = useMemo(() => timesheetHeaders(weekStart), [weekStart]);
+  const statusChips = useMemo(() => loggedByStatus(report?.issues ?? []), [report]);
+  const loggedIssues = useMemo(
+    () => (report?.issues ?? []).filter((i) => (i.workLoggedForPeriod ?? 0) > 0).length,
+    [report],
+  );
 
-  const openLogWork = () => {
-    if (!selectedIssue) return;
-    const key = selectedIssue.key;
-    dialogs.openLogWork(key, {
-      remainingEstimate: selectedIssue.remainingEstimate,
-      onLogged: () => {
-        setLogStatus(`Logged work on ${key}.`);
-        void loadRef.current();
-      },
-    });
-  };
-
-  const exportExcelPng = async () => {
+  const exportCsv = () => {
     if (!report) return;
     try {
       const now = new Date();
@@ -260,16 +244,12 @@ export function TimeLoggedView() {
           dailyCsvRows(heatmapHours),
         ),
       );
-      await exportSvgPng(chart1Ref.current, `${stem}-logged-vs-estimated.png`);
-      await exportSvgPng(chart2Ref.current, `${stem}-daily-chart.png`);
-      pushToast({ title: 'Export complete', body: `${stem}-issues.csv, ${stem}-daily.csv` });
+      pushToast({ title: 'Export complete', body: `${stem}-issues.csv, ${stem}-daily.csv`, severity: 'success' });
     } catch (err) {
-      pushToast({ title: 'Export failed', body: err instanceof Error ? err.message : String(err) });
+      pushToast({ title: 'Export failed', body: errText(err), severity: 'error' });
     }
   };
 
-  // PDF export = window.print() over the print-styled section below — the
-  // accepted web equivalent of the WPF QuestPDF A4 export (§7).
   const exportPdf = () => window.print();
 
   const columns: GridColumn<JiraIssue>[] = useMemo(
@@ -277,44 +257,65 @@ export function TimeLoggedView() {
       {
         key: 'key',
         header: 'Key',
-        width: 100,
+        width: 96,
         render: (i) => <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>{i.key}</span>,
       },
-      { key: 'summary', header: 'Summary', width: 380 },
+      { key: 'summary', header: 'Summary', width: 330 },
       {
         key: 'status',
         header: 'Status',
-        width: 120,
-        render: (i) => <span style={{ color: statusColor(i.status) }}>{i.status}</span>,
+        width: 130,
+        render: (i) => <StatusPill status={i.status} />,
       },
-      { key: 'sprint', header: 'Sprint', width: 160, format: (i) => i.sprint ?? '' },
       {
         key: 'workLoggedForPeriod',
-        header: 'Work Logged',
-        width: 120,
-        format: (i) => formatTimeSpan(i.workLoggedForPeriod),
+        header: 'Logged (period)',
+        width: 116,
+        render: (i) => (
+          <b style={{ color: (i.workLoggedForPeriod ?? 0) > 0 ? 'var(--accent-green)' : 'var(--muted)' }}>
+            {formatTimeSpan(i.workLoggedForPeriod)}
+          </b>
+        ),
         sortValue: (i) => i.workLoggedForPeriod ?? 0,
       },
       {
-        key: 'timeSpent',
-        header: 'Total Spent',
-        width: 120,
-        format: (i) => formatTimeSpan(i.timeSpent),
-        sortValue: (i) => i.timeSpent ?? 0,
-      },
-      {
-        key: 'originalEstimate',
-        header: 'Estimated',
-        width: 120,
-        format: (i) => formatTimeSpan(i.originalEstimate),
-        sortValue: (i) => i.originalEstimate ?? 0,
+        key: 'estbar',
+        header: 'Estimated ↔ Logged',
+        width: 190,
+        render: (i) => <EstBar issue={i} />,
+        sortValue: (i) => ((i.originalEstimate ?? 0) > 0 ? (i.timeSpent ?? 0) / (i.originalEstimate ?? 1) : 0),
+        format: (i) => `${formatTimeSpan(i.timeSpent)} / ${formatTimeSpan(i.originalEstimate)}`,
       },
       {
         key: 'remainingEstimate',
         header: 'Remaining',
-        width: 120,
+        width: 100,
         format: (i) => formatTimeSpan(i.remainingEstimate),
         sortValue: (i) => i.remainingEstimate ?? 0,
+      },
+      { key: 'sprint', header: 'Sprint', width: 150, format: (i) => i.sprint ?? '' },
+      {
+        key: 'log',
+        header: '',
+        width: 88,
+        format: () => '',
+        sortValue: () => null,
+        render: (i) => (
+          <button
+            className="btn"
+            style={{ padding: '2px 10px', fontSize: 11.5 }}
+            title={`Log work on ${i.key} (format: 1h 30m)`}
+            onClick={(e) => {
+              e.stopPropagation();
+              dialogs.openLogWork(i.key, {
+                remainingEstimate: i.remainingEstimate,
+                onLogged: () => void loadRef.current(),
+              });
+            }}
+          >
+            + Log
+          </button>
+        ),
       },
     ],
     [],
@@ -329,7 +330,7 @@ export function TimeLoggedView() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16, paddingBottom: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
       <style>{`
         .tl-print { position: absolute; left: -99999px; top: 0; }
         @media print {
@@ -339,17 +340,29 @@ export function TimeLoggedView() {
           .tl-print table { border-collapse: collapse; width: 100%; font-size: 11px; }
           .tl-print th, .tl-print td { border: 1px solid #999; padding: 3px 6px; text-align: left; }
         }
+        .tl-chip { transition: transform 120ms ease; }
+        .tl-chip:hover { transform: translateY(-1px); }
       `}</style>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <h2 style={{ fontSize: 18 }}>Time Spent</h2>
-        <select value={period} onChange={(e) => setPeriod(e.target.value as PeriodId)}>
+      {/* ------------------------------------------------ toolbar ---------- */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <h2 style={{ fontSize: 18, fontFamily: 'var(--font-display)' }}>Time Spent</h2>
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           {PERIODS.map((p) => (
-            <option key={p.id} value={p.id}>
+            <button
+              key={p.id}
+              className="btn"
+              onClick={() => setPeriod(p.id)}
+              style={
+                period === p.id
+                  ? { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)', fontWeight: 700 }
+                  : undefined
+              }
+            >
               {p.label}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
         {period === 'customRange' ? (
           <>
             <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
@@ -359,99 +372,91 @@ export function TimeLoggedView() {
         <UserSearchPicker users={users} value={userFilter} onCommit={setUserFilter} />
         {busy ? <span className="accent-cyan">…</span> : null}
         <div style={{ flex: 1 }} />
-        <button className="btn" onClick={() => void exportExcelPng()} disabled={!report}>
-          Export to Excel/PNG
+        <button className="btn" onClick={exportCsv} disabled={!report}>
+          ⬇ CSV
         </button>
         <button className="btn" onClick={exportPdf} disabled={!report}>
-          Export PDF
+          ⬇ PDF
         </button>
       </div>
 
       {error ? <div style={{ color: 'var(--accent-red)', fontSize: 12.5 }}>{error}</div> : null}
 
-      <details className="card" style={{ padding: '10px 14px' }}>
-        <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Log work</summary>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingTop: 10 }}>
-          <span>
-            Selected: <b style={{ color: 'var(--accent-cyan)' }}>{selectedIssue?.key ?? '—'}</b>
-            {'  '}Epic: <b>{selectedIssue?.epicKey ?? '—'}</b>
-          </span>
-          <button
-            className="btn btn-primary"
-            onClick={openLogWork}
-            disabled={!selectedIssue}
-            title="Time format: 1h 30m, 45m, 2h"
-          >
-            Log work
-          </button>
-          {logStatus ? <span style={{ color: 'var(--accent-green)' }}>{logStatus}</span> : null}
+      {/* ------------------------------------------- hero summary ---------- */}
+      <div
+        className="card"
+        style={{
+          padding: '16px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 24,
+          flexWrap: 'wrap',
+        }}
+      >
+        <div>
+          <div className="muted" style={{ fontSize: 10.5, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            Total logged · {PERIODS.find((p) => p.id === period)?.label}
+          </div>
+          <div style={{ fontSize: 30, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--accent-green)', lineHeight: 1.15 }}>
+            {formatTimeSpan(report?.total ?? 0)}
+          </div>
+          <div className="muted" style={{ fontSize: 11.5 }}>
+            across {loggedIssues} issue{loggedIssues === 1 ? '' : 's'}
+          </div>
         </div>
-      </details>
-
-      <div className="card" style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <details>
-          <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Logged vs Estimated chart</summary>
-          <div ref={chart1Ref} style={{ paddingTop: 10 }}>
-            <Bars
-              title="Sprint time per issue (hours)"
-              height={220}
-              groups={lveGroups.map((g) => ({
-                label: g.key,
-                values: [g.estimatedHours, g.loggedHours],
-                colors: [undefined, g.over ? '#EF4444' : undefined],
-                tooltip: g.tooltip,
-              }))}
-              series={[
-                { name: 'Estimated', color: '#4F46E5' },
-                { name: 'Logged (under)', color: '#10B981' },
-              ]}
-              extraLegend={[{ name: 'Logged (over)', color: '#EF4444' }]}
-              valueSuffix="h"
-            />
-          </div>
-        </details>
-        <details>
-          <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Logging per day in sprint</summary>
-          <div style={{ paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <select value={selectedSprint} onChange={(e) => onSprintChange(e.target.value)} style={{ maxWidth: 360 }}>
-              {availableSprints.length === 0 ? <option value="">(active sprint)</option> : null}
-              {availableSprints.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <div ref={chart2Ref}>
-              <StackedBarsH
-                title="Logging per day (sprint)"
-                rows={sprintChart.rows}
-                series={sprintChart.series}
-                valueSuffix="h"
-              />
-            </div>
-          </div>
-        </details>
-        <details>
-          <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Activity heatmap (last 13 weeks)</summary>
-          <div style={{ paddingTop: 10 }}>
-            <Heatmap hoursByDay={heatmapHours} />
-          </div>
-        </details>
+        <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--border-soft)' }} />
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flex: 1 }}>
+          {statusChips.length === 0 ? (
+            <span className="muted" style={{ fontSize: 12.5 }}>
+              Nothing logged in this period yet.
+            </span>
+          ) : (
+            statusChips.map((c) => (
+              <div
+                key={c.status}
+                className="tl-chip"
+                title={`${c.count} issue(s) in "${c.status}" — ${formatTimeSpan(c.seconds)} logged in this period`}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                  padding: '8px 14px',
+                  borderRadius: 10,
+                  border: `1px solid ${statusColor(c.status)}`,
+                  background: `color-mix(in srgb, ${statusColor(c.status)} 8%, transparent)`,
+                  minWidth: 110,
+                }}
+              >
+                <span style={{ fontSize: 11, fontWeight: 700, color: statusColor(c.status) }}>{c.status}</span>
+                <span style={{ fontSize: 15, fontWeight: 700 }}>{formatTimeSpan(c.seconds)}</span>
+                <span className="muted" style={{ fontSize: 10.5 }}>
+                  {c.count} issue{c.count === 1 ? '' : 's'}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
+      {/* ------------------------------------------- issues panel ---------- */}
+      <DataGrid<JiraIssue>
+        stateKey="TimeLogged.Issues"
+        columns={columns}
+        rows={report?.issues ?? []}
+        rowKey={(i) => i.key}
+        multiSelect
+        onRowDoubleClick={(i) => dialogs.openIssueDetails(i.key)}
+        emptyText="No work logged in this period."
+      />
+
+      {/* -------------------------------------------- timesheet ------------ */}
       <div className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontWeight: 700, fontSize: 13.5 }}>Weekly timesheet</span>
           <button className="btn btn-icon" onClick={() => changeWeek(addDays(weekStart, -7))} title="Previous week">
             ◀
           </button>
-          <span
-            style={{
-              padding: '4px 14px',
-              borderRadius: 999,
-              border: '1px solid var(--border-strong)',
-              fontSize: 12.5,
-            }}
-          >
+          <span style={{ padding: '4px 14px', borderRadius: 999, border: '1px solid var(--border-strong)', fontSize: 12.5 }}>
             {formatDMmmYy(weekStart)} – {formatDMmmYy(addDays(weekStart, 6))}
           </span>
           <button className="btn btn-icon" onClick={() => changeWeek(addDays(weekStart, 7))} title="Next week">
@@ -462,7 +467,7 @@ export function TimeLoggedView() {
           </button>
           <div style={{ flex: 1 }} />
           <span>
-            Total:{' '}
+            Week total:{' '}
             <b style={{ color: 'var(--accent-green)' }}>
               {formatTimeSpan(Math.round((timesheet?.weeklyTotalHours ?? 0) * 3600))}
             </b>
@@ -525,29 +530,10 @@ export function TimeLoggedView() {
         </div>
       </div>
 
-      <DataGrid<JiraIssue>
-        stateKey="TimeLogged.Issues"
-        columns={columns}
-        rows={report?.issues ?? []}
-        rowKey={(i) => i.key}
-        multiSelect
-        onSelectionChange={(rows) => setSelectedIssue(rows[0] ?? null)}
-        onRowDoubleClick={(i) => dialogs.openIssueDetails(i.key)}
-        emptyText="No work logged in this period."
-      />
-
-      <div
-        style={{
-          position: 'sticky',
-          bottom: 0,
-          padding: '10px 14px',
-          background: 'var(--bg-panel-high)',
-          borderTop: '1px solid var(--border-strong)',
-          margin: '0 -16px',
-        }}
-      >
-        Total Work Logged:{' '}
-        <b style={{ color: 'var(--accent-green)' }}>{formatTimeSpan(report?.total ?? 0)}</b>
+      {/* --------------------------------------------- heatmap ------------- */}
+      <div className="card" style={{ padding: 14 }}>
+        <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 8 }}>Activity — last 13 weeks</div>
+        <Heatmap hoursByDay={heatmapHours} />
       </div>
 
       {/* Print-only section for the PDF export (window.print). */}
@@ -561,6 +547,7 @@ export function TimeLoggedView() {
             <tr>
               <th>Key</th>
               <th>Summary</th>
+              <th>Status</th>
               <th>Logged</th>
               <th>Total</th>
               <th>Est</th>
@@ -572,6 +559,7 @@ export function TimeLoggedView() {
               <tr key={i.key}>
                 <td>{i.key}</td>
                 <td>{i.summary}</td>
+                <td>{i.status}</td>
                 <td>{issuesCsvRow(i)[4]}</td>
                 <td>{issuesCsvRow(i)[5]}</td>
                 <td>{issuesCsvRow(i)[6]}</td>
