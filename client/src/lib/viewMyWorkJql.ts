@@ -55,8 +55,11 @@ export function applyQuickFilter(
 ): string {
   const { body, orderBy } = splitOrderBy(jql);
   let next = body;
-  if (previousQuery) {
-    const prevClause = ` AND (${previousQuery})`;
+  if (previousQuery && previousQuery.trim()) {
+    // MUST mirror the append below exactly (trimmed) — Greenhopper queries
+    // carry whitespace, and an asymmetric search never matched, so chip
+    // clauses accumulated (`AND (assignee=A) AND (assignee=B) …` → 0 rows).
+    const prevClause = ` AND (${previousQuery.trim()})`;
     const at = next.lastIndexOf(prevClause);
     if (at >= 0) next = (next.slice(0, at) + next.slice(at + prevClause.length)).trim();
   }

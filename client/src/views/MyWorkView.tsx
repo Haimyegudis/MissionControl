@@ -347,10 +347,11 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
     })();
   };
 
-  // Quick-filter chip → clause swap reload.
+  // Quick-filter chip → clause swap reload (trimmed so add/remove match).
   const applyChip = (query: string | null) => {
-    const next = applyQuickFilter(jqlRef.current, query, activeQuick);
-    setActiveQuick(query && query.trim() ? query : null);
+    const trimmed = query && query.trim() ? query.trim() : null;
+    const next = applyQuickFilter(jqlRef.current, trimmed, activeQuick);
+    setActiveQuick(trimmed);
     jqlRef.current = next;
     setJql(next);
     void load(next);

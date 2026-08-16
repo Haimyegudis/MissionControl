@@ -3,6 +3,7 @@
 // (or while Mute all is on) is recoverable here.
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   markToastsSeen,
   toastHistoryStore,
@@ -30,13 +31,16 @@ export function NotificationBell() {
   const seenAt = useStore(toastSeenStore);
   const [open, setOpen] = useState(false);
   const host = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
 
   const unread = history.filter((h) => h.at > seenAt).length;
 
   useEffect(() => {
     if (!open) return;
     const close = (e: PointerEvent) => {
-      if (!host.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (!host.current?.contains(t) && !panelRef.current?.contains(t)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
@@ -51,7 +55,11 @@ export function NotificationBell() {
 
   const toggle = () => {
     setOpen((v) => {
-      if (!v) markToastsSeen();
+      if (!v) {
+        markToastsSeen();
+        const rect = host.current?.getBoundingClientRect();
+        if (rect) setAnchor({ top: rect.bottom + 6, right: Math.max(8, window.innerWidth - rect.right) });
+      }
       return !v;
     });
   };
@@ -83,13 +91,17 @@ export function NotificationBell() {
           </span>
         ) : null}
       </button>
-      {open ? (
+      {open && anchor
+        ? createPortal(
         <div
+          ref={panelRef}
           className="card card-high"
           style={{
-            position: 'absolute',
-            top: '115%',
-            right: 0,
+            // Portal to <body>: a position:fixed panel inside the header's
+            // stacking context could never rise above dialogs/cards.
+            position: 'fixed',
+            top: anchor.top,
+            right: anchor.right,
             zIndex: 3000,
             width: 360,
             maxHeight: '60vh',
@@ -114,8 +126,10 @@ export function NotificationBell() {
               </div>
             ))
           )}
-        </div>
-      ) : null}
+        </div>,
+        document.body,
+      )
+        : null}
     </div>
   );
 }
