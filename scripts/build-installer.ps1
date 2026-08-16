@@ -127,6 +127,29 @@ if ($IncludeKnowledge) {
   $kCount = (Get-ChildItem $KDb, $KData -Recurse -File | Measure-Object).Count
   if ($kCount -lt 5) { Fail "Knowledge pack looks empty ($kCount files) - is $YakiRoot present?" }
   Step "Knowledge pack staged: $kCount files"
+
+  # Ollama runtime + the embedding model, for fully-offline vector search.
+  Step 'Bundling Ollama + mxbai-embed-large model'
+  $OllamaSetup = Join-Path $Assets 'OllamaSetup.exe'
+  if (-not (Test-Path $OllamaSetup)) { Fail "Missing $OllamaSetup - download https://ollama.com/download/OllamaSetup.exe into scripts\installer\ first" }
+  $ODir = Join-Path $App 'ollama'
+  New-Item -ItemType Directory -Force -Path $ODir | Out-Null
+  Copy-Item $OllamaSetup (Join-Path $ODir 'OllamaSetup.exe')
+
+  $ModelSrc = Join-Path $env:USERPROFILE '.ollama\models'
+  $manifest = Join-Path $ModelSrc 'manifests\registry.ollama.ai\library\mxbai-embed-large\335m'
+  if (-not (Test-Path $manifest)) { Fail "mxbai-embed-large:335m manifest not found at $manifest (run: ollama pull mxbai-embed-large:335m)" }
+  $manDest = Join-Path $ODir 'models\manifests\registry.ollama.ai\library\mxbai-embed-large'
+  New-Item -ItemType Directory -Force -Path $manDest, (Join-Path $ODir 'models\blobs') | Out-Null
+  Copy-Item $manifest (Join-Path $manDest '335m')
+  $mj = Get-Content $manifest -Raw | ConvertFrom-Json
+  $digests = @($mj.config.digest) + ($mj.layers | ForEach-Object { $_.digest })
+  foreach ($d in $digests) {
+    $blob = Join-Path $ModelSrc ('blobs\' + ($d -replace ':', '-'))
+    if (-not (Test-Path $blob)) { Fail "Model blob missing: $blob" }
+    Copy-Item $blob (Join-Path $ODir 'models\blobs\')
+  }
+  Step "Ollama bundled: setup exe + model ($($digests.Count) blobs)"
 }
 
 # --- 3. verify: no secrets / no sources in payload --------------------------
@@ -184,6 +207,16 @@ foreach ($stale in @($exe, 'MissionControlSetup.cmd', 'MissionControl.zip', 'ins
   if (Test-Path $p) { Remove-Item $p -Force }
 }
 $exeOk = $false
+
+# IExpress CAB tops out around 2GB; a knowledge+Ollama payload exceeds it, so
+# full builds always ship the cmd+zip pair instead of a single exe.
+if ($IncludeKnowledge -and -not $SkipExe) {
+  $zipMB = [Math]::Round((Get-Item $zip).Length / 1MB)
+  if ($zipMB -gt 1500) {
+    Step "Payload zip is $zipMB MB - skipping IExpress (CAB limit), emitting cmd+zip pair"
+    $SkipExe = $true
+  }
+}
 
 if (-not $SkipExe) {
   Step 'Building MissionControlSetup.exe with IExpress'
