@@ -7,7 +7,7 @@
 // + session change reload.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api, boards as boardsApi, issues as issuesApi } from '../api/client';
+import { api, boards as boardsApi, issues as issuesApi, metadataExtra } from '../api/client';
 import { ContextMenu, type MenuEntry } from '../components/ContextMenu';
 import { DataGrid, type GridColumn } from '../components/DataGrid';
 import { Kanban } from '../components/Kanban';
@@ -32,7 +32,9 @@ import {
   boardHash,
   boardModeJql,
   defaultMyWorkJql,
+  MY_WORK_ORDER_BY,
   parseBoardParams,
+  splitOrderBy,
   type BoardParams,
 } from '../lib/viewMyWorkJql';
 import { onTick } from '../stores/scheduler';
@@ -262,6 +264,10 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
 
   // Board-mode entry: force kanban, clear assignee filter (no reload trigger),
   // board JQL, Greenhopper quick filters (empty/failed → assignee chips).
+  // The board's saved filter usually embeds `assignee = currentUser()` — using
+  // `filter = N` verbatim showed only YOUR issues and made picking a teammate
+  // return nothing. We fetch the raw filter JQL and strip its assignee clause
+  // so the whole team's board shows.
   const enterBoardMode = useCallback(
     async (b: BoardParams) => {
       await loadSettings().catch(() => undefined);
@@ -269,7 +275,21 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
       setKanban(true);
       setAssigneeUser('');
       setActiveQuick(null);
-      const nextJql = boardModeJql(b.filterId, project);
+      // Old rows are a different query — clear instead of showing stale data.
+      setIssues([]);
+      setTotalCount(0);
+      let nextJql = boardModeJql(b.filterId, project);
+      if (b.filterId !== null && b.filterId !== undefined) {
+        try {
+          const { jql: rawFilterJql } = await boardsApi.filterJql(b.filterId);
+          if (rawFilterJql && rawFilterJql.trim()) {
+            const { body } = splitOrderBy(applyAssigneeFilter(rawFilterJql, ''));
+            nextJql = `${body} AND statusCategory != Done ${MY_WORK_ORDER_BY}`;
+          }
+        } catch {
+          /* fall back to filter = N */
+        }
+      }
       jqlRef.current = nextJql;
       setJql(nextJql);
       void load(nextJql);
@@ -306,13 +326,25 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardProp]);
 
-  // Assignee filter → JQL rewrite reload.
+  // Assignee filter → JQL rewrite reload. Display names are not valid JQL
+  // usernames — resolve to the login first (fallback: raw text).
   const commitAssignee = (user: string) => {
     setAssigneeUser(user);
-    const next = applyAssigneeFilter(jqlRef.current, user);
-    jqlRef.current = next;
-    setJql(next);
-    void load(next);
+    void (async () => {
+      let jqlUser = user.trim();
+      if (jqlUser) {
+        try {
+          const { username } = await metadataExtra.resolveUser(jqlUser);
+          if (username) jqlUser = username;
+        } catch {
+          /* keep raw text */
+        }
+      }
+      const next = applyAssigneeFilter(jqlRef.current, jqlUser);
+      jqlRef.current = next;
+      setJql(next);
+      void load(next);
+    })();
   };
 
   // Quick-filter chip → clause swap reload.

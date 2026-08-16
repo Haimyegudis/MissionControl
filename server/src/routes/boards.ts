@@ -2,6 +2,7 @@
 
 import { Router } from 'express';
 import { BOARDS_CACHE_KEY } from '../jira/cached.js';
+import { apiPrefix, jiraFetch } from '../jira/httpClient.js';
 import type { PinnedBoard } from '../types.js';
 import { h, HttpError, qstr, type AppDeps } from './deps.js';
 
@@ -45,6 +46,18 @@ export function boardRoutes(deps: AppDeps): Router {
     '/:id/quickfilters',
     h(async (req, res) => {
       res.json(await deps.boards.getQuickFilters(boardId(req.params.id)));
+    }),
+  );
+
+  // Raw JQL of a board's saved filter — board mode rewrites it (strip the
+  // embedded assignee = currentUser() so the whole team shows).
+  router.get(
+    '/filter/:filterId/jql',
+    h(async (req, res) => {
+      const id = boardId(req.params.filterId);
+      const prefix = apiPrefix(deps.session.profile?.instanceType ?? 'datacenter');
+      const filter = (await jiraFetch(deps.session, `${prefix}/filter/${id}`)) as { jql?: unknown } | null;
+      res.json({ jql: typeof filter?.jql === 'string' ? filter.jql : null });
     }),
   );
 

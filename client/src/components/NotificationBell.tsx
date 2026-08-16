@@ -90,7 +90,7 @@ export function NotificationBell() {
             position: 'absolute',
             top: '115%',
             right: 0,
-            zIndex: 900,
+            zIndex: 3000,
             width: 360,
             maxHeight: '60vh',
             overflowY: 'auto',

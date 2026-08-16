@@ -28,26 +28,41 @@ export class JiraDashboardService {
     return apiPrefix(this.session.profile?.instanceType ?? 'datacenter');
   }
 
-  /** Page 50; loops until an empty batch or startAt >= total; breaks on any error. */
+  /** Hard cap — HP's instance has thousands of dashboards; the serial 50-per
+   *  -page walk took minutes and read as "loading forever". */
+  private static readonly DASHBOARD_CAP = 600;
+
+  /** Favourites first, then the first pages of everything (parallel, capped). */
   async getDashboards(): Promise<JiraDashboardSummary[]> {
     if (!this.session.isConnected) return [];
-    const out: JiraDashboardSummary[] = [];
-    let startAt = 0;
-    for (;;) {
-      let resp: any;
+
+    const fetchPage = async (startAt: number, filter?: string): Promise<{ items: JiraDashboardSummary[]; total: number }> => {
       try {
-        resp = await this.fetchFn(this.session, `${this.prefix}/dashboard`, {
-          query: { startAt, maxResults: 50 },
+        const resp: any = await this.fetchFn(this.session, `${this.prefix}/dashboard`, {
+          query: { startAt, maxResults: 50, ...(filter ? { filter } : {}) },
         });
+        const batch: any[] = Array.isArray(resp?.dashboards) ? resp.dashboards : [];
+        return { items: batch.map(mapSummary), total: typeof resp?.total === 'number' ? resp.total : batch.length };
       } catch {
-        break; // non-2xx stops pagination, keeps what we have
+        return { items: [], total: 0 };
       }
-      const batch: any[] = Array.isArray(resp?.dashboards) ? resp.dashboards : [];
-      if (batch.length === 0) break;
-      out.push(...batch.map(mapSummary));
-      startAt += batch.length;
-      const total = typeof resp?.total === 'number' ? resp.total : startAt;
-      if (startAt >= total) break;
+    };
+
+    // Favourites (small, most relevant) + page 1 of all, in parallel.
+    const [fav, first] = await Promise.all([fetchPage(0, 'favourite'), fetchPage(0)]);
+    const cap = JiraDashboardService.DASHBOARD_CAP;
+    const target = Math.min(first.total, cap);
+    const starts: number[] = [];
+    for (let s = 50; s < target; s += 50) starts.push(s);
+    const rest = await Promise.all(starts.map((s) => fetchPage(s)));
+
+    const seen = new Set<string>();
+    const out: JiraDashboardSummary[] = [];
+    for (const d of [...fav.items, ...first.items, ...rest.flatMap((r) => r.items)]) {
+      if (d.id && !seen.has(d.id)) {
+        seen.add(d.id);
+        out.push(d);
+      }
     }
     return out;
   }

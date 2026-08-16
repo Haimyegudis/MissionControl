@@ -164,6 +164,11 @@ export const boards = {
   issues: (boardId: number, jql?: string) =>
     api.get<JiraIssue[]>(`/api/boards/${boardId}/issues`, jql ? { jql } : undefined),
   quickFilters: (boardId: number) => api.get<JiraQuickFilter[]>(`/api/boards/${boardId}/quickfilters`),
+  filterJql: (filterId: number) => api.get<{ jql: string | null }>(`/api/boards/filter/${filterId}/jql`),
+};
+
+export const metadataExtra = {
+  resolveUser: (name: string) => api.get<{ username: string | null }>('/api/metadata/resolve-user', { name }),
 };
 
 export const dashboard = {

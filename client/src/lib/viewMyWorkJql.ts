@@ -24,7 +24,11 @@ export function splitOrderBy(jql: string): { body: string; orderBy: string } {
   return { body: jql.slice(0, match.index).trim(), orderBy: jql.slice(match.index).trim() };
 }
 
-const ASSIGNEE_CLAUSE = /\s+AND\s+assignee\s*=\s*(?:"(?:[^"\\]|\\.)*"|currentUser\(\))/gi;
+// Strips `AND assignee = "..."` / `AND assignee = currentUser()` — with or
+// without wrapping parens (assignee quick-filter chips append the clause
+// parenthesized; leaving it produced two contradictory assignee conditions).
+const ASSIGNEE_CLAUSE =
+  /\s+AND\s+(?:\(\s*assignee\s*=\s*(?:"(?:[^"\\]|\\.)*"|currentUser\(\))\s*\)|assignee\s*=\s*(?:"(?:[^"\\]|\\.)*"|currentUser\(\)))/gi;
 
 /**
  * Assignee-filter rewrite (§2): split trailing ORDER BY, strip any existing

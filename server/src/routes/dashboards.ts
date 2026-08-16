@@ -42,11 +42,19 @@ export function dashboardSnapshotRoutes(deps: AppDeps): Router {
 
 export function dashboardsRoutes(deps: AppDeps): Router {
   const router = Router();
+  let listCache: { at: number; list: unknown } | null = null;
 
   router.get(
     '/',
-    h(async (_req, res) => {
-      res.json(await deps.dashboards.getDashboards());
+    h(async (req, res) => {
+      const fresh = qstr(req.query.fresh) === '1';
+      if (!fresh && listCache && Date.now() - listCache.at < 10 * 60_000) {
+        res.json(listCache.list);
+        return;
+      }
+      const list = await deps.dashboards.getDashboards();
+      listCache = { at: Date.now(), list };
+      res.json(list);
     }),
   );
 

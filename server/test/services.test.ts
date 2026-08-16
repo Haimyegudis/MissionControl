@@ -814,7 +814,8 @@ describe('JiraDashboardService', () => {
 
     const dashboards = await svc.getDashboards();
     expect(dashboards).toHaveLength(60);
-    expect(calls).toHaveLength(2);
+    // favourites page + page 1 + page 2 (parallel, deduped by id)
+    expect(calls).toHaveLength(3);
     expect(dashboards[0]).toEqual({
       id: '1',
       name: 'Dash 1',

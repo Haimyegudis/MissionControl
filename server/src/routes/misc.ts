@@ -3,6 +3,7 @@
 
 import { Router } from 'express';
 import { Readable } from 'node:stream';
+import { resolveJiraUsername } from '../ai/yaki/jiraSearch.js';
 import { normalizeBaseUrl } from '../jira/httpClient.js';
 import type { JiraUser } from '../types.js';
 import { defaultProjectKey, h, HttpError, qstr, requireString, type AppDeps } from './deps.js';
@@ -64,6 +65,16 @@ export function metadataRoutes(deps: AppDeps): Router {
     h(async (req, res) => {
       const field = requireString(qstr(req.query.field), 'field');
       res.json(await deps.metadata.getFieldSuggestions(field, qstr(req.query.query) ?? null));
+    }),
+  );
+
+  // Display name → JQL-usable username (assignee = needs the login, not the
+  // display name). Null when unresolvable.
+  router.get(
+    '/resolve-user',
+    h(async (req, res) => {
+      const name = requireString(qstr(req.query.name), 'name');
+      res.json({ username: await resolveJiraUsername(deps.session, name) });
     }),
   );
 
