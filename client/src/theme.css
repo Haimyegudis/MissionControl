@@ -235,6 +235,49 @@ select option {
   color: #e8eefa;
 }
 
+/* WYSIWYG textarea replacement (case editor) — textarea look, rendered content */
+.rich-ta {
+  font: inherit;
+  color: var(--text-primary);
+  background: var(--input-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 7px 10px;
+  outline: none;
+  overflow-y: auto;
+  max-height: 40vh;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.rich-ta:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+.rich-ta:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  opacity: 0.8;
+  pointer-events: none;
+}
+.rich-ta ol, .rich-ta ul { margin: 4px 0; padding-left: 24px; }
+.rich-ta li { margin: 2px 0; }
+.rich-ta code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: var(--bg-panel-high);
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.rich-ta table { border-collapse: collapse; margin: 6px 0; }
+.rich-ta th, .rich-ta td {
+  border: 1px solid var(--border-strong);
+  padding: 4px 10px;
+  min-width: 60px;
+  font-size: 12.5px;
+}
+.rich-ta th { background: var(--bg-panel-high); font-weight: 700; }
+.rich-ta a { color: var(--accent-cyan); }
+
 :root[data-theme='light'] select option {
   background: #ffffff;
   color: #10203c;

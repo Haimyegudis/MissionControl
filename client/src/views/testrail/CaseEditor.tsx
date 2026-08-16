@@ -5,8 +5,9 @@
 import { useMemo, useState } from 'react';
 import { trApi } from '../../api/testrail';
 import { DraftBanner } from '../../components/DraftBanner';
-import { MdToolbar, useMdFields } from '../../components/MdToolbar';
 import { Modal } from '../../components/Modal';
+import { RichTextArea } from '../../components/RichTextArea';
+import { RichToolbar, useRichTarget } from '../../components/RichToolbar';
 import { clearDraft, draftKey, loadDraft } from '../../lib/drafts';
 import { useDraftAutosave } from '../../lib/useDraftAutosave';
 import { stepsToText } from '../../lib/testrail';
@@ -108,7 +109,10 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
   const [steps, setSteps] = useState<StepRow[]>(init.steps);
   const [banner, setBanner] = useState<number | null>(restored?.savedAt ?? null);
   const [busy, setBusy] = useState(false);
-  const mdFields = useMdFields();
+  const richTarget = useRichTarget();
+  const focusTarget = (el: HTMLElement) => {
+    richTarget.current = el;
+  };
 
   const current: CaseDraft = { title, sectionId, typeId, priorityId, estimate, refs, ownerId, preconds, expected, steps };
   useDraftAutosave(dKey, current, JSON.stringify(current) === JSON.stringify(baseline));
@@ -263,12 +267,12 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
           </label>
         </div>
 
-        <MdToolbar fields={mdFields} />
+        <RichToolbar target={richTarget} />
 
-        <label style={fieldCol}>
+        <div style={fieldCol}>
           Preconditions
-          <textarea rows={2} value={preconds} onChange={(e) => setPreconds(e.target.value)} {...mdFields.register(setPreconds)} />
-        </label>
+          <RichTextArea value={preconds} onChange={setPreconds} onFocusTarget={focusTarget} />
+        </div>
 
         <div>
           <div
@@ -285,27 +289,17 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
           </div>
           {steps.map((s, i) => (
             <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 28px', gap: 8, marginBottom: 8 }}>
-              <textarea
-                rows={2}
+              <RichTextArea
                 placeholder="Step — what to do"
                 value={s.action}
-                onChange={(e) =>
-                  setSteps((prev) => prev.map((row, j) => (j === i ? { ...row, action: e.target.value } : row)))
-                }
-                {...mdFields.register((v) =>
-                  setSteps((prev) => prev.map((row, j) => (j === i ? { ...row, action: v } : row))),
-                )}
+                onChange={(v) => setSteps((prev) => prev.map((row, j) => (j === i ? { ...row, action: v } : row)))}
+                onFocusTarget={focusTarget}
               />
-              <textarea
-                rows={2}
+              <RichTextArea
                 placeholder="Expected — what to check"
                 value={s.expected}
-                onChange={(e) =>
-                  setSteps((prev) => prev.map((row, j) => (j === i ? { ...row, expected: e.target.value } : row)))
-                }
-                {...mdFields.register((v) =>
-                  setSteps((prev) => prev.map((row, j) => (j === i ? { ...row, expected: v } : row))),
-                )}
+                onChange={(v) => setSteps((prev) => prev.map((row, j) => (j === i ? { ...row, expected: v } : row)))}
+                onFocusTarget={focusTarget}
               />
               <button
                 className="btn btn-icon"
@@ -321,10 +315,10 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
           </button>
         </div>
 
-        <label style={fieldCol}>
+        <div style={fieldCol}>
           Expected (overall, optional)
-          <textarea rows={2} value={expected} onChange={(e) => setExpected(e.target.value)} {...mdFields.register(setExpected)} />
-        </label>
+          <RichTextArea value={expected} onChange={setExpected} onFocusTarget={focusTarget} />
+        </div>
       </div>
     </Modal>
   );
