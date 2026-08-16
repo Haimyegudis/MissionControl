@@ -6,6 +6,7 @@ import {
   DRAFT_TTL_MS,
   draftAge,
   draftKey,
+  isFlushSuppressed,
   loadDraft,
   pruneDrafts,
   saveDraft,
@@ -84,6 +85,18 @@ describe('pruneDrafts', () => {
     expect(localStorage.getItem(draftKey('stale'))).toBeNull();
     expect(localStorage.getItem(draftKey('corrupt'))).toBeNull();
     expect(localStorage.getItem('mc.other')).toBe('untouched');
+  });
+});
+
+describe('flush suppression', () => {
+  it('clearDraft suppresses the unmount flush; saveDraft lifts it', () => {
+    const key = draftKey('sup');
+    saveDraft(key, { a: 1 });
+    expect(isFlushSuppressed(key)).toBe(false);
+    clearDraft(key); // deliberate clear (save/discard)
+    expect(isFlushSuppressed(key)).toBe(true);
+    saveDraft(key, { a: 2 }); // user typed again → drafting resumes
+    expect(isFlushSuppressed(key)).toBe(false);
   });
 });
 

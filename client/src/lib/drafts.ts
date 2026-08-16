@@ -26,9 +26,21 @@ export function draftKey(...parts: Array<string | number>): string {
   return PREFIX + parts.map((p) => String(p)).join('.');
 }
 
+/**
+ * Keys cleared on purpose (successful save / discard) this session. The
+ * unmount flush in useDraftAutosave consults this so closing an editor right
+ * after a deliberate clear does not resurrect the draft.
+ */
+const clearedOnPurpose = new Set<string>();
+
+export function isFlushSuppressed(key: string): boolean {
+  return clearedOnPurpose.has(key);
+}
+
 export function saveDraft<T>(key: string, data: T, now: number = Date.now()): void {
   const s = storage();
   if (!s) return;
+  clearedOnPurpose.delete(key);
   try {
     s.setItem(key, JSON.stringify({ savedAt: now, data } satisfies StoredDraft<T>));
   } catch {
@@ -55,6 +67,7 @@ export function loadDraft<T>(key: string, now: number = Date.now()): StoredDraft
 }
 
 export function clearDraft(key: string): void {
+  clearedOnPurpose.add(key);
   storage()?.removeItem(key);
 }
 

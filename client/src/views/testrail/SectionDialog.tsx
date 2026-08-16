@@ -1,9 +1,14 @@
 // Section create/rename dialog (Railbook sectionEditorModal). Deletion runs
 // through the typed-name ConfirmDialog from the section actions toolbar.
+// Unsaved input autosaves as a draft — an accidental close, refresh or
+// timeout restores it on reopen.
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { trApi } from '../../api/testrail';
+import { DraftBanner } from '../../components/DraftBanner';
 import { Modal } from '../../components/Modal';
+import { clearDraft, draftKey, loadDraft } from '../../lib/drafts';
+import { useDraftAutosave } from '../../lib/useDraftAutosave';
 import { pushToast } from '../../stores/toasts';
 import type { TestRailState } from '../../stores/testrail';
 import type { TrSection } from '../../testrailTypes';
@@ -20,10 +25,33 @@ export interface SectionDialogProps {
   onSaved: () => void;
 }
 
+interface SectionDraft {
+  name: string;
+  description: string;
+}
+
 export function SectionDialog({ st, existing, parentId, onClose, onSaved }: SectionDialogProps) {
-  const [name, setName] = useState(existing?.name ?? '');
-  const [description, setDescription] = useState('');
+  const dKey = existing
+    ? draftKey('section', 'edit', existing.id)
+    : draftKey('section', 'new', st.projectId ?? 0, String(st.selSuiteId ?? 0), parentId ?? 0);
+  const baseline = useMemo<SectionDraft>(() => ({ name: existing?.name ?? '', description: '' }), [existing]);
+  // Read once on mount; interrupted work (refresh, accidental close) restores.
+  const restored = useMemo(() => loadDraft<SectionDraft>(dKey), [dKey]);
+
+  const [name, setName] = useState(restored?.data.name ?? baseline.name);
+  const [description, setDescription] = useState(restored?.data.description ?? baseline.description);
+  const [banner, setBanner] = useState<number | null>(restored?.savedAt ?? null);
   const [busy, setBusy] = useState(false);
+
+  const current: SectionDraft = { name, description };
+  useDraftAutosave(dKey, current, JSON.stringify(current) === JSON.stringify(baseline));
+
+  const discardDraft = () => {
+    clearDraft(dKey);
+    setBanner(null);
+    setName(baseline.name);
+    setDescription(baseline.description);
+  };
 
   const save = async () => {
     if (!name.trim()) {
@@ -52,6 +80,7 @@ export function SectionDialog({ st, existing, parentId, onClose, onSaved }: Sect
         });
         pushToast({ title: 'TestRail', body: 'Section created.' });
       }
+      clearDraft(dKey);
       onClose();
       onSaved();
     } catch (err) {
@@ -65,6 +94,7 @@ export function SectionDialog({ st, existing, parentId, onClose, onSaved }: Sect
     <Modal
       title={existing ? 'Rename section' : parentId != null ? 'New subsection' : 'New section'}
       width={460}
+      closeOnBackdrop={false}
       onClose={onClose}
       footer={
         <>
@@ -78,6 +108,7 @@ export function SectionDialog({ st, existing, parentId, onClose, onSaved }: Sect
       }
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {banner !== null ? <DraftBanner savedAt={banner} onDiscard={discardDraft} /> : null}
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           Name
           <input value={name} autoFocus onChange={(e) => setName(e.target.value)} />

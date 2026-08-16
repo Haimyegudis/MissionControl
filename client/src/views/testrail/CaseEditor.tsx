@@ -163,6 +163,7 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
     <Modal
       title={isEdit ? `Edit case C${(existing as TrCase).id}` : 'New case'}
       width={720}
+      closeOnBackdrop={false}
       onClose={onClose}
       footer={
         <>
