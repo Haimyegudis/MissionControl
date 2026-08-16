@@ -40,9 +40,13 @@ export function SectionDialog({ st, existing, parentId, onClose, onSaved }: Sect
           pushToast({ title: 'TestRail', body: 'Pick a specific suite first to create a section.' });
           return;
         }
+        // parentId is authoritative: the toolbar "+ Section" passes null for a
+        // top-level section; the section-actions "add subsection" passes the
+        // parent. Never silently inherit the tree selection — that used to
+        // nest new sections under whatever was selected, hiding them.
         await trApi.addSection(st.projectId, {
           suiteId: st.selSuiteId,
-          parentId: parentId ?? st.selSectionId ?? null,
+          parentId,
           name: name.trim(),
           description: description.trim() || null,
         });
