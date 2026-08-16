@@ -119,6 +119,8 @@ export function TeamEditor({ existing, onClose }: TeamEditorProps) {
       title={existing ? 'Edit team' : 'New team'}
       width={520}
       maxHeight={640}
+      // A stray click outside must not throw away the member selection.
+      closeOnBackdrop={false}
       onClose={() => onClose(null)}
       footer={
         <>

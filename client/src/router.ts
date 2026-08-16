@@ -26,7 +26,8 @@ export const ROUTES: Array<{ id: RouteId; label: string }> = [
   { id: 'incidents', label: 'Incidents' },
   { id: 'boards', label: 'Boards' },
   { id: 'filters', label: 'Filters' },
-  { id: 'recent', label: 'Recent Updates' },
+  // 'recent' removed from the nav — the Backlog's "Updated" filter covers it
+  // (route stays reachable via #/recent).
   { id: 'timelogged', label: 'Time Spent' },
   // 'dashboards' (Jira dashboards list) removed from the nav per user
   // request — the route stays reachable via #/dashboards for deep links.

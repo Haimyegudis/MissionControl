@@ -31,7 +31,8 @@ import {
 } from './common';
 import { RunEditor } from './RunsView';
 
-const PAINT_CAP = 1500;
+/** Rows painted initially; scrolling near the page bottom extends by this. */
+const PAINT_STEP = 500;
 
 const CHIPS: Array<{ key: string; label: string; cls: string; statusId: number | null }> = [
   { key: '', label: 'All', cls: 'c-all', statusId: null },
@@ -57,6 +58,19 @@ export function RunDetailView() {
   const [historyTest, setHistoryTest] = useState<TrTest | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
+  const [paintCap, setPaintCap] = useState(PAINT_STEP);
+
+  // Windowed rendering: extend when the user scrolls near the page bottom.
+  useEffect(() => {
+    const onScroll = () => {
+      const doc = document.documentElement;
+      if (doc.scrollTop + window.innerHeight > doc.scrollHeight - 800) {
+        setPaintCap((c) => c + PAINT_STEP);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const me = st.session?.user?.id ?? null;
 
@@ -273,7 +287,7 @@ export function RunDetailView() {
   const passRate = allTotal > 0 ? `${Math.round((counts.passed / allTotal) * 100)}%` : passPct(run);
 
   const selectedTests = all.filter((t) => sel.has(t.id));
-  const shown = visible.slice(0, PAINT_CAP);
+  const shown = visible.slice(0, paintCap);
 
   return (
     <TestRailGate st={st}>
@@ -534,9 +548,9 @@ export function RunDetailView() {
             </tbody>
           </table>
         </div>
-        {visible.length > PAINT_CAP ? (
+        {visible.length > shown.length ? (
           <div className="tr-empty-note">
-            Showing {PAINT_CAP} of {visible.length} tests — narrow with search or the status chips.
+            Showing {shown.length} of {visible.length} tests — scroll down to load more.
           </div>
         ) : null}
       </div>

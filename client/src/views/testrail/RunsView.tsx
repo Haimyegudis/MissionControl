@@ -13,6 +13,7 @@ import {
   resolveRunCaseFilter,
   sectionPath,
 } from '../../lib/testrail';
+import { DataGrid, type GridColumn } from '../../components/DataGrid';
 import { Modal } from '../../components/Modal';
 import { navigateTestRailRun } from '../../router';
 import { pushToast } from '../../stores/toasts';
@@ -37,8 +38,6 @@ import {
   useTestRail,
   type ConfirmSpec,
 } from './common';
-
-const DISPLAY_CAP = 500;
 
 export function RunsView() {
   const st = useTestRail();
@@ -81,9 +80,93 @@ export function RunsView() {
     return [...list].sort((a, b) => (b.createdOn ?? 0) - (a.createdOn ?? 0));
   }, [runs, suiteFilter, search, myOnly, me, st.people, st.meta]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const shown = filtered.slice(0, DISPLAY_CAP);
   const activeCount = filtered.filter((r) => !r.isCompleted).length;
   const myCount = me != null ? runs.filter((r) => r.createdBy === me).length : 0;
+
+  const runColumns = useMemo<GridColumn<TrRun>[]>(
+    () => [
+      { key: 'name', header: 'Run', width: 380 },
+      {
+        key: 'createdOn',
+        header: 'Created',
+        width: 110,
+        render: (r) => (
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, whiteSpace: 'nowrap' }}>
+            {fmtUnixDate(r.createdOn)}
+          </span>
+        ),
+        format: (r) => fmtUnixDate(r.createdOn),
+        sortValue: (r) => r.createdOn ?? 0,
+      },
+      {
+        key: 'createdBy',
+        header: 'By',
+        width: 130,
+        render: (r) => <span className="muted">{userName(st, r.createdBy)}</span>,
+        format: (r) => userName(st, r.createdBy),
+        sortValue: (r) => userName(st, r.createdBy),
+      },
+      {
+        key: 'status',
+        header: 'Status',
+        width: 90,
+        render: (r) => <RunStateStamp isCompleted={r.isCompleted} />,
+        format: (r) => (r.isCompleted ? 'closed' : 'active'),
+        sortValue: (r) => (r.isCompleted ? 1 : 0),
+      },
+      {
+        key: 'dist',
+        header: 'Distribution',
+        width: 220,
+        render: (r) => <DistBar r={r} />,
+        format: (r) => `${r.passedCount}p/${r.failedCount}f/${r.blockedCount}b/${r.untestedCount}u`,
+        sortValue: (r) => r.passedCount + r.failedCount + r.blockedCount + r.retestCount,
+      },
+      {
+        key: 'pass',
+        header: 'Pass',
+        width: 70,
+        render: (r) => (
+          <span style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{passPct(r)}</span>
+        ),
+        format: (r) => passPct(r),
+        sortValue: (r) => {
+          const total = r.passedCount + r.failedCount + r.blockedCount + r.retestCount + r.untestedCount;
+          return total > 0 ? r.passedCount / total : 0;
+        },
+      },
+      {
+        key: 'actions',
+        header: 'Actions',
+        width: 170,
+        format: () => '',
+        sortValue: () => null,
+        render: (r) => (
+          <span style={{ whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
+            {!r.isCompleted ? (
+              <>
+                <button className="btn" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => setEditor({ existing: r })}>
+                  edit
+                </button>{' '}
+                <button className="btn" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => closeRun(r)}>
+                  close
+                </button>{' '}
+              </>
+            ) : null}
+            <button
+              className="btn"
+              style={{ padding: '2px 8px', fontSize: 11, color: 'var(--accent-red)' }}
+              onClick={() => deleteRun(r)}
+            >
+              delete
+            </button>
+          </span>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [st.people, st.meta],
+  );
 
   const closeRun = (run: TrRun) =>
     setConfirm({
@@ -185,80 +268,16 @@ export function RunsView() {
         </div>
       </div>
 
-      <div className="card">
-        <div style={{ overflowX: 'auto' }}>
-          <table className="tr-tbl">
-            <thead>
-              <tr>
-                <th>Run</th>
-                <th>Created</th>
-                <th>By</th>
-                <th>Status</th>
-                <th style={{ width: 220 }}>Distribution</th>
-                <th style={{ textAlign: 'right' }}>Pass</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((r) => (
-                <tr key={r.id} className="clickable" onClick={() => navigateTestRailRun(r.id)}>
-                  <td>{r.name}</td>
-                  <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, whiteSpace: 'nowrap' }}>
-                    {fmtUnixDate(r.createdOn)}
-                  </td>
-                  <td className="muted">{userName(st, r.createdBy)}</td>
-                  <td>
-                    <RunStateStamp isCompleted={r.isCompleted} />
-                  </td>
-                  <td>
-                    <DistBar r={r} />
-                  </td>
-                  <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{passPct(r)}</td>
-                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
-                    {!r.isCompleted ? (
-                      <>
-                        <button
-                          className="btn"
-                          style={{ padding: '2px 8px', fontSize: 11 }}
-                          onClick={() => setEditor({ existing: r })}
-                        >
-                          edit
-                        </button>{' '}
-                        <button
-                          className="btn"
-                          style={{ padding: '2px 8px', fontSize: 11 }}
-                          onClick={() => closeRun(r)}
-                        >
-                          close
-                        </button>{' '}
-                      </>
-                    ) : null}
-                    <button
-                      className="btn"
-                      style={{ padding: '2px 8px', fontSize: 11, color: 'var(--accent-red)' }}
-                      onClick={() => deleteRun(r)}
-                    >
-                      delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {shown.length === 0 ? (
-                <tr>
-                  <td colSpan={7}>
-                    <div className="tr-empty-note">{st.runsLoaded ? 'No matching runs.' : 'loading runs…'}</div>
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-        {filtered.length > DISPLAY_CAP ? (
-          <div className="tr-empty-note">
-            Showing newest {DISPLAY_CAP} of {filtered.length} matches — narrow with search or suite filter.
-          </div>
-        ) : null}
-      </div>
+      {/* Unified DataGrid: sort by any column, drag-resize, right-click header
+          for column chooser + CSV export, scroll-windowed rendering. */}
+      <DataGrid<TrRun>
+        stateKey="TestRail.Runs"
+        columns={runColumns}
+        rows={filtered}
+        rowKey={(r) => String(r.id)}
+        onRowActivate={(r) => navigateTestRailRun(r.id)}
+        emptyText={st.runsLoaded ? 'No matching runs.' : 'loading runs…'}
+      />
 
       {editor ? <RunEditor st={st} existing={editor.existing} onClose={() => setEditor(null)} /> : null}
       {confirm ? <ConfirmDialog spec={confirm} onClose={() => setConfirm(null)} /> : null}

@@ -38,6 +38,8 @@ export interface DataGridProps<T> {
   rowKey: (row: T) => string;
   onRowDoubleClick?: (row: T) => void;
   onRowContextMenu?: (row: T, e: { clientX: number; clientY: number }) => void;
+  /** Plain single-click action (fires unless a selection modifier is held). */
+  onRowActivate?: (row: T) => void;
   /** Enable ctrl/shift multi-select. */
   multiSelect?: boolean;
   onSelectionChange?: (rows: T[]) => void;
@@ -45,6 +47,10 @@ export interface DataGridProps<T> {
   /** Max body height (px); container scrolls beyond it. */
   maxHeight?: number;
 }
+
+/** Windowed rendering: rows painted initially / added per scroll notch. */
+const RENDER_INITIAL = 150;
+const RENDER_STEP = 200;
 
 function cellText<T>(col: GridColumn<T>, row: T): string {
   if (col.format) return col.format(row);
@@ -68,6 +74,7 @@ export function DataGrid<T>({
   rowKey,
   onRowDoubleClick,
   onRowContextMenu,
+  onRowActivate,
   multiSelect = false,
   onSelectionChange,
   emptyText = 'No rows.',
@@ -77,6 +84,9 @@ export function DataGrid<T>({
   const [sort, setSort] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
   const [headerMenu, setHeaderMenu] = useState<{ x: number; y: number } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [renderCap, setRenderCap] = useState(RENDER_INITIAL);
+  // New row set (filter/search/reload) → window back to the top slice.
+  useEffect(() => setRenderCap(RENDER_INITIAL), [rows]);
   const anchorRef = useRef<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resizingRef = useRef(false);
@@ -217,8 +227,20 @@ export function DataGrid<T>({
 
   const totalWidth = visibleColumns.reduce((sum, c) => sum + (state[c.key]?.width ?? c.width), 0);
 
+  const shownRows = sortedRows.length > renderCap ? sortedRows.slice(0, renderCap) : sortedRows;
+
   return (
-    <div style={{ overflow: 'auto', maxHeight, border: '1px solid var(--border-soft)', borderRadius: 8 }}>
+    <div
+      style={{ overflow: 'auto', maxHeight, border: '1px solid var(--border-soft)', borderRadius: 8 }}
+      onScroll={(e) => {
+        // Windowed rendering: extend as the user nears the bottom — huge
+        // lists never mount thousands of rows at once.
+        const el = e.currentTarget;
+        if (sortedRows.length > renderCap && el.scrollTop + el.clientHeight > el.scrollHeight - 600) {
+          setRenderCap((c) => c + RENDER_STEP);
+        }
+      }}
+    >
       <table
         style={{
           borderCollapse: 'collapse',
@@ -289,7 +311,7 @@ export function DataGrid<T>({
               </td>
             </tr>
           ) : (
-            sortedRows.map((row) => {
+            shownRows.map((row) => {
               const key = rowKey(row);
               const isSelected = multiSelect && selected.has(key);
               return (
@@ -300,7 +322,10 @@ export function DataGrid<T>({
                     // browser from also highlighting the cell text.
                     if (multiSelect && (e.shiftKey || e.ctrlKey || e.metaKey)) e.preventDefault();
                   }}
-                  onClick={(e) => onRowClick(row, e)}
+                  onClick={(e) => {
+                    onRowClick(row, e);
+                    if (onRowActivate && !e.shiftKey && !e.ctrlKey && !e.metaKey) onRowActivate(row);
+                  }}
                   onDoubleClick={() => onRowDoubleClick?.(row)}
                   onContextMenu={(e) => {
                     if (!onRowContextMenu) return;
@@ -313,7 +338,7 @@ export function DataGrid<T>({
                   }}
                   style={{
                     background: isSelected ? 'color-mix(in srgb, var(--accent-cyan) 12%, transparent)' : 'transparent',
-                    cursor: onRowDoubleClick || multiSelect ? 'pointer' : 'default',
+                    cursor: onRowDoubleClick || onRowActivate || multiSelect ? 'pointer' : 'default',
                   }}
                 >
                   {visibleColumns.map((c) => (
@@ -336,6 +361,11 @@ export function DataGrid<T>({
           )}
         </tbody>
       </table>
+      {sortedRows.length > shownRows.length ? (
+        <div className="muted" style={{ padding: '8px 12px', fontSize: 11.5, textAlign: 'center' }}>
+          Showing {shownRows.length} of {sortedRows.length} — scroll to load more.
+        </div>
+      ) : null}
       {headerMenu ? (
         <ContextMenu x={headerMenu.x} y={headerMenu.y} entries={headerMenuEntries} onClose={() => setHeaderMenu(null)} />
       ) : null}

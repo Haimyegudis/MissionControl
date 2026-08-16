@@ -59,7 +59,8 @@ import {
   type ConfirmSpec,
 } from './common';
 
-const ROW_CAP = 800;
+/** Rows painted initially; scrolling near the page bottom extends by this. */
+const ROW_STEP = 400;
 
 interface ColDef {
   key: string;
@@ -148,7 +149,20 @@ export function CaseLibraryView() {
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
   const [bulkEdit, setBulkEdit] = useState<number[] | null>(null);
+  const [rowCap, setRowCap] = useState(ROW_STEP);
   const [covProgress, setCovProgress] = useState<string | null>(null);
+
+  // Windowed rendering: extend when the user scrolls near the page bottom.
+  useEffect(() => {
+    const onScroll = () => {
+      const doc = document.documentElement;
+      if (doc.scrollTop + window.innerHeight > doc.scrollHeight - 800) {
+        setRowCap((c) => c + ROW_STEP);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -388,10 +402,10 @@ export function CaseLibraryView() {
   const rows: ReactNode[] = [];
   let painted = 0;
   for (const group of groups) {
-    if (painted >= ROW_CAP) break;
+    if (painted >= rowCap) break;
     const collapsed = st.collapsedSecs.has(group.sectionId);
     const allSel = group.cases.every((c) => st.caseSel.has(c.id));
-    const shown = collapsed ? [] : group.cases.slice(0, ROW_CAP - painted);
+    const shown = collapsed ? [] : group.cases.slice(0, rowCap - painted);
     painted += shown.length;
     rows.push(
       <tr
@@ -483,8 +497,7 @@ export function CaseLibraryView() {
       <tr key="cap">
         <td colSpan={span}>
           <div className="tr-empty-note">
-            Showing {painted} of {visible.length} cases — use the filters, pick a section, or collapse groups to see
-            the rest.
+            Showing {painted} of {visible.length} cases — scroll down to load more.
           </div>
         </td>
       </tr>,
@@ -507,7 +520,7 @@ export function CaseLibraryView() {
   }
   return rows;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groups, st.collapsedSecs, st.caseSel, sections, st.suites, st.selSuiteId, cols, cellCtx, span, visible.length, loadError]);
+  }, [groups, st.collapsedSecs, st.caseSel, sections, st.suites, st.selSuiteId, cols, cellCtx, span, visible.length, loadError, rowCap]);
 
   const suiteOptions = (
     <>

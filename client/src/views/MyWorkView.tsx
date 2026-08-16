@@ -213,6 +213,8 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
   const [selectedRows, setSelectedRows] = useState<JiraIssue[]>([]);
   const [rowMenu, setRowMenu] = useState<{ row: JiraIssue; x: number; y: number } | null>(null);
   const [bulkAssign, setBulkAssign] = useState<{ keys: string[] } | null>(null);
+  /** Days back for the "Updated" filter (0 = any time). */
+  const [updatedWithin, setUpdatedWithin] = useState(0);
 
   const { element: promptElement, prompt } = useTextPrompt();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -565,10 +567,18 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
   // Derived view data
   // -------------------------------------------------------------------------
 
-  const viewRows = useMemo(
-    () => filterRows(issues, filters, keyContains),
-    [issues, filters, keyContains],
-  );
+  const viewRows = useMemo(() => {
+    let rows = filterRows(issues, filters, keyContains);
+    // "Updated within" filter — replaces the removed Recent Updates page.
+    if (updatedWithin > 0) {
+      const cutoff = Date.now() - updatedWithin * 86_400_000;
+      rows = rows.filter((i) => {
+        const t = i.updated ? new Date(i.updated).getTime() : 0;
+        return t >= cutoff;
+      });
+    }
+    return rows;
+  }, [issues, filters, keyContains, updatedWithin]);
 
   const filterOptions = useMemo(() => {
     const out = {} as Record<MyWorkFilterKey, string[]>;
@@ -684,6 +694,18 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
           style={{ width: 260 }}
         />
         <UserSearchPicker users={roster} value={assigneeUser} onCommit={commitAssignee} />
+        <select
+          title="Show only issues updated within…"
+          value={updatedWithin}
+          onChange={(e) => setUpdatedWithin(Number(e.target.value))}
+          style={updatedWithin > 0 ? { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)' } : undefined}
+        >
+          <option value={0}>Updated: any time</option>
+          <option value={1}>Updated: last 24h</option>
+          <option value={2}>Updated: 2 days</option>
+          <option value={7}>Updated: 7 days</option>
+          <option value={30}>Updated: 30 days</option>
+        </select>
         <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, cursor: 'pointer' }}>
           <input type="checkbox" checked={kanban} onChange={(e) => setKanban(e.target.checked)} />
           Kanban
