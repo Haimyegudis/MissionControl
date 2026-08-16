@@ -558,10 +558,22 @@ export function CaseLibraryView() {
                       </span>
                       <button
                         className="btn tr-sec-add"
-                        title={`Add subsection inside "${s.name}"`}
+                        title={
+                          s.depth === 0
+                            ? `Add subsection inside "${s.name}"`
+                            : `Add case in "${s.name}"`
+                        }
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSectionDialog({ existing: null, parentId: s.id });
+                          // Top-level section → new subsection; subsection →
+                          // new case inside it (select it so the editor's
+                          // section picker defaults there).
+                          if (s.depth === 0) {
+                            setSectionDialog({ existing: null, parentId: s.id });
+                          } else {
+                            selectSection(s.id);
+                            setEditor({ existing: null });
+                          }
                         }}
                       >
                         +
