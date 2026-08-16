@@ -100,6 +100,10 @@ export const trApi = {
   updateSection: (sectionId: number, name: string, description: string | null) =>
     put<TrSection>(`/api/testrail/sections/${sectionId}`, { name, description }),
   deleteSection: (sectionId: number) => del<void>(`/api/testrail/sections/${sectionId}`),
+  casesByRef: (ref: string, projectIds: number[]) =>
+    get<Array<{ id: number; title: string; refs: string | null; suiteId: number; suiteName: string; projectId: number }>>(
+      `/api/testrail/cases-by-ref?ref=${encodeURIComponent(ref)}&projects=${projectIds.join(',')}`,
+    ),
   addCase: (sectionId: number, payload: TrAddCasePayload) =>
     post<TrCase>(`/api/testrail/sections/${sectionId}/cases`, payload),
   updateCase: (caseId: number, payload: TrAddCasePayload) =>

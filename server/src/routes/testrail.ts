@@ -244,6 +244,61 @@ export function testrailRoutes(deps: AppDeps): Router {
     }),
   );
 
+  // Cases whose References mention a given Jira key — powers the issue
+  // dialog's TestRail section (the Jira TestRail plugin links via case refs).
+  // Served from the same SQLite cache the suite/case routes fill.
+  router.get(
+    '/cases-by-ref',
+    h(async (req, res) => {
+      const ref = (qstr(req.query.ref) ?? '').trim().toUpperCase();
+      if (!ref) throw new HttpError(400, 'ref is required');
+      const projectIds = (qstr(req.query.projects) ?? '')
+        .split(',')
+        .map((p) => Number.parseInt(p, 10))
+        .filter((n) => Number.isInteger(n));
+      if (projectIds.length === 0) throw new HttpError(400, 'projects is required');
+
+      const client = service.requireClient();
+      const out: Array<Record<string, unknown>> = [];
+      for (const pid of projectIds) {
+        let suites;
+        try {
+          suites = await service.cachedJson(`suites:${pid}`, () => client.getSuites(pid), false);
+        } catch {
+          continue; // unreadable project
+        }
+        for (const suite of suites as Array<{ id: number; name: string }>) {
+          if (out.length >= 100) break;
+          let cases;
+          try {
+            // Same key shape as GET /projects/:id/cases so the cache is shared.
+            cases = await service.cachedJson(
+              `cases:${pid}:${suite.id}:`,
+              () => client.getCases(pid, suite.id),
+              false,
+            );
+          } catch {
+            continue;
+          }
+          for (const c of cases as Array<{ id: number; title: string; refs: string | null; suiteId: number | null }>) {
+            if ((c.refs ?? '').toUpperCase().includes(ref)) {
+              out.push({
+                id: c.id,
+                title: c.title,
+                refs: c.refs,
+                suiteId: c.suiteId ?? suite.id,
+                suiteName: suite.name,
+                projectId: pid,
+              });
+              if (out.length >= 100) break;
+            }
+          }
+        }
+      }
+      res.json(out);
+    }),
+  );
+
   router.post(
     '/sections/:id/cases',
     h(async (req, res) => {

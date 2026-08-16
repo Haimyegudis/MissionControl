@@ -17,7 +17,19 @@ export interface PaletteRow {
   group: string;
   key: string;
   label: string;
+  /** Issue type chip (Epic / Task / Bug / …) shown after the key. */
+  badge?: string;
   action?: () => void;
+}
+
+/** Chip color per issue type — epics must be visually distinct from tasks. */
+export function issueTypeColor(type: string): string {
+  const t = type.toLowerCase();
+  if (t.includes('epic')) return '#b558f6';
+  if (t.includes('story')) return '#22d38f';
+  if (t.includes('bug') || t.includes('defect') || t.includes('incident')) return '#e5484d';
+  if (t.includes('sub')) return '#8aa0bf';
+  return '#4f9cf9'; // task & everything else
 }
 
 const ISSUE_KEY_RE = /^[A-Za-z][A-Za-z0-9_]*-\d+$/;
@@ -127,6 +139,7 @@ export function CommandPalette({ mode = 'default', onClose, onPickIssue }: Comma
               group: 'JIRA',
               key: i.key,
               label: i.summary,
+              badge: i.issueType || undefined,
               action: () => pickIssue(i.key),
             })),
           );
@@ -215,6 +228,23 @@ export function CommandPalette({ mode = 'default', onClose, onPickIssue }: Comma
               <div className="muted" style={{ width: 80, flexShrink: 0, fontWeight: 700, fontSize: 12 }}>
                 {row.key}
               </div>
+              {row.badge ? (
+                <span
+                  style={{
+                    flexShrink: 0,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    padding: '1px 7px',
+                    borderRadius: 999,
+                    border: `1px solid ${issueTypeColor(row.badge)}`,
+                    color: issueTypeColor(row.badge),
+                  }}
+                >
+                  {row.badge}
+                </span>
+              ) : null}
               <div
                 style={{
                   flex: 1,

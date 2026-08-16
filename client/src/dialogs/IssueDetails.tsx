@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { issues as issuesApi } from '../api/client';
 import { trApi } from '../api/testrail';
+import { openCase, selectProject, trStore } from '../stores/testrail';
 import type { TrRun } from '../testrailTypes';
 import { Modal } from '../components/Modal';
 import { IssueLinkText } from '../components/IssueLinkText';
@@ -81,6 +82,9 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
   const [commentText, setCommentText] = useState('');
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [trRuns, setTrRuns] = useState<TrRun[]>([]);
+  const [trCases, setTrCases] = useState<
+    Array<{ id: number; title: string; suiteId: number; suiteName: string; projectId: number }>
+  >([]);
   const [commentStatus, setCommentStatus] = useState('');
   const [commentBusy, setCommentBusy] = useState(false);
   const loadSeq = useRef(0);
@@ -154,6 +158,7 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
   useEffect(() => {
     let cancelled = false;
     setTrRuns([]);
+    setTrCases([]);
     const key = details?.issue.key;
     if (!key) return;
     const isEpic = /epic/i.test(details?.issue.issueType ?? '');
@@ -174,14 +179,24 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
         }
         const projects = (await trApi.projects()).filter((p) => /indigo/i.test(p.name) || p.id === 603);
         const lists = await Promise.all(projects.map((p) => trApi.runs(p.id).catch(() => [] as TrRun[])));
+        // Match by refs OR run name — many runs carry the key in their title.
+        const noSpace = (s: string) => s.replace(/\s+/g, '');
         const matches = lists.flat().filter((r) => {
-          const refs = (r.refs ?? '').toUpperCase();
-          if (!refs) return false;
-          for (const n of needles) if (refs.includes(n)) return true;
+          const hay = noSpace(`${r.refs ?? ''} ${r.name ?? ''}`).toUpperCase();
+          if (!hay) return false;
+          for (const n of needles) if (hay.includes(noSpace(n))) return true;
           return false;
         });
         matches.sort((a, b) => (b.createdOn ?? 0) - (a.createdOn ?? 0));
         if (!cancelled) setTrRuns(matches.slice(0, 12));
+
+        // Linked cases — the Jira TestRail plugin links via case References.
+        try {
+          const cases = await trApi.casesByRef(key, projects.map((p) => p.id));
+          if (!cancelled) setTrCases(cases);
+        } catch {
+          /* section stays hidden */
+        }
       } catch {
         /* TestRail not connected — section simply stays hidden */
       }
@@ -433,6 +448,44 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
                     </div>
                   );
                 })}
+              </SectionCard>
+            )}
+
+            {trCases.length > 0 && (
+              <SectionCard title={`TestRail cases (${trCases.length})`}>
+                {trCases.map((c) => (
+                  <div
+                    key={c.id}
+                    style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '4px 0', fontSize: 12.5 }}
+                  >
+                    <a
+                      href="#/testrail/cases"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onClose();
+                        window.location.hash = '#/testrail/cases';
+                        void (async () => {
+                          if (trStore.get().projectId !== c.projectId) await selectProject(c.projectId);
+                          openCase(c.id, c.suiteId);
+                        })();
+                      }}
+                      style={{
+                        color: 'var(--accent-cyan)',
+                        textDecoration: 'underline',
+                        flex: 1,
+                        minWidth: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      C{c.id} — {c.title}
+                    </a>
+                    <span className="muted" style={{ whiteSpace: 'nowrap' }}>
+                      {c.suiteName}
+                    </span>
+                  </div>
+                ))}
               </SectionCard>
             )}
 
