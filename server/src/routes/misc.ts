@@ -50,6 +50,8 @@ export function metadataRoutes(deps: AppDeps): Router {
     '/distinct',
     h(async (req, res) => {
       const project = qstr(req.query.project) ?? defaultProjectKey(deps);
+      // project is interpolated unquoted into JQL — key charset only.
+      if (!/^[A-Z][A-Z0-9_]*$/i.test(project)) throw new HttpError(400, `Invalid project key: ${project}`);
       const field = requireString(qstr(req.query.field), 'field');
       const rawMax = Number(qstr(req.query.max));
       const max = Number.isFinite(rawMax) && rawMax > 0 ? rawMax : 5000;
@@ -92,6 +94,11 @@ export function miscRoutes(deps: AppDeps): Router {
       if (target.host !== jiraHost) {
         throw new HttpError(403, 'Attachment URL host does not match the Jira base URL.');
       }
+      // The PAT rides on this request — never allow an http downgrade or a
+      // redirect chain to carry it elsewhere.
+      if (target.protocol !== 'https:') {
+        throw new HttpError(400, 'Attachment URL must be https.');
+      }
 
       const authorization =
         profile.instanceType === 'cloud'
@@ -99,7 +106,10 @@ export function miscRoutes(deps: AppDeps): Router {
           : `Bearer ${profile.jiraPat}`;
 
       const fetchFn = deps.fetchFn ?? fetch;
-      const upstream = await fetchFn(target, { headers: { Authorization: authorization } });
+      const upstream = await fetchFn(target, {
+        headers: { Authorization: authorization },
+        redirect: 'manual',
+      });
 
       res.status(upstream.status);
       const contentType = upstream.headers.get('content-type');

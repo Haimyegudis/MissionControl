@@ -20,6 +20,7 @@ import { JiraSession } from './jira/session.js';
 import { TimeLoggedService } from './jira/timeLogged.js';
 import { metadataWarmup } from './jira/warmup.js';
 import { JiraWorklogService } from './jira/worklogService.js';
+import { loadOrCreateApiToken } from './security.js';
 import { openDb } from './storage/db.js';
 import { CreateDefaultsStore, CreateMetaCache } from './storage/fileStores.js';
 import { TestRailService } from './testrail/service.js';
@@ -85,9 +86,12 @@ async function testConnection(creds: Credentials): Promise<JiraUser> {
   return new JiraIssueService(probe).getCurrentUser();
 }
 
+const apiToken = loadOrCreateApiToken(dataDir);
+
 const app = createApp({
   session,
   credentials,
+  apiToken,
   testConnection,
   warmup: () => {
     void metadataWarmup({ session, metadata, boards, getDistinct });

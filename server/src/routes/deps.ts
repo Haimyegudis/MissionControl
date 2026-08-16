@@ -175,6 +175,8 @@ export interface AskLumoRequest {
 export interface AppDeps {
   session: JiraSession;
   credentials: CredentialsDep;
+  /** Per-install API token (security.ts); absent/empty disables auth (tests). */
+  apiToken?: string;
   /** Build a throwaway session for the given credentials and GET /myself. */
   testConnection(credentials: Credentials): Promise<JiraUser>;
   /** Fire-and-forget metadata warmup after a successful login. */

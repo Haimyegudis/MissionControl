@@ -253,7 +253,8 @@ export class JiraMetadataService implements JqlFieldResolver {
    */
   async resolveJqlField(displayName: string): Promise<string> {
     const id = await this.resolveFieldId(displayName);
-    if (id === null) return `"${displayName}"`;
+    // Quote-escape the display name — it is interpolated into JQL.
+    if (id === null) return `"${displayName.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
     if (id.startsWith('customfield_')) return `cf[${id.slice('customfield_'.length)}]`;
     return id;
   }

@@ -22,6 +22,7 @@ import { timeloggedRoutes } from './routes/timelogged.js';
 import { confluenceRoutes } from './routes/confluence.js';
 import { reminderRoutes } from './routes/reminders.js';
 import { copilotAuthRoutes } from './routes/copilotAuth.js';
+import { securityMiddleware } from './security.js';
 
 export type { AppDeps } from './routes/deps.js';
 
@@ -55,6 +56,9 @@ export function translateError(err: unknown): { status: number; message: string 
 export function createApp(deps: AppDeps): Express {
   const app = express();
   app.disable('x-powered-by');
+  // Host/Origin allow-list + per-install API token (empty token in tests
+  // keeps the auth check off while Host/Origin still apply).
+  app.use(securityMiddleware(deps.apiToken ?? ''));
   app.use(express.json({ limit: '2mb' }));
 
   const api = express.Router();

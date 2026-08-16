@@ -34,18 +34,19 @@ function tlsEnvKey(): string {
 function confluenceHttpsAgent(): https.Agent {
   const key = tlsEnvKey();
   if (cachedAgent && cachedKey === key) return cachedAgent;
-  const verifyTls = process.env.CONFLUENCE_VERIFY_TLS === 'true';
+  // Verify by DEFAULT — a PAT travels on this connection. Only an explicit
+  // CONFLUENCE_VERIFY_TLS=false opts out (self-signed internal certs; prefer
+  // NODE_EXTRA_CA_CERTS with the internal CA instead).
+  const verifyTls = process.env.CONFLUENCE_VERIFY_TLS !== 'false';
   const caPath = process.env.NODE_EXTRA_CA_CERTS;
-  const opts: https.AgentOptions = {};
+  const opts: https.AgentOptions = { rejectUnauthorized: verifyTls };
   if (caPath) {
     try {
       opts.ca = readFileSync(caPath);
       opts.rejectUnauthorized = true;
     } catch {
-      opts.rejectUnauthorized = verifyTls;
+      /* keep verifyTls */
     }
-  } else {
-    opts.rejectUnauthorized = verifyTls;
   }
   cachedAgent = new https.Agent(opts);
   cachedKey = key;

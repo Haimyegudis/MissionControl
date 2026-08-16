@@ -24,6 +24,21 @@ export const ANTI_TOOL_HEADER =
 let cachedExePath: string | null = null;
 let cachedClaudeExePath: string | null = null;
 
+/** Model ids are CLI arguments — allow only safe id characters. */
+const MODEL_RE = /^[A-Za-z0-9._:[\]-]+$/;
+
+/** Throw unless the model looks like a plain model id (defense against
+ *  command injection through the .cmd shell flatten below). */
+export function assertSafeModel(model: string): void {
+  if (!MODEL_RE.test(model)) throw new Error(`Invalid model id: ${JSON.stringify(model)}`);
+}
+
+/** cmd.exe-safe quoting: escape embedded quotes, then quote when needed. */
+function cmdQuote(a: string): string {
+  const escaped = a.replace(/"/g, '""');
+  return /[\s&()^,;="]/.test(a) ? `"${escaped}"` : escaped;
+}
+
 /** Test hook: forget the cached copilot.exe path. */
 export function resetCopilotExeCache(): void {
   cachedExePath = null;
@@ -96,9 +111,10 @@ export async function runCopilotCli(
   model: string,
   signal?: AbortSignal,
 ): Promise<string> {
+  assertSafeModel(model);
   const exe = resolveCopilotExe();
   const tmpFile = path.join(tmpdir(), `copilot-prompt-${randomUUID()}.txt`);
-  writeFileSync(tmpFile, ANTI_TOOL_HEADER + prompt, 'utf8');
+  writeFileSync(tmpFile, ANTI_TOOL_HEADER + prompt, { encoding: 'utf8', mode: 0o600 });
 
   try {
     return await new Promise<string>((resolve, reject) => {
@@ -124,7 +140,7 @@ export async function runCopilotCli(
       const isBatch = /\.(cmd|bat)$/i.test(exe);
       const child = isBatch
         ? spawn(
-            [exe, ...args].map((a) => (/[\s&()^,;=]/.test(a) ? `"${a}"` : a)).join(' '),
+            [exe, ...args].map(cmdQuote).join(' '),
             { windowsHide: true, shell: true },
           )
         : spawn(exe, args, { windowsHide: true });
@@ -271,9 +287,10 @@ export async function runClaudeCli(
   model: string,
   signal?: AbortSignal,
 ): Promise<string> {
+  assertSafeModel(model);
   const exe = resolveClaudeExe();
   const tmpFile = path.join(tmpdir(), `claude-prompt-${randomUUID()}.txt`);
-  writeFileSync(tmpFile, prompt, 'utf8');
+  writeFileSync(tmpFile, prompt, { encoding: 'utf8', mode: 0o600 });
 
   try {
     return await new Promise<string>((resolve, reject) => {
@@ -281,7 +298,7 @@ export async function runClaudeCli(
       const isBatch = /\.(cmd|bat)$/i.test(exe);
       const child = isBatch
         ? spawn(
-            [exe, ...args].map((a) => (/[\s&()^,;=]/.test(a) ? `"${a}"` : a)).join(' '),
+            [exe, ...args].map(cmdQuote).join(' '),
             { windowsHide: true, shell: true },
           )
         : spawn(exe, args, { windowsHide: true });

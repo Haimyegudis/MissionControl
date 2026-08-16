@@ -20,6 +20,13 @@ function readJsonObject(filePath: string): Record<string, unknown> {
   }
 }
 
+/** Keys land in plain-object maps — refuse prototype-pollution names. */
+export function assertSafeMapKey(key: string): void {
+  if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+    throw new Error(`Invalid key: ${key}`);
+  }
+}
+
 function writeJson(filePath: string, value: unknown, indented: boolean): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value, null, indented ? 2 : undefined), 'utf8');
@@ -58,6 +65,7 @@ export class CreateDefaultsStore {
   }
 
   save(key: string, defaults: CreateDefaultsEntry): void {
+    assertSafeMapKey(key);
     const all = readJsonObject(this.filePath);
     all[key] = defaults;
     writeJson(this.filePath, all, true);
@@ -108,6 +116,7 @@ export class CreateMetaCache {
   }
 
   save(key: string, meta: JiraCreateIssueMeta | null): void {
+    assertSafeMapKey(key);
     const all = readJsonObject(this.filePath);
     const stored: StoredMetaEntry = {
       SavedUtc: new Date().toISOString(),

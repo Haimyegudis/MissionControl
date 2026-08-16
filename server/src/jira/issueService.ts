@@ -1,5 +1,20 @@
+import sanitizeHtml from 'sanitize-html';
 import { apiPrefix, jiraFetch, type JiraFetchOptions } from './httpClient.js';
 import type { JiraSession } from './session.js';
+
+/** Jira-rendered HTML → safe subset (keeps formatting, tables, images). */
+function sanitizeDescriptionHtml(html: string): string {
+  return sanitizeHtml(html, {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'span', 'del', 'ins', 'u']),
+    allowedAttributes: {
+      a: ['href', 'title', 'rel', 'target'],
+      img: ['src', 'alt', 'title', 'width', 'height'],
+      '*': ['class'],
+    },
+    allowedSchemes: ['http', 'https', 'data'],
+    disallowedTagsMode: 'discard',
+  });
+}
 import {
   buildTimeline,
   extractAllFields,
@@ -382,7 +397,9 @@ export class JiraIssueService {
     return {
       issue,
       description,
-      descriptionHtml: typeof renderedDescription === 'string' ? renderedDescription : null,
+      // Server-side sanitize — the client denylist stays as defense-in-depth.
+      descriptionHtml:
+        typeof renderedDescription === 'string' ? sanitizeDescriptionHtml(renderedDescription) : null,
       comments,
       worklogs,
       transitions,

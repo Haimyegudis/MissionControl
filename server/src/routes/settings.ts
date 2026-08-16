@@ -2,9 +2,16 @@
 
 import { Router } from 'express';
 import { DEFAULT_APP_SETTINGS, type AppSettings } from '../types.js';
-import { h, type AppDeps } from './deps.js';
+import { h, HttpError, type AppDeps } from './deps.js';
 
 const KNOWN_KEYS = new Set(Object.keys(DEFAULT_APP_SETTINGS));
+
+/** mcpServerEnv may hold user-entered tokens — never echo the values. */
+function redacted(settings: AppSettings): AppSettings {
+  const env = settings.mcpServerEnv ?? {};
+  const masked = Object.fromEntries(Object.keys(env).map((k) => [k, '•••']));
+  return { ...settings, mcpServerEnv: masked };
+}
 
 export function settingsRoutes(deps: AppDeps): Router {
   const router = Router();
@@ -12,7 +19,7 @@ export function settingsRoutes(deps: AppDeps): Router {
   router.get(
     '/',
     h((_req, res) => {
-      res.json(deps.repos.appSettings.get());
+      res.json(redacted(deps.repos.appSettings.get()));
     }),
   );
 
@@ -23,11 +30,31 @@ export function settingsRoutes(deps: AppDeps): Router {
       const body = (req.body ?? {}) as Record<string, unknown>;
       const merged = { ...deps.repos.appSettings.get() } as Record<string, unknown>;
       for (const [key, value] of Object.entries(body)) {
-        if (KNOWN_KEYS.has(key) && value !== undefined) merged[key] = value;
+        if (!KNOWN_KEYS.has(key) || value === undefined) continue;
+        // defaultProjectKey is interpolated unquoted into JQL all over — keep
+        // it a plain Jira project key.
+        if (key === 'defaultProjectKey') {
+          const v = String(value).trim().toUpperCase();
+          if (!/^[A-Z][A-Z0-9_]*$/.test(v)) throw new HttpError(400, `Invalid project key: ${String(value)}`);
+          merged[key] = v;
+          continue;
+        }
+        // Round-trip guard: masked env values from GET must not clobber the
+        // stored secrets.
+        if (key === 'mcpServerEnv' && value !== null && typeof value === 'object') {
+          const prev = (merged.mcpServerEnv ?? {}) as Record<string, string>;
+          const next: Record<string, string> = {};
+          for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+            next[k] = String(v) === '•••' ? (prev[k] ?? '') : String(v);
+          }
+          merged[key] = next;
+          continue;
+        }
+        merged[key] = value;
       }
       const settings = merged as unknown as AppSettings;
       deps.repos.appSettings.save(settings);
-      res.json(settings);
+      res.json(redacted(settings));
     }),
   );
 

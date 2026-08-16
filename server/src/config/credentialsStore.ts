@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { restrictToOwner } from '../security.js';
 import { configFile, ensureDir } from './appPaths.js';
 
 export type JiraInstanceType = 'cloud' | 'datacenter';
@@ -69,6 +70,8 @@ export class CredentialsStore {
     const tmp = `${file}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify(credentials, null, 2), 'utf8');
     fs.renameSync(tmp, file);
+    // PATs live in this file — restrict it to the owning user (NTFS ACL).
+    restrictToOwner(file);
   }
 
   clear(): void {

@@ -113,7 +113,9 @@ function dynamicSummaryScript(type: 'inProgress' | 'todo'): string {
 $null = [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime]
 $null = [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType=WindowsRuntime]
 $s = $null
-try { $s = Invoke-RestMethod 'http://127.0.0.1:5643/api/reminders/alert-summary?type=${type}' -TimeoutSec 5 } catch { }
+$tok = ''
+try { $tok = (Get-Content (Join-Path $env:APPDATA 'JiraWeb\api-token') -Raw).Trim() } catch { }
+try { $s = Invoke-RestMethod 'http://127.0.0.1:5643/api/reminders/alert-summary?type=${type}' -TimeoutSec 5 -Headers @{ 'x-mc-token' = $tok } } catch { }
 if ($s -ne $null -and $s.count -eq 0) { exit 0 }  # nothing to nag about
 $title = if ($s -ne $null) { ${titleExpr} } else { '${fallbackTitle}' }
 $body = if ($s -ne $null -and $s.lines) { ($s.lines | Select-Object -First 3) -join [char]10 } else { 'Open Mission Control for details' }
