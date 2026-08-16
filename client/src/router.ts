@@ -28,7 +28,8 @@ export const ROUTES: Array<{ id: RouteId; label: string }> = [
   { id: 'filters', label: 'Filters' },
   { id: 'recent', label: 'Recent Updates' },
   { id: 'timelogged', label: 'Time Spent' },
-  { id: 'dashboards', label: 'Dashboards' },
+  // 'dashboards' (Jira dashboards list) removed from the nav per user
+  // request — the route stays reachable via #/dashboards for deep links.
   { id: 'team', label: 'Team' },
   { id: 'settings', label: 'Settings' },
 ];
