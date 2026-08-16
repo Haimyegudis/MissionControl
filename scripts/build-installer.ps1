@@ -108,6 +108,7 @@ Copy-Item (Join-Path $Assets 'mission-control-hidden.vbs')  (Join-Path $App 'lau
 Copy-Item (Join-Path $Assets 'setup-helper.ps1')            (Join-Path $App 'launcher\')
 Copy-Item (Join-Path $Assets 'Uninstall.cmd')               (Join-Path $App 'Uninstall.cmd')
 Copy-Item (Join-Path $Assets 'README.txt')                  (Join-Path $App 'README.txt')
+Copy-Item (Join-Path $Assets 'icon\mission-control.ico')    (Join-Path $App 'mission-control.ico')
 Copy-Item (Join-Path $Assets 'install.cmd')                 (Join-Path $Payload 'install.cmd')
 
 # optional: Yaki knowledge pack (vector DBs + brain + config control; no uploads, no .env)

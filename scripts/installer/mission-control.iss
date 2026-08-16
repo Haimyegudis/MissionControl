@@ -27,6 +27,8 @@ SolidCompression=no
 CreateAppDir=yes
 DirExistsWarning=no
 UninstallDisplayName={#AppName}
+UninstallDisplayIcon={app}\mission-control.ico
+SetupIconFile=icon\mission-control.ico
 WizardStyle=modern
 
 [Tasks]
@@ -37,8 +39,8 @@ Name: "desktopicon"; Description: "Create a Desktop shortcut"
 Source: "{#PayloadApp}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Icons]
-Name: "{userdesktop}\Mission Control"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\launcher\mission-control-hidden.vbs"""; WorkingDir: "{app}"; Tasks: desktopicon
-Name: "{userprograms}\Mission Control"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\launcher\mission-control-hidden.vbs"""; WorkingDir: "{app}"
+Name: "{userdesktop}\Mission Control"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\launcher\mission-control-hidden.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\mission-control.ico"; Tasks: desktopicon
+Name: "{userprograms}\Mission Control"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\launcher\mission-control-hidden.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\mission-control.ico"
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "MissionControl"; ValueData: "wscript.exe ""{app}\launcher\mission-control-hidden.vbs"" /serveronly"; Flags: uninsdeletevalue; Tasks: autostart
