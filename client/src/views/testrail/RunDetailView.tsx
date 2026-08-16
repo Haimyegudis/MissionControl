@@ -214,6 +214,33 @@ export function RunDetailView() {
   const done = all.filter((t) => t.statusId !== 3).length;
   const total = all.length || 1;
 
+  // Status tiles derive from the LIVE tests (fresh statuses); the cached run
+  // record's counts go stale for up to an hour and confuse everyone.
+  const counts = useMemo(() => {
+    if (tests === null) {
+      return {
+        passed: run.passedCount,
+        failed: run.failedCount,
+        blocked: run.blockedCount,
+        retest: run.retestCount,
+        untested: run.untestedCount,
+      };
+    }
+    const c = { passed: 0, failed: 0, blocked: 0, retest: 0, untested: 0 };
+    for (const t of tests) {
+      if (t.statusId === 1) c.passed++;
+      else if (t.statusId === 5) c.failed++;
+      else if (t.statusId === 2) c.blocked++;
+      else if (t.statusId === 4) c.retest++;
+      else c.untested++;
+    }
+    return c;
+  }, [tests, run]);
+  const passRate =
+    counts.passed + counts.failed + counts.blocked + counts.retest > 0
+      ? `${Math.round((counts.passed / (counts.passed + counts.failed + counts.blocked + counts.retest)) * 100)}%`
+      : passPct(run);
+
   const selectedTests = all.filter((t) => sel.has(t.id));
   const shown = visible.slice(0, PAINT_CAP);
 
@@ -253,12 +280,12 @@ export function RunDetailView() {
       </div>
 
       <div className="tr-tiles">
-        <Tile label="Passed" value={run.passedCount} color="var(--accent-green)" />
-        <Tile label="Failed" value={run.failedCount} color="var(--accent-red)" />
-        <Tile label="Blocked" value={run.blockedCount} color="var(--accent-yellow)" />
-        <Tile label="Retest" value={run.retestCount} color="var(--accent-magenta)" />
-        <Tile label="Untested" value={run.untestedCount} color="var(--muted)" />
-        <Tile label="Pass rate" value={passPct(run)} color="var(--accent-cyan)" />
+        <Tile label="Passed" value={counts.passed} color="var(--accent-green)" />
+        <Tile label="Failed" value={counts.failed} color="var(--accent-red)" />
+        <Tile label="Blocked" value={counts.blocked} color="var(--accent-yellow)" />
+        <Tile label="Retest" value={counts.retest} color="var(--accent-magenta)" />
+        <Tile label="Untested" value={counts.untested} color="var(--muted)" />
+        <Tile label="Pass rate" value={passRate} color="var(--accent-cyan)" />
       </div>
 
       <div className="bigbar-wrap">
@@ -270,10 +297,10 @@ export function RunDetailView() {
         </div>
         <div className="bigbar">
           {([
-            [run.passedCount, 'var(--accent-green)'],
-            [run.failedCount, 'var(--accent-red)'],
-            [run.blockedCount, 'var(--accent-yellow)'],
-            [run.retestCount, 'var(--accent-magenta)'],
+            [counts.passed, 'var(--accent-green)'],
+            [counts.failed, 'var(--accent-red)'],
+            [counts.blocked, 'var(--accent-yellow)'],
+            [counts.retest, 'var(--accent-magenta)'],
           ] as Array<[number, string]>).map(([n, color], i) =>
             n > 0 ? <span key={i} style={{ width: `${((n / total) * 100).toFixed(2)}%`, background: color }} /> : null,
           )}

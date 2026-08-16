@@ -115,6 +115,7 @@ export interface MetadataServiceLike {
   getProjects(): Promise<string[]>;
   getIssueTypes(): Promise<string[]>;
   getStatuses(): Promise<string[]>;
+  getStatusMap(): Promise<Record<string, string>>;
   getPriorities(): Promise<string[]>;
   getResolutions(): Promise<string[]>;
   getFields(): Promise<string[]>;
@@ -192,6 +193,11 @@ export class CachedMetadataService implements MetadataServiceLike {
 
   getStatuses(): Promise<string[]> {
     return this.cachedList('statuses', () => this.inner.getStatuses());
+  }
+
+  /** Id→name map; small and session-bound — passes through uncached. */
+  getStatusMap(): Promise<Record<string, string>> {
+    return this.inner.getStatusMap();
   }
 
   getPriorities(): Promise<string[]> {

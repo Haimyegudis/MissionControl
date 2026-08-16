@@ -18,6 +18,7 @@ export function metadataRoutes(deps: AppDeps): Router {
   router.get('/projects', h(async (_req, res) => res.json(await deps.metadata.getProjects())));
   router.get('/issuetypes', h(async (_req, res) => res.json(await deps.metadata.getIssueTypes())));
   router.get('/statuses', h(async (_req, res) => res.json(await deps.metadata.getStatuses())));
+  router.get('/status-map', h(async (_req, res) => res.json(await deps.metadata.getStatusMap())));
   router.get('/priorities', h(async (_req, res) => res.json(await deps.metadata.getPriorities())));
   router.get('/resolutions', h(async (_req, res) => res.json(await deps.metadata.getResolutions())));
   router.get('/fields', h(async (_req, res) => res.json(await deps.metadata.getFields())));

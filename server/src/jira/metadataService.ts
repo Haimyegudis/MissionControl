@@ -66,6 +66,21 @@ export class JiraMetadataService implements JqlFieldResolver {
     return this.fetchList(`${this.prefix}/status`, 'name');
   }
 
+  /** Status id → display name (Time-in-Status raw values carry ids only). */
+  async getStatusMap(): Promise<Record<string, string>> {
+    if (!this.session.isConnected) return {};
+    const resp = await this.fetchFn(this.session, `${this.prefix}/status`);
+    const map: Record<string, string> = {};
+    for (const el of Array.isArray(resp) ? (resp as any[]) : []) {
+      const id = el?.id;
+      const name = el?.name;
+      if ((typeof id === 'string' || typeof id === 'number') && typeof name === 'string') {
+        map[String(id)] = name;
+      }
+    }
+    return map;
+  }
+
   getPriorities(): Promise<string[]> {
     return this.fetchList(`${this.prefix}/priority`, 'name');
   }

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { issues as issuesApi } from '../api/client';
 import { trApi } from '../api/testrail';
+import { fmtDuration, parseTimeInStatus } from '../lib/timeInStatus';
 import { IssueTestRailPanel } from './IssueTestRailPanel';
 import type { TrRun } from '../testrailTypes';
 import { Modal } from '../components/Modal';
@@ -85,6 +86,15 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
   const [trCases, setTrCases] = useState<
     Array<{ id: number; title: string; suiteId: number; suiteName: string; projectId: number }>
   >([]);
+  const [statusNames, setStatusNames] = useState<Record<string, string>>({});
+
+  // Status id → name (for the Time-in-Status field) — fetched once.
+  useEffect(() => {
+    fetch('/api/metadata/status-map')
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((m) => setStatusNames(m ?? {}))
+      .catch(() => {});
+  }, []);
   const [commentStatus, setCommentStatus] = useState('');
   const [commentBusy, setCommentBusy] = useState(false);
   const loadSeq = useRef(0);
@@ -388,11 +398,26 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
 
             {details.allFields.length > 0 && (
               <SectionCard title="All fields">
-                {details.allFields.map((f) => (
-                  <KV key={f.key} label={f.key} labelWidth={200}>
-                    <IssueLinkText text={f.value} onOpenIssue={openIssue} />
-                  </KV>
-                ))}
+                {details.allFields.map((f) => {
+                  const tis = parseTimeInStatus(f.value);
+                  return (
+                    <KV key={f.key} label={f.key} labelWidth={200}>
+                      {tis ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          {tis.map((e) => (
+                            <div key={e.statusId} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                              <span style={{ minWidth: 130 }}>{statusNames[e.statusId] ?? `Status ${e.statusId}`}</span>
+                              <b>{fmtDuration(e.millis)}</b>
+                              {e.count > 1 ? <span className="muted">entered {e.count}×</span> : null}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <IssueLinkText text={f.value} onOpenIssue={openIssue} />
+                      )}
+                    </KV>
+                  );
+                })}
               </SectionCard>
             )}
 
