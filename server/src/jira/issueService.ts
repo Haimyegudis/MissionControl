@@ -607,6 +607,16 @@ export class JiraIssueService {
     });
   }
 
+  /** Assign an issue; DC takes {name}, Cloud {accountId}. */
+  async setAssignee(issueKey: string, assignee: string): Promise<void> {
+    if (!assignee || assignee.trim().length === 0) return;
+    const body = this.isCloud ? { accountId: assignee } : { name: assignee };
+    await this.fetchFn(this.session, `${this.prefix}/issue/${encodeURIComponent(issueKey)}/assignee`, {
+      method: 'PUT',
+      body,
+    });
+  }
+
   // -------------------------------------------------------------------------
   // Distinct field values (§6)
   // -------------------------------------------------------------------------

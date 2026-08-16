@@ -7,6 +7,7 @@ import { boardHash } from '../lib/viewMyWorkJql';
 import { CONFLUENCE_ROUTES, navigate, ROUTES, TESTRAIL_ROUTES, routeStore, type RouteId } from '../router';
 import { pinBoard, pinnedBoardsStore, refreshPinnedBoards, unpinBoard } from '../stores/pinnedBoards';
 import { errText } from '../lib/errors';
+import { NotificationBell } from './NotificationBell';
 import { pausePomodoro, pomodoroStore, resumePomodoro, statusText, stopPomodoro } from '../stores/pomodoro';
 import { lastRefreshStore, triggerNow } from '../stores/scheduler';
 import { sessionStore } from '../stores/session';
@@ -344,6 +345,16 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
 
         <button className="btn btn-icon" title="Command palette (Ctrl+K)" onClick={() => openPalette()}>
           🔍
+        </button>
+
+        <NotificationBell />
+
+        <button
+          className="btn btn-icon"
+          title="Help — all features and how to use them (F1)"
+          onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F1' }))}
+        >
+          ?
         </button>
 
         <button className="btn btn-icon" title={themeInfo.label} onClick={cycleTheme}>

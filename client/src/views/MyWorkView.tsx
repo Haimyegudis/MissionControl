@@ -479,6 +479,42 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
         },
       },
       {
+        label: 'Bulk: change status of selected',
+        onClick: () => {
+          void (async () => {
+            const target = await prompt(
+              'Bulk transition',
+              `Target status for ${keys.length} selected issue(s) (e.g. In Progress, Done):`,
+            );
+            if (target === null || !target.trim()) return;
+            const wanted = target.trim().toLowerCase();
+            await runBulk(
+              keys,
+              async (key) => {
+                const transitions = await issuesApi.transitions(key);
+                const t =
+                  transitions.find((x) => (x.toStatus ?? '').toLowerCase() === wanted) ??
+                  transitions.find((x) => (x.toStatus ?? '').toLowerCase().includes(wanted)) ??
+                  transitions.find((x) => x.name.toLowerCase().includes(wanted));
+                if (!t) throw new Error(`no transition to '${target}'`);
+                await issuesApi.performTransition(key, { id: t.id });
+              },
+              'Bulk transition',
+            );
+          })();
+        },
+      },
+      {
+        label: 'Bulk: assign selected to…',
+        onClick: () => {
+          void (async () => {
+            const who = await prompt('Bulk assign', `Assignee username for ${keys.length} selected issue(s):`);
+            if (who === null || !who.trim()) return;
+            await runBulk(keys, (key) => issuesApi.setAssignee(key, who.trim()), 'Bulk assign');
+          })();
+        },
+      },
+      {
         label: 'Bulk: open all selected',
         onClick: () => {
           for (const key of keys.slice(0, BULK_OPEN_CAP)) dialogs.openIssueDetails(key);

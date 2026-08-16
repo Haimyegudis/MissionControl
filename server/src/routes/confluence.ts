@@ -202,6 +202,12 @@ export function confluenceRoutes(deps: AppDeps): Router {
     res.json(await service.client().updatePage(current, requireString(body.title, 'title'), requireString(body.storageBody, 'storageBody'), body.parentId === undefined ? undefined : parentId));
   }));
 
+  router.delete('/pages/:id', h(async (req, res) => {
+    await service.requirePage(req.params.id); // 404 before delete
+    await service.client().deletePage(req.params.id);
+    res.status(204).end();
+  }));
+
   router.get('/proxy', h(async (req, res) => {
     const rawUrl = requireString(qstr(req.query.url), 'url');
     const client = service.client();

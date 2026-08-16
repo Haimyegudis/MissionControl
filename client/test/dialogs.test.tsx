@@ -238,16 +238,17 @@ describe('CommandPalette (§11)', () => {
   });
 });
 
-describe('HelpDialog (§10.9)', () => {
-  it('renders sections, legend colors and footer version', () => {
+describe('HelpDialog', () => {
+  it('renders the tabbed guide with all areas and the footer version', () => {
     const html = renderToString(<HelpDialog onClose={noop} />);
-    expect(html).toContain('Visual Legend');
-    expect(html).toContain('#10B981');
-    expect(html).toContain('#F59E0B');
-    expect(html).toContain('#EF4444');
-    expect(html).toContain('#4F46E5');
-    expect(html).toContain('Keyboard Shortcuts');
-    expect(html).toContain('v0.1.0');
+    expect(html).toContain('Jira');
+    expect(html).toContain('TestRail');
+    expect(html).toContain('Confluence');
+    expect(html).toContain('Lumo (AI)');
+    expect(html).toContain('Alerts');
+    expect(html).toContain('Shortcuts');
+    expect(html).toContain('Mission Control');
+    expect(html).toContain('v1.0');
   });
 });
 

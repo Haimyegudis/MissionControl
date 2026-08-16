@@ -169,6 +169,15 @@ export function issueRoutes(deps: AppDeps): Router {
     }),
   );
 
+  router.put(
+    '/:key/assignee',
+    h(async (req, res) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      await deps.issues.setAssignee(req.params.key, requireString(body.assignee, 'assignee'));
+      res.status(204).end();
+    }),
+  );
+
   router.get(
     '/:key/worklogs',
     h(async (req, res) => {

@@ -69,6 +69,7 @@ export interface TestRailState {
 // Column defaults mirror Railbook's CASE_COLS visibility.
 export const DEFAULT_VISIBLE_COLS = ['id', 'title', 'priority', 'owner', 'assigned', 'refs', 'updated'];
 
+const LS_FILTERS = 'deck.tr.filters';
 const LS_COLS = 'deck.tr.cols';
 const LS_COLW = 'deck.tr.colw';
 const LS_TREE = 'deck.tr.treehidden';
@@ -103,7 +104,12 @@ export const trStore = createStore<TestRailState>({
   selSectionId: null,
   caseSel: new Set(),
   collapsedSecs: new Set(),
-  filters: { titleContains: '', ownerText: '', assigneeText: '', showNeverRan: false },
+  // Filters survive navigation and reloads (coverage stays session-local).
+  filters: {
+    ...{ titleContains: '', ownerText: '', assigneeText: '', showNeverRan: false },
+    ...readJson<Partial<TrFilters>>(LS_FILTERS, {}),
+    showNeverRan: false,
+  },
   coverage: {},
   cols: {
     visible: readJson<string[]>(LS_COLS, DEFAULT_VISIBLE_COLS),
@@ -367,7 +373,16 @@ export function toggleCollapsedSection(sectionId: number): void {
 }
 
 export function setFilters(partial: Partial<TrFilters>): void {
-  trStore.set((prev) => ({ ...prev, filters: { ...prev.filters, ...partial } }));
+  trStore.set((prev) => {
+    const filters = { ...prev.filters, ...partial };
+    try {
+      const { showNeverRan: _skip, ...persisted } = filters;
+      localStorage.setItem(LS_FILTERS, JSON.stringify(persisted));
+    } catch {
+      /* best-effort */
+    }
+    return { ...prev, filters };
+  });
 }
 
 export function setVisibleCols(visible: string[]): void {
@@ -445,6 +460,15 @@ export async function analyzeCoverage(
     },
     filters: { ...prev.filters, showNeverRan: true },
   }));
+  // Persist: the scan is expensive and used to evaporate on project switch.
+  try {
+    localStorage.setItem(
+      `deck.tr.coverage.${suiteId}`,
+      JSON.stringify({ covered: [...covered], runsAnalyzed: allRuns.length - failed, totalRuns: allRuns.length, at: Date.now() }),
+    );
+  } catch {
+    /* best-effort */
+  }
   if (failed) {
     pushToast({
       title: 'Coverage partial',
@@ -452,6 +476,26 @@ export async function analyzeCoverage(
     });
   } else {
     pushToast({ title: 'Coverage complete', body: `All ${allRuns.length} runs of this suite analyzed.` });
+  }
+}
+
+/** Restore a persisted coverage scan (≤7 days old) into the store. */
+export function restoreCoverage(suiteId: number): boolean {
+  try {
+    const raw = localStorage.getItem(`deck.tr.coverage.${suiteId}`);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as { covered: number[]; runsAnalyzed: number; totalRuns: number; at: number };
+    if (!Array.isArray(parsed.covered) || Date.now() - parsed.at > 7 * 86_400_000) return false;
+    trStore.set((prev) => ({
+      ...prev,
+      coverage: {
+        ...prev.coverage,
+        [suiteId]: { covered: new Set(parsed.covered), runsAnalyzed: parsed.runsAnalyzed, totalRuns: parsed.totalRuns },
+      },
+    }));
+    return true;
+  } catch {
+    return false;
   }
 }
 

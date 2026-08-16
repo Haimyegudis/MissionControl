@@ -60,6 +60,7 @@ export interface IssuesDep {
   ): Promise<void>;
   addComment(issueKey: string, body: string): Promise<void>;
   addLabel(issueKey: string, label: string): Promise<void>;
+  setAssignee(issueKey: string, assignee: string): Promise<void>;
   resetFieldCache(): void;
 }
 

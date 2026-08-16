@@ -230,6 +230,11 @@ export class ConfluenceClient {
     return this.page(page.id);
   }
 
+  /** Move the page to Confluence's trash (soft delete — restorable there). */
+  async deletePage(pageId: string): Promise<void> {
+    await this.request(`rest/api/content/${encodeURIComponent(pageId)}`, { method: 'DELETE' });
+  }
+
   async proxy(url: string): Promise<Response> {
     const target = new URL(url, `${this.baseUrl}/`);
     const allowed = new URL(this.baseUrl);

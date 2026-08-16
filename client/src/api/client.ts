@@ -141,6 +141,8 @@ export const issues = {
     api.post<void>(`/api/issues/${encodeURIComponent(key)}/comments`, { body }),
   addLabel: (key: string, label: string) =>
     api.post<void>(`/api/issues/${encodeURIComponent(key)}/labels`, { label }),
+  setAssignee: (key: string, assignee: string) =>
+    api.put<void>(`/api/issues/${encodeURIComponent(key)}/assignee`, { assignee }),
   worklogs: (key: string) => api.get<JiraWorklog[]>(`/api/issues/${encodeURIComponent(key)}/worklogs`),
   addWorklog: (
     key: string,
@@ -273,6 +275,7 @@ export const confluence = {
     api.post<ConfluencePageContent>('/api/confluence/pages', body),
   updatePage: (pageId: string, body: { title: string; storageBody: string; version: number; parentId?: string | null }) =>
     api.put<ConfluencePageContent>(`/api/confluence/pages/${encodeURIComponent(pageId)}`, body),
+  deletePage: (pageId: string) => api.del<void>(`/api/confluence/pages/${encodeURIComponent(pageId)}`),
   proxyUrl: (url: string) => withQuery('/api/confluence/proxy', { url }),
 };
 

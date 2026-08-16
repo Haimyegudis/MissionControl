@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { confluence } from '../../api/client';
 import { DraftBanner } from '../../components/DraftBanner';
 import { useTextPrompt } from '../../components/TextPrompt';
+import { pushToast } from '../../stores/toasts';
+import { ConfirmDialog, type ConfirmSpec } from '../testrail/common';
 import { clearDraft, draftKey, loadDraft } from '../../lib/drafts';
 import { useDraftAutosave } from '../../lib/useDraftAutosave';
 import { updateSettings } from '../../stores/settings';
@@ -70,8 +72,30 @@ function PageTree({ pages, selectedId, onOpen }: { pages: ConfluencePage[]; sele
   return <div className="cf-tree">{render(pages)}</div>;
 }
 
-function PageViewer({ page, baseUrl, onEdit }: { page: ConfluencePageContent; baseUrl: string | null; onEdit: () => void }) {
+function PageViewer({ page, baseUrl, onEdit, onDeleted }: { page: ConfluencePageContent; baseUrl: string | null; onEdit: () => void; onDeleted: () => void }) {
   const openUrl = absoluteConfluenceUrl(baseUrl, page.url);
+  const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
+  const doDelete = () =>
+    setConfirm({
+      title: 'Delete page',
+      message: (
+        <span>
+          Move <b>{page.title}</b> (v{page.version}) to the Confluence trash? It can be restored from Confluence's
+          trash by a space admin.
+        </span>
+      ),
+      confirmLabel: 'Delete page',
+      typed: page.title,
+      onConfirm: async () => {
+        try {
+          await confluence.deletePage(page.id);
+          pushToast({ title: 'Page deleted', body: page.title, severity: 'success' });
+          onDeleted();
+        } catch (e) {
+          pushToast({ title: 'Delete failed', body: message(e), severity: 'error' });
+        }
+      },
+    });
 
   // Ctrl+wheel over the page zooms ONLY the rendered Confluence page (the
   // iframe is scaled; the rest of the app is untouched). Persisted.
@@ -129,7 +153,10 @@ function PageViewer({ page, baseUrl, onEdit }: { page: ConfluencePageContent; ba
       } : undefined}
     >
       <div className="cf-page-heading cf-page-actions">
-        <div className="cf-breadcrumb">{page.spaceKey} <span>/</span> {page.title}</div>
+        <div className="cf-breadcrumb">
+          {page.spaceKey} <span>/</span> {page.title}{' '}
+          <span className="muted" style={{ fontSize: 11 }}>v{page.version}</span>
+        </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {zoom !== 1 ? (
             <button className="btn" title="Reset zoom (Ctrl+wheel to zoom)" onClick={() => { setZoom(1); try { localStorage.setItem('mc.cf.zoom', '1'); } catch { /* ignore */ } }}>
@@ -140,6 +167,9 @@ function PageViewer({ page, baseUrl, onEdit }: { page: ConfluencePageContent; ba
             <button className="btn" title="Full screen (Esc to exit)" onClick={() => setFullScreen(true)}>⛶ Full screen</button>
           ) : null}
           <button className="btn btn-primary" onClick={onEdit}>Edit</button>
+          <button className="btn" style={{ color: 'var(--accent-red)', borderColor: 'var(--accent-red)' }} onClick={doDelete}>
+            Delete
+          </button>
           {openUrl ? <a className="btn" href={openUrl} target="_blank" rel="noreferrer">Open in Confluence ↗</a> : null}
           {fullScreen ? (
             <button
@@ -168,6 +198,7 @@ function PageViewer({ page, baseUrl, onEdit }: { page: ConfluencePageContent; ba
           }}
         />
       </div>
+      {confirm ? <ConfirmDialog spec={confirm} onClose={() => setConfirm(null)} /> : null}
     </section>
   );
 }
@@ -709,7 +740,7 @@ export function ConfluenceView() {
           {mode === 'search' ? <SearchPanel spaces={spaces} currentSpaceKey={space?.key ?? ''} onOpen={(p) => void openPage(p)} /> : null}
           {mode === 'create' && space ? <PageEditor mode="create" space={space} spaces={spaces} initial={null} onCancel={() => setMode('pages')} onSaved={(saved) => { setRoots((items) => [saved, ...items.filter((item) => item.id !== saved.id)]); setPage(saved); setMode('pages'); }} /> : null}
           {mode === 'edit' && space && page ? <PageEditor mode="edit" space={space} spaces={spaces} initial={page} onCancel={() => setMode('pages')} onSaved={(saved) => { setPage(saved); setRoots((x) => x.map((p) => p.id === saved.id ? saved : p)); setMode('pages'); }} /> : null}
-          {mode === 'pages' ? pageLoading ? <div className="cf-empty">Loading page…</div> : page ? <PageViewer page={page} baseUrl={status?.baseUrl ?? null} onEdit={() => setMode('edit')} /> : <div className="cf-welcome"><div className="cf-welcome-icon">▤</div><h2>{space ? space.name : 'Indigo Confluence'}</h2><p>{space?.description || 'Choose a page from the tree, search all Indigo content, or create a new page.'}</p><div><button className="btn btn-primary" disabled={!space} onClick={() => setMode('create')}>Create a page</button><button className="btn" onClick={() => setMode('search')}>Search pages</button></div></div> : null}
+          {mode === 'pages' ? pageLoading ? <div className="cf-empty">Loading page…</div> : page ? <PageViewer page={page} baseUrl={status?.baseUrl ?? null} onEdit={() => setMode('edit')} onDeleted={() => { setRoots((x) => x.filter((p) => p.id !== page.id)); setPage(null); }} /> : <div className="cf-welcome"><div className="cf-welcome-icon">▤</div><h2>{space ? space.name : 'Indigo Confluence'}</h2><p>{space?.description || 'Choose a page from the tree, search all Indigo content, or create a new page.'}</p><div><button className="btn btn-primary" disabled={!space} onClick={() => setMode('create')}>Create a page</button><button className="btn" onClick={() => setMode('search')}>Search pages</button></div></div> : null}
         </div>
       </div>
     </div>

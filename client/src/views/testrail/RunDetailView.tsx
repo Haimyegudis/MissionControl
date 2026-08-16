@@ -7,6 +7,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { trApi } from '../../api/testrail';
 import { Modal } from '../../components/Modal';
+import { buildCsv, downloadCsv } from '../../lib/csv';
+import { RefLinks } from '../../components/RefLinks';
 import { fmtUnixDate, passPct } from '../../lib/testrail';
 import { testrailRunIdStore } from '../../router';
 import { pushToast } from '../../stores/toasts';
@@ -287,6 +289,12 @@ export function RunDetailView() {
             <>
               <RunStateStamp isCompleted={run.isCompleted} /> &nbsp;{all.length} tests · created{' '}
               {fmtUnixDate(run.createdOn)}
+              {run.refs ? (
+                <>
+                  {' '}
+                  · refs <RefLinks refs={run.refs} />
+                </>
+              ) : null}
               {run.description ? ` — ${run.description}` : ''}
             </>
           }
@@ -381,6 +389,26 @@ export function RunDetailView() {
               <option key={n} value={n} />
             ))}
           </datalist>
+          <button
+            className="btn"
+            title="Export the filtered tests to CSV"
+            onClick={() => {
+              const csv = buildCsv(
+                [
+                  { header: 'Test', value: (t: TrTest) => `T${t.id}` },
+                  { header: 'Case', value: (t: TrTest) => `C${t.caseId}` },
+                  { header: 'Title', value: (t: TrTest) => t.title },
+                  { header: 'Status', value: (t: TrTest) => statusLabel(st, t.statusId) },
+                  { header: 'Assigned', value: (t: TrTest) => userName(st, t.assignedToId) },
+                ],
+                visible,
+              );
+              downloadCsv(`run-${runId}-tests.csv`, csv);
+              pushToast({ title: 'Exported', body: `${visible.length} tests`, severity: 'success' });
+            }}
+          >
+            ⬇ CSV
+          </button>
           <span style={{ flex: 1 }} />
           <div className="chip-row">
             {CHIPS.map((chip) => (

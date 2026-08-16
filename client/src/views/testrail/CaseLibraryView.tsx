@@ -28,6 +28,7 @@ import {
   ensureCases,
   ensureSections,
   priorityName,
+  restoreCoverage,
   selectProject,
   selectSection,
   selectSuite,
@@ -175,6 +176,12 @@ export function CaseLibraryView() {
   const cases = currentCases(st);
   const suiteForCoverage = typeof st.selSuiteId === 'number' ? st.selSuiteId : null;
   const coverage = suiteForCoverage != null ? st.coverage[suiteForCoverage] : undefined;
+
+  // A persisted coverage scan (≤7 days) restores instead of rescanning.
+  useEffect(() => {
+    if (suiteForCoverage != null && !st.coverage[suiteForCoverage]) restoreCoverage(suiteForCoverage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suiteForCoverage]);
 
   const nameOf = (id: number | null) => userName(st, id);
   const sectionScope = useMemo(

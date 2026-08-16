@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { trApi } from '../../api/testrail';
 import { MdView } from '../../components/MdView';
+import { RefLinks } from '../../components/RefLinks';
 import { fmtUnixDate } from '../../lib/testrail';
 import { navigateTestRailRun } from '../../router';
 import { pushToast } from '../../stores/toasts';
@@ -148,7 +149,9 @@ export function CaseDrawer({ st, caseId, onClose, onEdit, onTransfer, onDeleted 
         <dt>Assigned to</dt>
         <dd>{userName(st, c.assignedToId)}</dd>
         <dt>Refs</dt>
-        <dd>{c.refs ?? '—'}</dd>
+        <dd>
+          <RefLinks refs={c.refs} />
+        </dd>
         <dt>Estimate</dt>
         <dd>{c.estimate ?? '—'}</dd>
         <dt>Created</dt>
