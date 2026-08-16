@@ -259,6 +259,16 @@ export function testrailRoutes(deps: AppDeps): Router {
       if (projectIds.length === 0) throw new HttpError(400, 'projects is required');
 
       const client = service.requireClient();
+      const projectNames = new Map<number, string>();
+      try {
+        const all = (await service.cachedJson('projects', () => client.getProjects(), false)) as Array<{
+          id: number;
+          name: string;
+        }>;
+        for (const p of all) projectNames.set(p.id, p.name);
+      } catch {
+        /* names best-effort */
+      }
       const out: Array<Record<string, unknown>> = [];
       for (const pid of projectIds) {
         let suites;
@@ -289,6 +299,7 @@ export function testrailRoutes(deps: AppDeps): Router {
                 suiteId: c.suiteId ?? suite.id,
                 suiteName: suite.name,
                 projectId: pid,
+                projectName: projectNames.get(pid) ?? '',
               });
               if (out.length >= 100) break;
             }

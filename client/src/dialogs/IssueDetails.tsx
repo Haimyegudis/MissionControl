@@ -191,8 +191,23 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
         if (!cancelled) setTrRuns(matches.slice(0, 12));
 
         // Linked cases — the Jira TestRail plugin links via case References.
+        // Cases get copied between program suites keeping the same refs, so
+        // the issue's Program field scopes the list: an epic on Kedem shows
+        // only the Kedem suite's cases, not the David/S4 duplicates.
         try {
-          const cases = await trApi.casesByRef(key, projects.map((p) => p.id));
+          let cases = await trApi.casesByRef(key, projects.map((p) => p.id));
+          const programs = (details?.allFields.find((f) => f.key.trim().toLowerCase() === 'program')?.value ?? '')
+            .split(',')
+            .map((p) => p.trim().toLowerCase())
+            .filter(Boolean);
+          if (programs.length > 0) {
+            const scoped = cases.filter((c) => {
+              const suite = c.suiteName.toLowerCase();
+              const project = (c.projectName ?? '').toLowerCase();
+              return programs.some((p) => suite.includes(p) || p.includes(suite) || project.includes(p));
+            });
+            if (scoped.length > 0) cases = scoped;
+          }
           if (!cancelled) setTrCases(cases);
         } catch {
           /* section stays hidden */
