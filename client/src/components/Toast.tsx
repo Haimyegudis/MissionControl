@@ -14,7 +14,9 @@ const hostStyle: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: 10,
-  zIndex: 1000,
+  // Above every dialog/drawer (Modal overlay is 2000, Confluence full-screen
+  // 1000) — alerts must never hide behind an open card.
+  zIndex: 3000,
   pointerEvents: 'none',
 };
 
