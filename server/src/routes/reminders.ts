@@ -8,7 +8,9 @@ import { applyReminderConfig, loadReminderConfig } from '../reminders.js';
 import { defaultProjectKey, h, HttpError, qstr, type AppDeps } from './deps.js';
 
 const SUMMARY_TYPES: Record<string, string> = {
-  inProgress: 'statusCategory = "In Progress"',
+  // Exact status, not statusCategory — the category lumps In Review (and
+  // other in-flight statuses) into "In Progress", inflating the count.
+  inProgress: 'status = "In Progress"',
   todo: 'statusCategory = "To Do"',
 };
 
