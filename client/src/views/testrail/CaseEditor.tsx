@@ -8,11 +8,12 @@ import { DraftBanner } from '../../components/DraftBanner';
 import { Modal } from '../../components/Modal';
 import { RichTextArea } from '../../components/RichTextArea';
 import { RichToolbar, useRichTarget } from '../../components/RichToolbar';
+import { UserIdPicker } from '../../components/UserIdPicker';
 import { clearDraft, draftKey, loadDraft } from '../../lib/drafts';
 import { useDraftAutosave } from '../../lib/useDraftAutosave';
 import { sectionPath, stepsToText } from '../../lib/testrail';
 import { pushToast } from '../../stores/toasts';
-import { currentSections, userName, type TestRailState } from '../../stores/testrail';
+import { currentSections, type TestRailState } from '../../stores/testrail';
 import type { TrCase } from '../../testrailTypes';
 import { errText } from './common';
 
@@ -247,20 +248,10 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
             References
             <input value={refs} placeholder="JIRA-123, JIRA-456" onChange={(e) => setRefs(e.target.value)} />
           </label>
-          <label style={fieldCol}>
+          <div style={fieldCol}>
             Test case owner
-            <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
-              <option value="">—</option>
-              {ownerOptions.map(([id, name]) => (
-                <option key={id} value={id}>
-                  {name}
-                </option>
-              ))}
-              {ownerId && !ownerOptions.some(([id]) => String(id) === ownerId) ? (
-                <option value={ownerId}>{userName(st, Number(ownerId))}</option>
-              ) : null}
-            </select>
-          </label>
+            <UserIdPicker options={ownerOptions} value={ownerId} onChange={setOwnerId} />
+          </div>
         </div>
 
         <RichToolbar target={richTarget} />

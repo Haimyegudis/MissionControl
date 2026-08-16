@@ -5,8 +5,9 @@
 import { useMemo, useState } from 'react';
 import { trApi } from '../../api/testrail';
 import { Modal } from '../../components/Modal';
+import { UserIdPicker } from '../../components/UserIdPicker';
 import { pushToast } from '../../stores/toasts';
-import { userName, type TestRailState } from '../../stores/testrail';
+import type { TestRailState } from '../../stores/testrail';
 import { errText } from './common';
 
 const NO_CHANGE = '';
@@ -37,12 +38,6 @@ export function BulkEditDialog({
     return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   }, [st.meta, st.people]);
 
-  const [userFilter, setUserFilter] = useState('');
-  const filteredUsers = useMemo(() => {
-    const q = userFilter.trim().toLowerCase();
-    return q ? userOptions.filter(([, name]) => name.toLowerCase().includes(q)) : userOptions;
-  }, [userOptions, userFilter]);
-
   const nothingPicked = !assignedTo && !owner && !priority && !type;
 
   const apply = async () => {
@@ -72,20 +67,15 @@ export function BulkEditDialog({
 
   const fieldCol: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4 };
   const userSelect = (value: string, onChange: (v: string) => void, label: string) => (
-    <label style={fieldCol}>
+    <div style={fieldCol}>
       {label}
-      <select value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value={NO_CHANGE}>— no change —</option>
-        {filteredUsers.map(([id, name]) => (
-          <option key={id} value={id}>
-            {name}
-          </option>
-        ))}
-        {value && !filteredUsers.some(([id]) => String(id) === value) ? (
-          <option value={value}>{userName(st, Number(value))}</option>
-        ) : null}
-      </select>
-    </label>
+      <UserIdPicker
+        options={userOptions}
+        value={value}
+        onChange={onChange}
+        placeholder="Type a name — no change when empty"
+      />
+    </div>
   );
 
   return (
@@ -109,14 +99,6 @@ export function BulkEditDialog({
         <div className="muted" style={{ fontSize: 12 }}>
           Only the fields you pick change — everything else stays as-is.
         </div>
-        <label style={fieldCol}>
-          Filter users
-          <input
-            placeholder="Type to filter the user lists…"
-            value={userFilter}
-            onChange={(e) => setUserFilter(e.target.value)}
-          />
-        </label>
         {userSelect(assignedTo, setAssignedTo, 'Assigned to')}
         {userSelect(owner, setOwner, 'Test case owner')}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
