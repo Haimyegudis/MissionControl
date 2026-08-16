@@ -4,8 +4,11 @@ import { describe, expect, it } from 'vitest';
 import {
   countOnHold,
   dashboardSprintJql,
+  filterOnHold,
   formatHoursMinutes,
   KPI_DEFS,
+  kpiDrillJql,
+  kpiDrillSubtitle,
   needsCloseDialog,
   pickTransition,
   resolveDashboardWidgets,
@@ -138,5 +141,42 @@ describe('needsCloseDialog heuristics', () => {
   it('misses on plain moves', () => {
     expect(needsCloseDialog('In Progress', 'Start work')).toBe(false);
     expect(needsCloseDialog('To Do', 'Back to backlog')).toBe(false);
+  });
+});
+
+describe('KPI drill-down', () => {
+  it('kpiDrillJql mirrors the snapshot scopes', () => {
+    const scope = 'project = ISW AND assignee = currentUser() AND Sprint in openSprints()';
+    expect(kpiDrillJql('OpenIssues', 'ISW')).toBe(
+      `${scope} AND statusCategory != Done ORDER BY priority DESC, updated DESC`,
+    );
+    expect(kpiDrillJql('Critical', 'ISW')).toBe(
+      `${scope} AND issuetype in (Incident, Bug, Defect) AND priority in (Critical, Highest)` +
+        ' AND statusCategory != Done ORDER BY priority DESC, updated DESC',
+    );
+    expect(kpiDrillJql('UpdatedToday', 'ISW')).toBe(`${scope} AND updated >= startOfDay() ORDER BY updated DESC`);
+  });
+
+  it('kpiDrillJql is null for client-side/report drills', () => {
+    expect(kpiDrillJql('OnHold', 'ISW')).toBeNull();
+    expect(kpiDrillJql('LoggedToday', 'ISW')).toBeNull();
+    expect(kpiDrillJql('LoggedThisWeek', 'ISW')).toBeNull();
+  });
+
+  it('filterOnHold keeps only hold statuses (ci) and matches countOnHold', () => {
+    const issues = [
+      { status: 'On Hold' },
+      { status: 'ON HOLD - waiting' },
+      { status: 'In Progress' },
+      { status: '' },
+    ];
+    expect(filterOnHold(issues).map((i) => i.status)).toEqual(['On Hold', 'ON HOLD - waiting']);
+    expect(filterOnHold(issues).length).toBe(countOnHold(issues));
+  });
+
+  it('every KPI has a drill subtitle', () => {
+    for (const def of KPI_DEFS) {
+      expect(kpiDrillSubtitle(def.id)).not.toBe('');
+    }
   });
 });

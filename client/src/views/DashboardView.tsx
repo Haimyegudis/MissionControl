@@ -13,6 +13,7 @@ import { Kanban } from '../components/Kanban';
 import { TextPrompt } from '../components/TextPrompt';
 import { UserSearchPicker } from '../components/UserSearchPicker';
 import { dialogs } from '../dialogs/DialogHost';
+import { KpiDrilldown } from '../dialogs/KpiDrilldown';
 import { priorityColor, starColor, statusColor } from '../lib/colors';
 import { formatDateTime } from '../lib/format';
 import {
@@ -69,6 +70,7 @@ export function DashboardView() {
   const [mode, setMode] = useState<'kanban' | 'table'>('kanban');
   const [roster, setRoster] = useState<string[]>([]);
   const [wipColumn, setWipColumn] = useState<string | null>(null);
+  const [drillKpi, setDrillKpi] = useState<{ id: string; title: string } | null>(null);
 
   const userFilterRef = useRef(userFilter);
   userFilterRef.current = userFilter;
@@ -279,7 +281,14 @@ export function DashboardView() {
             <div
               key={w.id}
               className="card"
-              style={{ minWidth: 120, borderRadius: 6, padding: '10px 14px', flex: '0 1 auto' }}
+              role="button"
+              tabIndex={0}
+              title="Click to see the issues behind this number"
+              onClick={() => setDrillKpi({ id: w.id, title: w.title })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') setDrillKpi({ id: w.id, title: w.title });
+              }}
+              style={{ minWidth: 120, borderRadius: 6, padding: '10px 14px', flex: '0 1 auto', cursor: 'pointer' }}
             >
               <div className="muted" style={{ fontSize: 10, letterSpacing: '0.05em' }}>
                 {w.title}
@@ -357,6 +366,16 @@ export function DashboardView() {
           />
         )}
       </div>
+
+      {drillKpi !== null ? (
+        <KpiDrilldown
+          kpiId={drillKpi.id}
+          kpiTitle={drillKpi.title}
+          project={getSettings().defaultProjectKey || 'ISW'}
+          sprintIssues={sprintIssues}
+          onClose={() => setDrillKpi(null)}
+        />
+      ) : null}
 
       {wipColumn !== null ? (
         <TextPrompt

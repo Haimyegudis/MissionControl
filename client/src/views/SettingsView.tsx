@@ -25,7 +25,7 @@ const NAV: Array<[id: string, label: string]> = [
   ['set-notifications', 'Notifications'],
   ['set-dashboard', 'Dashboard'],
   ['set-ai', 'AI Assistant'],
-  ['set-reminders', 'Reminders'],
+  ['set-reminders', 'Alerts'],
   ['set-data', 'Data'],
 ];
 

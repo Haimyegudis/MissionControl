@@ -75,7 +75,7 @@ export function createApp(deps: AppDeps): Express {
   api.use('/lumo', lumoRoutes(deps));
   api.use('/testrail', testrailRoutes(deps));
   api.use('/confluence', confluenceRoutes(deps));
-  api.use('/reminders', reminderRoutes());
+  api.use('/reminders', reminderRoutes(deps));
   api.use('/copilot', copilotAuthRoutes());
   api.use((req: Request, res: Response) => {
     res.status(404).json({ status: 404, message: `Not found: ${req.method} /api${req.path}` });

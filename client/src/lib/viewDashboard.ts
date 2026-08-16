@@ -56,6 +56,54 @@ export function countOnHold(issues: readonly Pick<JiraIssue, 'status'>[]): numbe
   return issues.filter((i) => (i.status ?? '').toLowerCase().includes('hold')).length;
 }
 
+/** Sprint issues whose status contains "hold" (ci) — On Hold drill-down rows. */
+export function filterOnHold<T extends Pick<JiraIssue, 'status'>>(issues: readonly T[]): T[] {
+  return issues.filter((i) => (i.status ?? '').toLowerCase().includes('hold'));
+}
+
+/**
+ * Drill-down JQL for the issue-list KPI cards, mirroring the server snapshot
+ * scopes (DashboardAggregator) so drill rows always match the card's count.
+ * Null for KPIs that don't drill through a JQL search (OnHold = client filter
+ * of the sprint issues; Logged* = time-logged report).
+ */
+export function kpiDrillJql(id: string, project: string): string | null {
+  const scope = `project = ${project} AND assignee = currentUser() AND Sprint in openSprints()`;
+  switch (id) {
+    case 'OpenIssues':
+      return `${scope} AND statusCategory != Done ORDER BY priority DESC, updated DESC`;
+    case 'Critical':
+      return (
+        `${scope} AND issuetype in (Incident, Bug, Defect) AND priority in (Critical, Highest)` +
+        ' AND statusCategory != Done ORDER BY priority DESC, updated DESC'
+      );
+    case 'UpdatedToday':
+      return `${scope} AND updated >= startOfDay() ORDER BY updated DESC`;
+    default:
+      return null;
+  }
+}
+
+/** Human explanation line shown under the drill-down dialog title. */
+export function kpiDrillSubtitle(id: string): string {
+  switch (id) {
+    case 'OpenIssues':
+      return 'Your active-sprint issues that are not Done.';
+    case 'Critical':
+      return 'Your critical/highest incidents, bugs and defects still open in the sprint.';
+    case 'OnHold':
+      return 'Your sprint issues currently in an On Hold status.';
+    case 'UpdatedToday':
+      return 'Your sprint issues updated since midnight — sorted by most recent update.';
+    case 'LoggedToday':
+      return 'Work you logged today, broken down per issue.';
+    case 'LoggedThisWeek':
+      return 'Work you logged this week, per issue and per day.';
+    default:
+      return '';
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Sprint data
 // ---------------------------------------------------------------------------
