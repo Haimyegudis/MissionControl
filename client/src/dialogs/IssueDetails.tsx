@@ -149,17 +149,37 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
   const issue = details?.issue ?? null;
 
   // TestRail runs referencing this issue (via run refs) — best-effort, cached.
+  // For epics the match also covers every child issue key, so runs created
+  // against the epic's stories/tasks surface on the epic itself.
   useEffect(() => {
     let cancelled = false;
     setTrRuns([]);
     const key = details?.issue.key;
     if (!key) return;
+    const isEpic = /epic/i.test(details?.issue.issueType ?? '');
     (async () => {
       try {
+        const needles = new Set<string>([key.toUpperCase()]);
+        if (isEpic) {
+          try {
+            const children = await issuesApi.search(
+              `"Epic Link" = ${key} OR parent = ${key}`,
+              0,
+              200,
+            );
+            for (const child of children.items) needles.add(child.key.toUpperCase());
+          } catch {
+            /* epic children lookup is best-effort */
+          }
+        }
         const projects = (await trApi.projects()).filter((p) => /indigo/i.test(p.name) || p.id === 603);
         const lists = await Promise.all(projects.map((p) => trApi.runs(p.id).catch(() => [] as TrRun[])));
-        const needle = key.toUpperCase();
-        const matches = lists.flat().filter((r) => (r.refs ?? '').toUpperCase().includes(needle));
+        const matches = lists.flat().filter((r) => {
+          const refs = (r.refs ?? '').toUpperCase();
+          if (!refs) return false;
+          for (const n of needles) if (refs.includes(n)) return true;
+          return false;
+        });
         matches.sort((a, b) => (b.createdOn ?? 0) - (a.createdOn ?? 0));
         if (!cancelled) setTrRuns(matches.slice(0, 12));
       } catch {
@@ -169,7 +189,7 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
     return () => {
       cancelled = true;
     };
-  }, [details?.issue.key]);
+  }, [details?.issue.key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const reloadWithStatus = useCallback(async () => {
     const fresh = await load(currentKey);
