@@ -22,7 +22,7 @@ export type RouteId =
 
 export const ROUTES: Array<{ id: RouteId; label: string }> = [
   { id: 'dashboard', label: 'Dashboard' },
-  { id: 'mywork', label: 'My Work' },
+  { id: 'mywork', label: 'Backlog' },
   { id: 'incidents', label: 'Incidents' },
   { id: 'boards', label: 'Boards' },
   { id: 'filters', label: 'Filters' },

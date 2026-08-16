@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, boards as boardsApi, issues as issuesApi, metadataExtra } from '../api/client';
 import { ContextMenu, type MenuEntry } from '../components/ContextMenu';
 import { DataGrid, type GridColumn } from '../components/DataGrid';
+import { Modal } from '../components/Modal';
 import { Kanban } from '../components/Kanban';
 import { statusSubmenu } from '../components/StatusMenu';
 import { useTextPrompt } from '../components/TextPrompt';
@@ -210,6 +211,7 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
   const [roster, setRoster] = useState<string[]>([]);
   const [selectedRows, setSelectedRows] = useState<JiraIssue[]>([]);
   const [rowMenu, setRowMenu] = useState<{ row: JiraIssue; x: number; y: number } | null>(null);
+  const [bulkAssign, setBulkAssign] = useState<{ keys: string[] } | null>(null);
 
   const { element: promptElement, prompt } = useTextPrompt();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -239,7 +241,7 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
       setTotalCount(result.totalCount);
     } catch (err) {
       if (seq === loadSeq.current) {
-        pushToast({ title: 'My Work load failed', body: err instanceof Error ? err.message : String(err) });
+        pushToast({ title: 'Backlog load failed', body: err instanceof Error ? err.message : String(err) });
       }
     }
 
@@ -539,13 +541,7 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
       },
       {
         label: 'Bulk: assign selected to…',
-        onClick: () => {
-          void (async () => {
-            const who = await prompt('Bulk assign', `Assignee username for ${keys.length} selected issue(s):`);
-            if (who === null || !who.trim()) return;
-            await runBulk(keys, (key) => issuesApi.setAssignee(key, who.trim()), 'Bulk assign');
-          })();
-        },
+        onClick: () => setBulkAssign({ keys }),
       },
       {
         label: 'Bulk: open all selected',
@@ -676,7 +672,7 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 16, fontWeight: 700 }}>{board?.name ? board.name : 'My Work'}</div>
+        <div style={{ fontSize: 16, fontWeight: 700 }}>{board?.name ? board.name : 'Backlog'}</div>
         <input
           value={keyContains}
           onChange={(e) => setKeyContains(e.target.value)}
@@ -843,6 +839,36 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
           entries={rowMenuEntries(rowMenu.row)}
           onClose={() => setRowMenu(null)}
         />
+      ) : null}
+      {bulkAssign ? (
+        <Modal title={`Assign ${bulkAssign.keys.length} issue(s) to…`} width={420} onClose={() => setBulkAssign(null)}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="muted" style={{ fontSize: 12.5 }}>
+              Search and pick a user — the display name is resolved to the Jira username automatically.
+            </div>
+            <UserSearchPicker
+              users={roster}
+              value=""
+              width="100%"
+              onCommit={(who) => {
+                const picked = who.trim();
+                const keys = bulkAssign.keys;
+                setBulkAssign(null);
+                if (!picked) return;
+                void (async () => {
+                  let jqlUser = picked;
+                  try {
+                    const { username } = await metadataExtra.resolveUser(picked);
+                    if (username) jqlUser = username;
+                  } catch {
+                    /* keep raw */
+                  }
+                  await runBulk(keys, (key) => issuesApi.setAssignee(key, jqlUser), `Bulk assign → ${picked}`);
+                })();
+              }}
+            />
+          </div>
+        </Modal>
       ) : null}
       {promptElement}
     </div>

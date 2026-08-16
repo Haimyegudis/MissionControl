@@ -73,7 +73,7 @@ function JiraTab() {
           Kanban (drag cards to transition; right-click a column header to set a WIP limit) or a table. The user
           picker shows any teammate's sprint.
         </Item>
-        <Item name="My Work">your issues as kanban or grid, saved queries (with JSON import/export), bulk actions on multi-selected rows.</Item>
+        <Item name="Backlog">your issues as kanban or grid, saved queries (with JSON import/export), bulk actions on multi-selected rows.</Item>
         <Item name="Incidents">sticky incident filters with dashboard links.</Item>
         <Item name="Boards">sprint boards with Jira quick filters.</Item>
         <Item name="Filters">saved JQL filters with an editor and preview.</Item>

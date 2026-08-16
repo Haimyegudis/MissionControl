@@ -72,7 +72,7 @@ describe('DashboardView (§1)', () => {
 describe('MyWorkView (§2)', () => {
   it('renders toolbar, saved queries and column-filter buttons (table default)', () => {
     const html = renderToString(<MyWorkView />);
-    expect(html).toContain('My Work');
+    expect(html).toContain('Backlog');
     expect(html).toContain('Search by key or summary...');
     expect(html).toContain('Kanban');
     expect(html).toContain('SAVED QUERIES:');
