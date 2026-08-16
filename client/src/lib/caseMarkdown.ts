@@ -11,13 +11,29 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-/** Inline markdown → HTML (bold/italic/code/links) on an escaped line. */
+/** CSS color value safe to inject into a style attribute. */
+function safeColor(value: string): string | null {
+  const v = value.trim();
+  return /^[#a-zA-Z0-9(),.%\s-]+$/.test(v) ? v : null;
+}
+
+/** Inline markdown → HTML (bold/italic/code/links/colors) on an escaped line. */
 function inlineMdToHtml(line: string): string {
   let out = escapeHtml(line);
   out = out.replace(/`([^`]+)`/g, '<code>$1</code>');
   out = out.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
   out = out.replace(/\*([^*]+)\*/g, '<i>$1</i>');
   out = out.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
+  // Mission Control color tags — persisted in the markdown; TestRail shows
+  // them as plain text markers, we render real colors.
+  out = out.replace(/\{color:([^}]+)\}([\s\S]*?)\{\/color\}/g, (m, col: string, body: string) => {
+    const c = safeColor(col);
+    return c ? `<span style="color:${c}">${body}</span>` : m;
+  });
+  out = out.replace(/\{bg:([^}]+)\}([\s\S]*?)\{\/bg\}/g, (m, col: string, body: string) => {
+    const c = safeColor(col);
+    return c ? `<span style="background-color:${c}">${body}</span>` : m;
+  });
   return out;
 }
 
@@ -112,8 +128,20 @@ function inlineHtmlToMd(node: Node): string {
       return `[${inner || el.getAttribute('href') || ''}](${el.getAttribute('href') ?? ''})`;
     case 'BR':
       return '\n';
-    case 'SPAN':
-    case 'FONT':
+    case 'FONT': {
+      const color = el.getAttribute('color');
+      return color && inner.trim() ? `{color:${color}}${inner}{/color}` : inner;
+    }
+    case 'SPAN': {
+      // execCommand writes colors as inline styles — persist them as tags.
+      const style = el.getAttribute('style') ?? '';
+      const color = /(?:^|;)\s*color:\s*([^;]+)/i.exec(style)?.[1]?.trim();
+      const bg = /background(?:-color)?:\s*([^;]+)/i.exec(style)?.[1]?.trim();
+      let out = inner;
+      if (color && out.trim()) out = `{color:${color}}${out}{/color}`;
+      if (bg && bg !== 'transparent' && out.trim()) out = `{bg:${bg}}${out}{/bg}`;
+      return out;
+    }
     case 'U':
     default:
       return inner;

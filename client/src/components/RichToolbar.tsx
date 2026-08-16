@@ -293,7 +293,7 @@ export function RichToolbar({ target }: { target: RichTarget }) {
         <option value="transparent">None</option>
       </select>
       <span className="muted" style={{ fontSize: 10.5, marginLeft: 4 }}>
-        Formats the focused field — colors show here only; TestRail gets plain text
+        Formats the focused field — colors show in Mission Control; TestRail shows them as {'{color}'} text marks
       </span>
     </div>
   );

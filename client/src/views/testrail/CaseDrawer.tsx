@@ -4,7 +4,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { trApi } from '../../api/testrail';
-import { fmtUnixDate, richText } from '../../lib/testrail';
+import { MdView } from '../../components/MdView';
+import { fmtUnixDate } from '../../lib/testrail';
 import { navigateTestRailRun } from '../../router';
 import { pushToast } from '../../stores/toasts';
 import {
@@ -205,7 +206,7 @@ export function CaseDrawer({ st, caseId, onClose, onEdit, onTransfer, onDeleted 
         <>
           <hr className="tr-rule" />
           {sectionTitle('Preconditions')}
-          <pre className="blocktext">{richText(c.preconds)}</pre>
+          <MdView text={c.preconds} />
         </>
       ) : null}
 
@@ -215,12 +216,16 @@ export function CaseDrawer({ st, caseId, onClose, onEdit, onTransfer, onDeleted 
         c.stepsSeparated.map((s) => (
           <div key={s.index} className="step-card">
             <div className="step-n">Step {s.index}</div>
-            <div style={{ whiteSpace: 'pre-wrap' }}>{richText(s.action)}</div>
-            {s.expected ? <div className="step-exp">{richText(s.expected)}</div> : null}
+            <MdView text={s.action} />
+            {s.expected ? (
+              <div className="step-exp">
+                <MdView text={s.expected} />
+              </div>
+            ) : null}
           </div>
         ))
       ) : c.steps ? (
-        <pre className="blocktext">{richText(c.steps)}</pre>
+        <MdView text={c.steps} />
       ) : (
         <div className="muted">No steps recorded.</div>
       )}
@@ -228,7 +233,7 @@ export function CaseDrawer({ st, caseId, onClose, onEdit, onTransfer, onDeleted 
       {c.expected ? (
         <>
           <div style={{ padding: '12px 0 0' }}>{sectionTitle('Expected')}</div>
-          <pre className="blocktext">{richText(c.expected)}</pre>
+          <MdView text={c.expected} />
         </>
       ) : null}
 

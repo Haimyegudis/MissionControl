@@ -25,6 +25,17 @@ describe('mdToHtml', () => {
     expect(html).toContain('<tbody><tr><td>a</td><td>b</td></tr></tbody>');
   });
 
+  it('renders {color}/{bg} tags as colored spans; rejects unsafe values', () => {
+    expect(mdToHtml('{color:#e5484d}warning{/color}')).toBe(
+      '<div><span style="color:#e5484d">warning</span></div>',
+    );
+    expect(mdToHtml('{bg:rgba(253, 232, 71, 0.4)}note{/bg}')).toBe(
+      '<div><span style="background-color:rgba(253, 232, 71, 0.4)">note</span></div>',
+    );
+    // unsafe value → tag left as literal text
+    expect(mdToHtml('{color:red"onmouseover="x}y{/color}')).not.toContain('<span');
+  });
+
   it('keeps plain lines and blank lines as divs', () => {
     expect(mdToHtml('one\n\ntwo')).toBe('<div>one</div><div><br></div><div>two</div>');
     expect(mdToHtml('')).toBe('<div><br></div>');

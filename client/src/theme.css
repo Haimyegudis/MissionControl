@@ -258,9 +258,9 @@ select option {
   opacity: 0.8;
   pointer-events: none;
 }
-.rich-ta ol, .rich-ta ul { margin: 4px 0; padding-left: 24px; }
-.rich-ta li { margin: 2px 0; }
-.rich-ta code {
+.rich-ta ol, .rich-ta ul, .md-view ol, .md-view ul { margin: 4px 0; padding-left: 24px; }
+.rich-ta li, .md-view li { margin: 2px 0; }
+.rich-ta code, .md-view code {
   font-family: var(--font-mono);
   font-size: 0.92em;
   background: var(--bg-panel-high);
@@ -268,15 +268,23 @@ select option {
   border-radius: 4px;
   padding: 0 4px;
 }
-.rich-ta table { border-collapse: collapse; margin: 6px 0; }
-.rich-ta th, .rich-ta td {
+.rich-ta table, .md-view table { border-collapse: collapse; margin: 6px 0; max-width: 100%; }
+.rich-ta th, .rich-ta td, .md-view th, .md-view td {
   border: 1px solid var(--border-strong);
   padding: 4px 10px;
   min-width: 60px;
   font-size: 12.5px;
 }
-.rich-ta th { background: var(--bg-panel-high); font-weight: 700; }
-.rich-ta a { color: var(--accent-cyan); }
+.rich-ta th, .md-view th { background: var(--bg-panel-high); font-weight: 700; }
+.rich-ta a, .md-view a { color: var(--accent-cyan); }
+
+/* Rendered markdown (case drawer): normal wrapping text, breathable lines */
+.md-view {
+  font-size: 12.5px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  overflow-x: auto;
+}
 
 :root[data-theme='light'] select option {
   background: #ffffff;
