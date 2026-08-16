@@ -333,6 +333,42 @@ export function testrailRoutes(deps: AppDeps): Router {
     }),
   );
 
+  // Bulk partial edit — only provided fields change on each selected case.
+  router.put(
+    '/cases/bulk',
+    h(async (req, res) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const ids = intArray(body.caseIds);
+      if (ids.length === 0) throw new HttpError(400, 'caseIds is required');
+      const set = (body.set ?? {}) as Record<string, unknown>;
+      const fields: Record<string, unknown> = {};
+      if (optInt(set.ownerId) !== null) fields.custom_testcaseowner = optInt(set.ownerId);
+      if (optInt(set.assignedToId) !== null) fields.case_assignedto_id = optInt(set.assignedToId);
+      if (optInt(set.priorityId) !== null) fields.priority_id = optInt(set.priorityId);
+      if (optInt(set.typeId) !== null) fields.type_id = optInt(set.typeId);
+      if (typeof set.estimate === 'string' && set.estimate.trim()) fields.estimate = set.estimate.trim();
+      if (typeof set.refs === 'string' && set.refs.trim()) fields.refs = set.refs.trim();
+      if (Object.keys(fields).length === 0) throw new HttpError(400, 'No fields to set');
+
+      const client = service.requireClient();
+      const failures: Array<{ id: number; error: string }> = [];
+      let next = 0;
+      const worker = async (): Promise<void> => {
+        for (;;) {
+          const i = next++;
+          if (i >= ids.length) return;
+          try {
+            await client.updateCaseFields(ids[i], fields);
+          } catch (err) {
+            failures.push({ id: ids[i], error: err instanceof Error ? err.message : String(err) });
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(6, ids.length) }, () => worker()));
+      res.json({ updated: ids.length - failures.length, failures });
+    }),
+  );
+
   router.put(
     '/cases/:id',
     h(async (req, res) => {

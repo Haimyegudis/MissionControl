@@ -36,34 +36,38 @@ export function agingDotVisible(updatedIso: string | null | undefined, now: Date
  * PriorityToBrush: highest/critical/blocker `#EF4444` · high/s3 `#FFA13A` ·
  * medium/s4 `#FFD23A` · low/s5/s6/default `#8AA0BF`. Case-insensitive substring.
  */
+// Semantic colors return THEME TOKENS (CSS custom properties) so light/
+// railbook themes get readable variants — the fixed dark-theme hexes (e.g.
+// #FFD23A yellow) were invisible on light backgrounds.
+
 /** Chip color per issue type — epics must be visually distinct from tasks. */
 export function issueTypeColor(type: string): string {
   const t = type.toLowerCase();
-  if (t.includes('epic')) return '#b558f6';
-  if (t.includes('story')) return '#22d38f';
-  if (t.includes('bug') || t.includes('defect') || t.includes('incident')) return '#e5484d';
-  if (t.includes('sub')) return '#8aa0bf';
-  return '#4f9cf9'; // task & everything else
+  if (t.includes('epic')) return 'var(--accent-magenta, #b558f6)';
+  if (t.includes('story')) return 'var(--accent-green, #22d38f)';
+  if (t.includes('bug') || t.includes('defect') || t.includes('incident')) return 'var(--accent-red, #e5484d)';
+  if (t.includes('sub')) return 'var(--muted, #8aa0bf)';
+  return 'var(--accent-blue, #4f9cf9)'; // task & everything else
 }
 
 export function priorityColor(priority: string | null | undefined): string {
   const p = (priority ?? '').toLowerCase();
-  if (p.includes('highest') || p.includes('critical') || p.includes('blocker')) return '#EF4444';
-  if (p.includes('high') || p.includes('s3')) return '#FFA13A';
-  if (p.includes('medium') || p.includes('s4')) return '#FFD23A';
-  return '#8AA0BF';
+  if (p.includes('highest') || p.includes('critical') || p.includes('blocker')) return 'var(--accent-red, #EF4444)';
+  if (p.includes('high') || p.includes('s3')) return 'var(--accent-orange, #FFA13A)';
+  if (p.includes('medium') || p.includes('s4')) return 'var(--accent-yellow, #FFD23A)';
+  return 'var(--muted, #8AA0BF)';
 }
 
 /**
- * StatusToBrush: done|closed|delivered `#22D38F` · blocked|rejected `#EF4444` ·
- * progress|review `#1FE0E0` · default `#8AA0BF`. Case-insensitive substring.
+ * StatusToBrush: done|closed|delivered green · blocked|rejected red ·
+ * progress|review cyan · default muted. Case-insensitive substring.
  */
 export function statusColor(status: string | null | undefined): string {
   const s = (status ?? '').toLowerCase();
-  if (s.includes('done') || s.includes('closed') || s.includes('delivered')) return '#22D38F';
-  if (s.includes('blocked') || s.includes('rejected')) return '#EF4444';
-  if (s.includes('progress') || s.includes('review')) return '#1FE0E0';
-  return '#8AA0BF';
+  if (s.includes('done') || s.includes('closed') || s.includes('delivered')) return 'var(--accent-green, #22D38F)';
+  if (s.includes('blocked') || s.includes('rejected')) return 'var(--accent-red, #EF4444)';
+  if (s.includes('progress') || s.includes('review')) return 'var(--accent-cyan, #1FE0E0)';
+  return 'var(--muted, #8AA0BF)';
 }
 
 function hslToRgb(hDeg: number, s: number, l: number): [number, number, number] {

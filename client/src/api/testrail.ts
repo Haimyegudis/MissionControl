@@ -117,6 +117,14 @@ export const trApi = {
   updateCase: (caseId: number, payload: TrAddCasePayload) =>
     put<TrCase>(`/api/testrail/cases/${caseId}`, payload),
   deleteCase: (caseId: number) => del<void>(`/api/testrail/cases/${caseId}`),
+  bulkUpdateCases: (
+    caseIds: number[],
+    set: { ownerId?: number; assignedToId?: number; priorityId?: number; typeId?: number },
+  ) =>
+    put<{ updated: number; failures: Array<{ id: number; error: string }> }>('/api/testrail/cases/bulk', {
+      caseIds,
+      set,
+    }),
   copyCases: (targetSectionId: number, caseIds: number[]) =>
     post<void>('/api/testrail/cases/copy', { targetSectionId, caseIds }),
   moveCases: (targetSectionId: number, targetSuiteId: number | null, caseIds: number[]) =>

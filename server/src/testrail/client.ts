@@ -51,6 +51,7 @@ export interface TestRailClientLike {
   moveSection(sectionId: number, parentId?: number | null, afterId?: number | null): Promise<void>;
   addCase(sectionId: number, payload: TrAddCasePayload): Promise<TrCase>;
   updateCase(caseId: number, payload: TrAddCasePayload): Promise<TrCase>;
+  updateCaseFields(caseId: number, fields: Record<string, unknown>): Promise<TrCase>;
   deleteCase(caseId: number): Promise<void>;
   copyCasesToSection(targetSectionId: number, caseIds: number[]): Promise<void>;
   moveCasesToSection(targetSectionId: number, targetSuiteId: number | null, caseIds: number[]): Promise<void>;
@@ -353,6 +354,11 @@ export class TestRailClient implements TestRailClientLike {
     const body: Record<string, unknown> = { name };
     if (description !== null && description !== undefined) body.description = description;
     return readSection(await this.http.postJson(`update_section/${sectionId}`, body));
+  }
+
+  /** Partial case update — only the provided fields are sent. */
+  async updateCaseFields(caseId: number, fields: Record<string, unknown>): Promise<TrCase> {
+    return readCase(await this.http.postJson(`update_case/${caseId}`, fields));
   }
 
   async deleteSection(sectionId: number): Promise<void> {

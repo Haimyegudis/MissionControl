@@ -46,6 +46,7 @@ import type { TrCase, TrSection } from '../../testrailTypes';
 import { CaseDrawer } from './CaseDrawer';
 import { CaseEditor } from './CaseEditor';
 import { SectionDialog } from './SectionDialog';
+import { BulkEditDialog } from './BulkEditDialog';
 import { TransferDialog } from './TransferDialog';
 import { ColumnsDialog } from './ColumnsDialog';
 import {
@@ -146,6 +147,7 @@ export function CaseLibraryView() {
   );
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
+  const [bulkEdit, setBulkEdit] = useState<number[] | null>(null);
   const [covProgress, setCovProgress] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -550,6 +552,9 @@ export function CaseLibraryView() {
       {st.caseSel.size > 0 ? (
         <div className="bulk-bar">
           <span className="n">{st.caseSel.size} selected</span>
+          <button className="btn" onClick={() => setBulkEdit([...st.caseSel])}>
+            Edit… (assign / owner / priority)
+          </button>
           <button className="btn" onClick={() => setTransfer({ mode: 'copy', ids: [...st.caseSel] })}>
             Copy to…
           </button>
@@ -800,6 +805,18 @@ export function CaseLibraryView() {
 
       {editor ? (
         <CaseEditor st={st} existing={editor.existing} onClose={() => setEditor(null)} onSaved={refreshCasesFresh} />
+      ) : null}
+
+      {bulkEdit ? (
+        <BulkEditDialog
+          st={st}
+          caseIds={bulkEdit}
+          onClose={() => setBulkEdit(null)}
+          onSaved={() => {
+            clearCaseSelection();
+            refreshCasesFresh();
+          }}
+        />
       ) : null}
 
       {transfer ? (

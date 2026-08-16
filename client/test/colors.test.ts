@@ -52,50 +52,50 @@ describe('agingColor / agingDotVisible (ui-parity §12.8)', () => {
 
 describe('priorityColor (ui-parity §12.8)', () => {
   it('highest/critical/blocker red', () => {
-    expect(priorityColor('Highest')).toBe('#EF4444');
-    expect(priorityColor('Critical')).toBe('#EF4444');
-    expect(priorityColor('Blocker')).toBe('#EF4444');
+    expect(priorityColor('Highest')).toBe('var(--accent-red, #EF4444)');
+    expect(priorityColor('Critical')).toBe('var(--accent-red, #EF4444)');
+    expect(priorityColor('Blocker')).toBe('var(--accent-red, #EF4444)');
   });
 
   it('high/s3 orange', () => {
-    expect(priorityColor('High')).toBe('#FFA13A');
-    expect(priorityColor('S3 - Major')).toBe('#FFA13A');
+    expect(priorityColor('High')).toBe('var(--accent-orange, #FFA13A)');
+    expect(priorityColor('S3 - Major')).toBe('var(--accent-orange, #FFA13A)');
   });
 
   it('medium/s4 yellow', () => {
-    expect(priorityColor('Medium')).toBe('#FFD23A');
-    expect(priorityColor('S4 - Minor')).toBe('#FFD23A');
+    expect(priorityColor('Medium')).toBe('var(--accent-yellow, #FFD23A)');
+    expect(priorityColor('S4 - Minor')).toBe('var(--accent-yellow, #FFD23A)');
   });
 
   it('low/s5/s6/default gray-blue', () => {
-    expect(priorityColor('Low')).toBe('#8AA0BF');
-    expect(priorityColor('S5')).toBe('#8AA0BF');
-    expect(priorityColor('S6')).toBe('#8AA0BF');
-    expect(priorityColor(null)).toBe('#8AA0BF');
-    expect(priorityColor('Whatever')).toBe('#8AA0BF');
+    expect(priorityColor('Low')).toBe('var(--muted, #8AA0BF)');
+    expect(priorityColor('S5')).toBe('var(--muted, #8AA0BF)');
+    expect(priorityColor('S6')).toBe('var(--muted, #8AA0BF)');
+    expect(priorityColor(null)).toBe('var(--muted, #8AA0BF)');
+    expect(priorityColor('Whatever')).toBe('var(--muted, #8AA0BF)');
   });
 });
 
 describe('statusColor (ui-parity §12.8)', () => {
   it('done|closed|delivered green', () => {
-    expect(statusColor('Done')).toBe('#22D38F');
-    expect(statusColor('Closed')).toBe('#22D38F');
-    expect(statusColor('Delivered')).toBe('#22D38F');
+    expect(statusColor('Done')).toBe('var(--accent-green, #22D38F)');
+    expect(statusColor('Closed')).toBe('var(--accent-green, #22D38F)');
+    expect(statusColor('Delivered')).toBe('var(--accent-green, #22D38F)');
   });
 
   it('blocked|rejected red', () => {
-    expect(statusColor('Blocked')).toBe('#EF4444');
-    expect(statusColor('Rejected')).toBe('#EF4444');
+    expect(statusColor('Blocked')).toBe('var(--accent-red, #EF4444)');
+    expect(statusColor('Rejected')).toBe('var(--accent-red, #EF4444)');
   });
 
   it('progress|review cyan', () => {
-    expect(statusColor('In Progress')).toBe('#1FE0E0');
-    expect(statusColor('In Review')).toBe('#1FE0E0');
+    expect(statusColor('In Progress')).toBe('var(--accent-cyan, #1FE0E0)');
+    expect(statusColor('In Review')).toBe('var(--accent-cyan, #1FE0E0)');
   });
 
   it('default gray-blue', () => {
-    expect(statusColor('Open')).toBe('#8AA0BF');
-    expect(statusColor(null)).toBe('#8AA0BF');
+    expect(statusColor('Open')).toBe('var(--muted, #8AA0BF)');
+    expect(statusColor(null)).toBe('var(--muted, #8AA0BF)');
   });
 });
 
