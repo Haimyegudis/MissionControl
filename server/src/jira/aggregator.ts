@@ -44,28 +44,38 @@ export class DashboardAggregator {
     const project = this.session.profile?.defaultProjectKey?.trim() || 'ISW';
     const sprintScope = `project = ${project} AND assignee = currentUser() AND Sprint in openSprints()`;
 
-    const timeLoggedTotal = async (period: TimeLoggedPeriod): Promise<number> => {
+    // ONE worklog fan-out: the this-week report covers today, so today's
+    // total falls out of its per-day rows. The old today+thisWeek pair
+    // fetched every issue's worklogs twice.
+    const timeLoggedTotals = async (): Promise<{ today: number; week: number }> => {
       try {
-        return (await this.timeLogged.buildReport(period)).total;
+        const report = await this.timeLogged.buildReport('thisWeek');
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const now = new Date();
+        const todayYmd = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        const today = report.dailyByIssue
+          .filter((e) => e.day === todayYmd)
+          .reduce((sum, e) => sum + e.timeSpent, 0);
+        return { today, week: report.total };
       } catch {
-        return 0;
+        return { today: 0, week: 0 };
       }
     };
 
-    const [open, critical, blocked, updatedToday, recent, timeLoggedToday, timeLoggedThisWeek] =
-      await Promise.all([
-        this.issues.searchIssues(`${sprintScope} AND statusCategory != Done`, 0, 1),
-        this.issues.searchIssues(
-          `${sprintScope} AND issuetype in (Incident, Bug, Defect) AND priority in (Critical, Highest) AND statusCategory != Done`,
-          0,
-          1,
-        ),
-        this.issues.searchIssues(`${sprintScope} AND (status = Blocked OR labels = blocked)`, 0, 1),
-        this.issues.searchIssues(`${sprintScope} AND updated >= startOfDay()`, 0, 1),
-        this.issues.searchIssues(`${sprintScope} ORDER BY priority DESC, updated DESC`, 0, 50),
-        timeLoggedTotal('today'),
-        timeLoggedTotal('thisWeek'),
-      ]);
+    const [open, critical, blocked, updatedToday, recent, logged] = await Promise.all([
+      this.issues.searchIssues(`${sprintScope} AND statusCategory != Done`, 0, 1),
+      this.issues.searchIssues(
+        `${sprintScope} AND issuetype in (Incident, Bug, Defect) AND priority in (Critical, Highest) AND statusCategory != Done`,
+        0,
+        1,
+      ),
+      this.issues.searchIssues(`${sprintScope} AND (status = Blocked OR labels = blocked)`, 0, 1),
+      this.issues.searchIssues(`${sprintScope} AND updated >= startOfDay()`, 0, 1),
+      this.issues.searchIssues(`${sprintScope} ORDER BY priority DESC, updated DESC`, 0, 50),
+      timeLoggedTotals(),
+    ]);
+    const timeLoggedToday = logged.today;
+    const timeLoggedThisWeek = logged.week;
 
     return {
       openIssues: open.total,

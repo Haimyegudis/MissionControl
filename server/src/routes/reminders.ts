@@ -21,15 +21,18 @@ export function reminderRoutes(deps: AppDeps): Router {
     res.json(loadReminderConfig());
   });
 
-  router.put('/', (req, res) => {
-    const body = (req.body ?? {}) as Record<string, unknown>;
-    const { config, error } = applyReminderConfig(body);
-    if (error) {
-      res.status(500).json({ ...config, error });
-      return;
-    }
-    res.json(config);
-  });
+  router.put(
+    '/',
+    h(async (req, res) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const { config, error } = await applyReminderConfig(body);
+      if (error) {
+        res.status(500).json({ ...config, error });
+        return;
+      }
+      res.json(config);
+    }),
+  );
 
   // Live summary for the dynamic toasts: { count, lines: ["KEY — summary"] }.
   router.get(

@@ -428,10 +428,24 @@ describe('DashboardAggregator.buildDashboardSnapshot', () => {
         return pagedResult(4); // updated today
       },
     };
+    // One thisWeek report; today's total derives from its per-day rows.
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const now = new Date();
+    const todayYmd = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     const timeLogged = {
       async buildReport(period: string) {
-        const total = period === 'today' ? 1800 : 7200;
-        return { issues: [], total, fromUtc: '', toUtc: '', dailyByIssue: [], availableSprints: [] };
+        expect(period).toBe('thisWeek');
+        return {
+          issues: [],
+          total: 7200,
+          fromUtc: '',
+          toUtc: '',
+          dailyByIssue: [
+            { day: todayYmd, issueKey: 'ISW-1', issueSummary: 'a', timeSpent: 1800 },
+            { day: '2000-01-01', issueKey: 'ISW-2', issueSummary: 'b', timeSpent: 5400 },
+          ],
+          availableSprints: [],
+        };
       },
     };
     const snap = await new DashboardAggregator(makeSession(), issues, timeLogged).buildDashboardSnapshot();

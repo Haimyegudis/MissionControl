@@ -204,14 +204,27 @@ export function CaseLibraryView() {
 
   const groups = useMemo(() => groupCasesBySection(visible, sections), [visible, sections]);
 
-  const cols = CASE_COLS.filter((c) => c.always || st.cols.visible.includes(c.key));
+  const cols = useMemo(
+    () => CASE_COLS.filter((c) => c.always || st.cols.visible.includes(c.key)),
+    [st.cols.visible],
+  );
   const colW = (c: ColDef) => st.cols.widths[c.key] ?? (c.w || 260);
   const tableWidth = 26 + cols.reduce((a, c) => a + colW(c), 0);
   const span = cols.length + 1;
-  const cellCtx: CellCtx = {
-    st,
-    neverRan: (c) => Boolean(coverage) && !coverage!.covered.has(c.id),
-  };
+  const stRef = useRef(st);
+  stRef.current = st;
+  // Cells only read meta/people through ctx.st — keyed on those slices so
+  // unrelated store changes don't rebuild all rows.
+  const cellCtx: CellCtx = useMemo(
+    () => ({
+      get st() {
+        return stRef.current;
+      },
+      neverRan: (c) => Boolean(coverage) && !coverage!.covered.has(c.id),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [st.meta, st.people, coverage],
+  );
 
   const neverRanCount = useMemo(
     () => (coverage ? cases.filter((c) => !coverage.covered.has(c.id)).length : 0),
@@ -354,15 +367,18 @@ export function CaseLibraryView() {
     return out;
   }, [cases]);
 
+  // Memoized: up to ROW_CAP rows × ~8 cells used to rebuild on every render
+  // (every keystroke and checkbox click).
+  const bodyRows: ReactNode[] = useMemo(() => {
+  const rows: ReactNode[] = [];
   let painted = 0;
-  const bodyRows: ReactNode[] = [];
   for (const group of groups) {
     if (painted >= ROW_CAP) break;
     const collapsed = st.collapsedSecs.has(group.sectionId);
     const allSel = group.cases.every((c) => st.caseSel.has(c.id));
     const shown = collapsed ? [] : group.cases.slice(0, ROW_CAP - painted);
     painted += shown.length;
-    bodyRows.push(
+    rows.push(
       <tr
         key={`sec-${group.sectionId}`}
         className="secrow"
@@ -420,7 +436,7 @@ export function CaseLibraryView() {
       </tr>,
     );
     for (const c of shown) {
-      bodyRows.push(
+      rows.push(
         <tr
           key={c.id}
           className={`clickable ${st.caseSel.has(c.id) ? 'selected' : ''}`}
@@ -448,7 +464,7 @@ export function CaseLibraryView() {
     }
   }
   if (visible.length > painted) {
-    bodyRows.push(
+    rows.push(
       <tr key="cap">
         <td colSpan={span}>
           <div className="tr-empty-note">
@@ -459,8 +475,8 @@ export function CaseLibraryView() {
       </tr>,
     );
   }
-  if (bodyRows.length === 0) {
-    bodyRows.push(
+  if (rows.length === 0) {
+    rows.push(
       <tr key="empty">
         <td colSpan={span}>
           <div className="tr-empty-note">
@@ -470,6 +486,9 @@ export function CaseLibraryView() {
       </tr>,
     );
   }
+  return rows;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups, st.collapsedSecs, st.caseSel, sections, st.suites, st.selSuiteId, cols, cellCtx, span, visible.length]);
 
   const suiteOptions = (
     <>

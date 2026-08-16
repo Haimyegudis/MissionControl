@@ -26,6 +26,9 @@ export interface IssueDetailsProps {
 
 const DESC_SCOPE = 'jw-issue-desc';
 
+/** Shared across dialog mounts — the status list never changes mid-session. */
+let statusMapPromise: Promise<Record<string, string>> | null = null;
+
 /** MRU (ui-parity §10.1): dedup newest-first, cap 10, mirror recentIssueKeys. */
 function recordMru(key: string, summary: string): void {
   const current = getSettings();
@@ -88,12 +91,13 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
   >([]);
   const [statusNames, setStatusNames] = useState<Record<string, string>>({});
 
-  // Status id → name (for the Time-in-Status field) — fetched once.
+  // Status id → name (for the Time-in-Status field) — fetched once per page
+  // load (module-level promise cache), not once per dialog mount.
   useEffect(() => {
-    fetch('/api/metadata/status-map')
+    statusMapPromise ??= fetch('/api/metadata/status-map')
       .then((r) => (r.ok ? r.json() : {}))
-      .then((m) => setStatusNames(m ?? {}))
-      .catch(() => {});
+      .catch(() => ({}));
+    void statusMapPromise.then((m) => setStatusNames(m ?? {}));
   }, []);
   const [commentStatus, setCommentStatus] = useState('');
   const [commentBusy, setCommentBusy] = useState(false);
@@ -174,21 +178,19 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
     const isEpic = /epic/i.test(details?.issue.issueType ?? '');
     (async () => {
       try {
-        const needles = new Set<string>([key.toUpperCase()]);
-        if (isEpic) {
-          try {
-            const children = await issuesApi.search(
-              `"Epic Link" = ${key} OR parent = ${key}`,
-              0,
-              200,
-            );
-            for (const child of children.items) needles.add(child.key.toUpperCase());
-          } catch {
-            /* epic children lookup is best-effort */
-          }
-        }
+        // Independent fetches start together — this used to be a 3-deep
+        // serial waterfall (children → projects → runs → cases).
+        const childrenPromise = isEpic
+          ? issuesApi.search(`"Epic Link" = ${key} OR parent = ${key}`, 0, 200).catch(() => ({ items: [] }))
+          : Promise.resolve({ items: [] as Array<{ key: string }> });
         const projects = (await trApi.projects()).filter((p) => /indigo/i.test(p.name) || p.id === 603);
-        const lists = await Promise.all(projects.map((p) => trApi.runs(p.id).catch(() => [] as TrRun[])));
+        const casesPromise = trApi.casesByRef(key, projects.map((p) => p.id)).catch(() => []);
+        const [children, lists] = await Promise.all([
+          childrenPromise,
+          Promise.all(projects.map((p) => trApi.runs(p.id).catch(() => [] as TrRun[]))),
+        ]);
+        const needles = new Set<string>([key.toUpperCase()]);
+        for (const child of children.items) needles.add(child.key.toUpperCase());
         // Match by refs OR run name — many runs carry the key in their title.
         const noSpace = (s: string) => s.replace(/\s+/g, '');
         const matches = lists.flat().filter((r) => {
@@ -205,7 +207,7 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
         // the issue's Program field scopes the list: an epic on Kedem shows
         // only the Kedem suite's cases, not the David/S4 duplicates.
         try {
-          let cases = await trApi.casesByRef(key, projects.map((p) => p.id));
+          let cases = await casesPromise;
           const programs = (details?.allFields.find((f) => f.key.trim().toLowerCase() === 'program')?.value ?? '')
             .split(',')
             .map((p) => p.trim().toLowerCase())

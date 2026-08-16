@@ -118,13 +118,36 @@ export class TestRailService {
   // Cache
   // -------------------------------------------------------------------------
 
+  /** In-flight background refreshes (stale-while-revalidate), keyed. */
+  private readonly refreshing = new Set<string>();
+
+  /** TTL per cache family — volatile run/test state expires fast, structure
+   *  slowly. Entries past TTL are served stale ONCE while a background
+   *  refresh re-fills them (previously entries never expired at all). */
+  private static ttlFor(key: string): number {
+    if (key.startsWith('runs:') || key.startsWith('planruns:') || key.startsWith('tests:') || key.startsWith('results:')) {
+      return 3 * 60_000; // 3 minutes
+    }
+    return 60 * 60_000; // structure/meta: 1 hour
+  }
+
   /** Serve from SQLite when present; `fresh` bypasses and re-fills the entry. */
   async cachedJson(key: string, fetchFn: () => Promise<unknown>, fresh: boolean): Promise<unknown> {
     if (!fresh) {
       const hit = trCacheGet(this.db, key);
       if (hit) {
         try {
-          return JSON.parse(hit.json);
+          const value = JSON.parse(hit.json);
+          const age = Date.now() - hit.updatedAt;
+          if (age > TestRailService.ttlFor(key) && !this.refreshing.has(key)) {
+            // Stale: serve it now, refresh behind the response.
+            this.refreshing.add(key);
+            void fetchFn()
+              .then((freshValue) => trCacheSet(this.db, key, JSON.stringify(freshValue ?? null)))
+              .catch(() => undefined)
+              .finally(() => this.refreshing.delete(key));
+          }
+          return value;
         } catch {
           // corrupted entry → treated as a miss
         }
@@ -207,16 +230,27 @@ export class TestRailService {
           this.progress.done++;
         })();
 
-        for (const suite of suites) {
-          const sections = await client.getSections(pid, suite.id);
-          trCacheSet(this.db, `sections:${pid}:${suite.id}`, JSON.stringify(sections));
-          this.progress.done++;
-          const cases = await client.getCases(pid, suite.id, null);
-          trCacheSet(this.db, `cases:${pid}:${suite.id}:`, JSON.stringify(cases));
-          this.progress.done++;
-        }
-
-        await Promise.all([runsTask, metaTask]);
+        // Bounded pool (6) over suites — the serial loop warmed one suite at
+        // a time, 2 sequential calls each.
+        let nextSuite = 0;
+        const suiteWorker = async (): Promise<void> => {
+          for (;;) {
+            const i = nextSuite++;
+            if (i >= suites.length) return;
+            const suite = suites[i];
+            const sections = await client.getSections(pid, suite.id);
+            trCacheSet(this.db, `sections:${pid}:${suite.id}`, JSON.stringify(sections));
+            this.progress.done++;
+            const cases = await client.getCases(pid, suite.id, null);
+            trCacheSet(this.db, `cases:${pid}:${suite.id}:`, JSON.stringify(cases));
+            this.progress.done++;
+          }
+        };
+        await Promise.all([
+          runsTask,
+          metaTask,
+          ...Array.from({ length: Math.min(6, suites.length) }, () => suiteWorker()),
+        ]);
       }
     } catch {
       // Prefetch is best-effort; whatever landed in the cache still helps.

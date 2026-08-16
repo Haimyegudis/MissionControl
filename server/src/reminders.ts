@@ -10,7 +10,7 @@
 //   todo       — weekly nudge to move tasks from To Do to In Progress
 //   taskAlerts — one-time alerts about a specific issue at a date+time
 
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { dataDir } from './config/appPaths.js';
@@ -229,58 +229,81 @@ function loadStoredTaskNames(): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Scheduled-task plumbing
+// Scheduled-task plumbing — fully async: spawnSync here used to block the
+// Node event loop (up to ~40 child processes per apply), freezing the whole
+// server for every other request.
 // ---------------------------------------------------------------------------
 
-function deleteTask(name: string): void {
-  spawnSync('schtasks', ['/Delete', '/F', '/TN', name], { windowsHide: true });
+function run(exe: string, args: string[]): Promise<{ status: number; out: string }> {
+  return new Promise((resolve) => {
+    const child = spawn(exe, args, { windowsHide: true });
+    let out = '';
+    child.stdout?.setEncoding('utf8');
+    child.stderr?.setEncoding('utf8');
+    child.stdout?.on('data', (d: string) => (out += d));
+    child.stderr?.on('data', (d: string) => (out += d));
+    child.on('error', (e) => resolve({ status: -1, out: String(e) }));
+    child.on('close', (code) => resolve({ status: code ?? -1, out }));
+  });
 }
 
-function psFileCommand(script: string, extraArgs = ''): string {
-  return (
-    `powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "${script}"` +
-    (extraArgs ? ` ${extraArgs}` : '')
-  );
+function deleteTask(name: string): Promise<unknown> {
+  return run('schtasks', ['/Delete', '/F', '/TN', name]);
+}
+
+function psFileCommand(script: string): string {
+  return `powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "${script}"`;
 }
 
 /** Weekly task via schtasks (locale-safe: no dates involved). */
-function createWeeklyTask(name: string, rule: AlertRule, script: string): string | null {
-  const res = spawnSync(
-    'schtasks',
-    ['/Create', '/F', '/SC', 'WEEKLY', '/D', rule.days.join(','), '/ST', rule.time, '/TN', name, '/TR', psFileCommand(script)],
-    { windowsHide: true, encoding: 'utf8' },
-  );
-  if (res.status !== 0) return (res.stderr || res.stdout || 'schtasks failed').trim();
-  return null;
+async function createWeeklyTask(name: string, rule: AlertRule, script: string): Promise<string | null> {
+  const res = await run('schtasks', [
+    '/Create', '/F', '/SC', 'WEEKLY', '/D', rule.days.join(','), '/ST', rule.time, '/TN', name, '/TR', psFileCommand(script),
+  ]);
+  return res.status !== 0 ? (res.out.trim() || 'schtasks failed') : null;
 }
 
 /**
- * One-time task via PowerShell Register-ScheduledTask — schtasks /SD is
- * locale-dependent; [datetime]'YYYY-MM-DDTHH:MM' is not.
+ * All one-time alerts in ONE PowerShell invocation: unregister the previous
+ * task names, then Register-ScheduledTask per alert. schtasks /SD is
+ * locale-dependent; [datetime]'YYYY-MM-DDTHH:MM' is not. All interpolated
+ * values are sanitize()-validated (key/date/time regex, note charset).
  */
-function createOnceTask(name: string, alert: TaskAlert, script: string): string | null {
-  // Single-quoted PowerShell string: script path / key / note never contain
-  // single quotes (note is sanitized), so no inner escaping is needed. The
-  // whole command ships base64-encoded — immune to spawn quoting rules.
-  const args =
-    `-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "${script}"` +
-    ` -IssueKey "${alert.key}"` +
-    (alert.note ? ` -Note "${alert.note}"` : '');
-  const command =
-    `$a = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '${args}'; ` +
-    `$t = New-ScheduledTaskTrigger -Once -At ([datetime]'${alert.date}T${alert.time}'); ` +
-    `Register-ScheduledTask -TaskName '${name}' -Action $a -Trigger $t -Force | Out-Null`;
-  const encoded = Buffer.from(command, 'utf16le').toString('base64');
-  const res = spawnSync('powershell', ['-NoProfile', '-EncodedCommand', encoded], {
-    windowsHide: true,
-    encoding: 'utf8',
-  });
-  if (res.status !== 0) return (res.stderr || res.stdout || 'Register-ScheduledTask failed').trim();
-  return null;
+async function syncOnceTasks(
+  oldNames: string[],
+  alerts: TaskAlert[],
+  script: string,
+): Promise<{ created: string[]; error: string | null }> {
+  const created = alerts.map(
+    (alert, i) => `${TASK_ALERT_PREFIX}_${alert.key.replace(/[^A-Z0-9]/g, '')}_${i + 1}`,
+  );
+  const statements = [
+    ...oldNames.map(
+      (n) => `Unregister-ScheduledTask -TaskName '${n}' -Confirm:$false -ErrorAction SilentlyContinue`,
+    ),
+    ...alerts.map((alert, i) => {
+      const args =
+        `-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "${script}"` +
+        ` -IssueKey "${alert.key}"` +
+        (alert.note ? ` -Note "${alert.note}"` : '');
+      return (
+        `$a = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '${args}'; ` +
+        `$t = New-ScheduledTaskTrigger -Once -At ([datetime]'${alert.date}T${alert.time}'); ` +
+        `Register-ScheduledTask -TaskName '${created[i]}' -Action $a -Trigger $t -Force | Out-Null`
+      );
+    }),
+  ];
+  if (statements.length === 0) return { created: [], error: null };
+  const encoded = Buffer.from(statements.join('; '), 'utf16le').toString('base64');
+  const res = await run('powershell', ['-NoProfile', '-EncodedCommand', encoded]);
+  if (res.status !== 0) return { created: [], error: res.out.trim() || 'Register-ScheduledTask failed' };
+  return { created, error: null };
 }
 
 /** Persist config and (re)create / delete every scheduled task. */
-export function applyReminderConfig(raw: Record<string, unknown>): { config: ReminderConfig; error?: string } {
+export async function applyReminderConfig(
+  raw: Record<string, unknown>,
+): Promise<{ config: ReminderConfig; error?: string }> {
   const config = sanitize(raw);
   mkdirSync(appDataDir(), { recursive: true });
 
@@ -292,30 +315,30 @@ export function applyReminderConfig(raw: Record<string, unknown>): { config: Rem
     { task: INPROGRESS_TASK, rule: config.inProgress, file: 'inprogress-toast.ps1', content: dynamicSummaryScript('inProgress') },
     { task: TODO_TASK, rule: config.todo, file: 'todo-toast.ps1', content: dynamicSummaryScript('todo') },
   ];
-  for (const { task, rule, file, content } of weekly) {
-    if (!rule.enabled) {
-      deleteTask(task);
-      continue;
-    }
-    const script = scriptPath(file);
-    writeFileSync(script, content, 'utf8');
-    const err = createWeeklyTask(task, rule, script);
-    if (err) errors.push(`${task}: ${err}`);
-  }
+  await Promise.all(
+    weekly.map(async ({ task, rule, file, content }) => {
+      if (!rule.enabled) {
+        await deleteTask(task);
+        return;
+      }
+      const script = scriptPath(file);
+      writeFileSync(script, content, 'utf8');
+      const err = await createWeeklyTask(task, rule, script);
+      if (err) errors.push(`${task}: ${err}`);
+    }),
+  );
 
-  // One-time task alerts — drop everything previously created, then recreate.
-  for (const name of loadStoredTaskNames()) deleteTask(name);
-  const createdNames: string[] = [];
+  // One-time task alerts — old names dropped and new ones registered in a
+  // single PowerShell process.
   if (config.taskAlerts.length > 0) {
-    const script = scriptPath('task-alert-toast.ps1');
-    writeFileSync(script, TASK_ALERT_SCRIPT, 'utf8');
-    config.taskAlerts.forEach((alert, i) => {
-      const name = `${TASK_ALERT_PREFIX}_${alert.key.replace(/[^A-Z0-9]/g, '')}_${i + 1}`;
-      const err = createOnceTask(name, alert, script);
-      if (err) errors.push(`${name}: ${err}`);
-      else createdNames.push(name);
-    });
+    writeFileSync(scriptPath('task-alert-toast.ps1'), TASK_ALERT_SCRIPT, 'utf8');
   }
+  const { created: createdNames, error: onceError } = await syncOnceTasks(
+    loadStoredTaskNames(),
+    config.taskAlerts,
+    scriptPath('task-alert-toast.ps1'),
+  );
+  if (onceError) errors.push(onceError);
 
   const stored: StoredConfig = { ...config, taskAlertTaskNames: createdNames };
   writeFileSync(configPath(), JSON.stringify(stored, null, 2), 'utf8');

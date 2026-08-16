@@ -1,12 +1,12 @@
 // App root — session gate (loading → LoginPage or Shell) + routed views.
 // Real views land in Task B4; placeholders keep every route reachable.
 
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Shell } from './components/Shell';
 import { pruneDrafts } from './lib/drafts';
 import { ToastHost } from './components/Toast';
 import { DialogHost, useDialogs } from './dialogs/DialogHost';
-import { activePageName, routeStore } from './router';
+import { routeStore } from './router';
 import { initScheduler } from './stores/scheduler';
 import { sessionStore } from './stores/session';
 import { isSettingsLoaded, loadSettings, resolveTheme, settingsStore } from './stores/settings';
@@ -14,68 +14,68 @@ import { pushToast } from './stores/toasts';
 import { useStore } from './stores/useStore';
 import { LoginPage } from './views/LoginPage';
 import { DashboardView } from './views/DashboardView';
-import { MyWorkView } from './views/MyWorkView';
-import { IncidentsView } from './views/IncidentsView';
-import { BoardsView } from './views/BoardsView';
-import { FiltersView } from './views/FiltersView';
-import { RecentUpdatesView } from './views/RecentUpdatesView';
-import { TimeLoggedView } from './views/TimeLoggedView';
-import { DashboardsView } from './views/DashboardsView';
-import { TeamView } from './views/TeamView';
-import { SettingsView } from './views/SettingsView';
-import { CaseLibraryView } from './views/testrail/CaseLibraryView';
-import { RunsView } from './views/testrail/RunsView';
-import { RunDetailView } from './views/testrail/RunDetailView';
-import { TestRailReportsView } from './views/testrail/TestRailReportsView';
-import { ConfluenceView } from './views/confluence/ConfluenceView';
 
-function ComingSoon({ title }: { title: string }) {
-  return (
-    <div className="card" style={{ maxWidth: 560, margin: '48px auto', padding: 32, textAlign: 'center' }}>
-      <div style={{ fontSize: 18, fontWeight: 600 }}>{title}</div>
-      <div className="muted" style={{ marginTop: 8, fontSize: 13 }}>
-        This view is coming soon — the {title} page is built in a later task.
-      </div>
-    </div>
-  );
-}
+// Route-level code splitting: only the dashboard ships in the entry chunk;
+// every other view loads on first visit.
+const MyWorkView = lazy(() => import('./views/MyWorkView').then((m) => ({ default: m.MyWorkView })));
+const IncidentsView = lazy(() => import('./views/IncidentsView').then((m) => ({ default: m.IncidentsView })));
+const BoardsView = lazy(() => import('./views/BoardsView').then((m) => ({ default: m.BoardsView })));
+const FiltersView = lazy(() => import('./views/FiltersView').then((m) => ({ default: m.FiltersView })));
+const RecentUpdatesView = lazy(() => import('./views/RecentUpdatesView').then((m) => ({ default: m.RecentUpdatesView })));
+const TimeLoggedView = lazy(() => import('./views/TimeLoggedView').then((m) => ({ default: m.TimeLoggedView })));
+const DashboardsView = lazy(() => import('./views/DashboardsView').then((m) => ({ default: m.DashboardsView })));
+const TeamView = lazy(() => import('./views/TeamView').then((m) => ({ default: m.TeamView })));
+const SettingsView = lazy(() => import('./views/SettingsView').then((m) => ({ default: m.SettingsView })));
+const CaseLibraryView = lazy(() => import('./views/testrail/CaseLibraryView').then((m) => ({ default: m.CaseLibraryView })));
+const RunsView = lazy(() => import('./views/testrail/RunsView').then((m) => ({ default: m.RunsView })));
+const RunDetailView = lazy(() => import('./views/testrail/RunDetailView').then((m) => ({ default: m.RunDetailView })));
+const TestRailReportsView = lazy(() => import('./views/testrail/TestRailReportsView').then((m) => ({ default: m.TestRailReportsView })));
+const ConfluenceView = lazy(() => import('./views/confluence/ConfluenceView').then((m) => ({ default: m.ConfluenceView })));
+
+const viewFallback = (
+  <div className="muted" style={{ padding: 48, textAlign: 'center', fontSize: 13 }}>
+    Loading…
+  </div>
+);
 
 function ActiveView() {
   const route = useStore(routeStore);
-  switch (route) {
-    case 'dashboard':
-      return <DashboardView />;
-    case 'mywork':
-      return <MyWorkView />;
-    case 'incidents':
-      return <IncidentsView />;
-    case 'boards':
-      return <BoardsView />;
-    case 'filters':
-      return <FiltersView />;
-    case 'recent':
-      return <RecentUpdatesView />;
-    case 'timelogged':
-      return <TimeLoggedView />;
-    case 'dashboards':
-      return <DashboardsView />;
-    case 'team':
-      return <TeamView />;
-    case 'settings':
-      return <SettingsView />;
-    case 'testrail-cases':
-      return <CaseLibraryView />;
-    case 'testrail-runs':
-      return <RunsView />;
-    case 'testrail-run':
-      return <RunDetailView />;
-    case 'testrail-reports':
-      return <TestRailReportsView />;
-    case 'confluence':
-      return <ConfluenceView />;
-    default:
-      return <ComingSoon title={activePageName(route)} />;
-  }
+  const view = (() => {
+    switch (route) {
+      case 'mywork':
+        return <MyWorkView />;
+      case 'incidents':
+        return <IncidentsView />;
+      case 'boards':
+        return <BoardsView />;
+      case 'filters':
+        return <FiltersView />;
+      case 'recent':
+        return <RecentUpdatesView />;
+      case 'timelogged':
+        return <TimeLoggedView />;
+      case 'dashboards':
+        return <DashboardsView />;
+      case 'team':
+        return <TeamView />;
+      case 'settings':
+        return <SettingsView />;
+      case 'testrail-cases':
+        return <CaseLibraryView />;
+      case 'testrail-runs':
+        return <RunsView />;
+      case 'testrail-run':
+        return <RunDetailView />;
+      case 'testrail-reports':
+        return <TestRailReportsView />;
+      case 'confluence':
+        return <ConfluenceView />;
+      case 'dashboard':
+      default:
+        return <DashboardView />;
+    }
+  })();
+  return <Suspense fallback={viewFallback}>{view}</Suspense>;
 }
 
 /** Shell + views, wired to the dialog openers (must render under DialogHost). */

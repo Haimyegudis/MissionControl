@@ -511,17 +511,36 @@ export function statusLabel(st: TestRailState, id: number): string {
   return st.meta?.statuses.find((x) => x.id === id)?.label ?? `status ${id}`;
 }
 
+// "All suites" flattens allocate a fresh array per call, which used to
+// invalidate every downstream useMemo on every render. Identity-cached on
+// the source maps instead.
+let sectionsFlatCache: { src: TestRailState['sections']; value: TrSection[] } | null = null;
+let casesFlatCache: { suites: TrSuite[]; src: TestRailState['cases']; value: TrCase[] } | null = null;
+
 export function currentSections(st: TestRailState): TrSection[] {
-  if (st.selSuiteId === 'all') return Object.values(st.sections).flatMap((s) => s ?? []);
-  if (st.selSuiteId == null) return [];
-  return st.sections[st.selSuiteId] ?? [];
+  if (st.selSuiteId === 'all') {
+    if (!sectionsFlatCache || sectionsFlatCache.src !== st.sections) {
+      sectionsFlatCache = { src: st.sections, value: Object.values(st.sections).flatMap((s) => s ?? []) };
+    }
+    return sectionsFlatCache.value;
+  }
+  if (st.selSuiteId == null) return EMPTY_SECTIONS;
+  return st.sections[st.selSuiteId] ?? EMPTY_SECTIONS;
 }
 
 export function currentCases(st: TestRailState): TrCase[] {
-  if (st.selSuiteId === 'all') return st.suites.flatMap((su) => st.cases[su.id] ?? []);
-  if (st.selSuiteId == null) return [];
-  return st.cases[st.selSuiteId] ?? [];
+  if (st.selSuiteId === 'all') {
+    if (!casesFlatCache || casesFlatCache.src !== st.cases || casesFlatCache.suites !== st.suites) {
+      casesFlatCache = { suites: st.suites, src: st.cases, value: st.suites.flatMap((su) => st.cases[su.id] ?? []) };
+    }
+    return casesFlatCache.value;
+  }
+  if (st.selSuiteId == null) return EMPTY_CASES;
+  return st.cases[st.selSuiteId] ?? EMPTY_CASES;
 }
+
+const EMPTY_SECTIONS: TrSection[] = [];
+const EMPTY_CASES: TrCase[] = [];
 
 export function casesLoaded(st: TestRailState): boolean {
   if (st.selSuiteId === 'all') return st.suites.every((su) => st.cases[su.id]);

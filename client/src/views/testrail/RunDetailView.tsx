@@ -127,7 +127,10 @@ export function RunDetailView() {
     const aq = filterAssignee.trim().toLowerCase();
     if (aq) list = list.filter((t) => userName(st, t.assignedToId).toLowerCase().includes(aq));
     return list;
-  }, [all, filterText, filterStatus, filterMine, filterAssignee, me, myExecuted, st]);
+    // Depend on the name sources only — a full [st] dep re-filtered up to
+    // thousands of tests on every store change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [all, filterText, filterStatus, filterMine, filterAssignee, me, myExecuted, st.people, st.meta]);
 
   const myCount = me != null ? all.filter((t) => t.assignedToId === me || myExecuted.has(t.id)).length : 0;
 
@@ -137,7 +140,8 @@ export function RunDetailView() {
       if (t.assignedToId != null) names.add(userName(st, t.assignedToId));
     }
     return [...names].sort((a, b) => a.localeCompare(b));
-  }, [all, st]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [all, st.people, st.meta]);
 
   /** After any result post: fresh tests + results + run counts, keep the view. */
   const refresh = useCallback(async () => {

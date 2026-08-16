@@ -333,19 +333,20 @@ export class JiraIssueService {
     };
   }
 
-  /** Page size 100; loops while below hardCap and more pages exist. */
+  /** Page size 100. Page 1 lands first (it carries `total`); the remaining
+   *  pages up to the cap are fetched in PARALLEL instead of serially. */
   async searchAll(jql: string, hardCap: number, pageSize = 100): Promise<JiraIssue[]> {
-    const all: JiraIssue[] = [];
-    let startAt = 0;
-    let hasMore = true;
-    while (all.length < hardCap && hasMore) {
-      const page = await this.searchIssues(jql, startAt, pageSize);
-      all.push(...page.items);
-      if (page.items.length === 0) break;
-      startAt += page.items.length;
-      hasMore = page.hasMore;
+    const first = await this.searchIssues(jql, 0, pageSize);
+    const all: JiraIssue[] = [...first.items];
+    if (!first.hasMore || first.items.length === 0 || all.length >= hardCap) {
+      return all.slice(0, hardCap);
     }
-    return all;
+    const target = Math.min(hardCap, first.total > 0 ? first.total : hardCap);
+    const starts: number[] = [];
+    for (let s = first.items.length; s < target; s += pageSize) starts.push(s);
+    const pages = await Promise.all(starts.map((s) => this.searchIssues(jql, s, pageSize)));
+    for (const page of pages) all.push(...page.items);
+    return all.slice(0, hardCap);
   }
 
   // -------------------------------------------------------------------------

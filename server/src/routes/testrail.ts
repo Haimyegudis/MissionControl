@@ -269,43 +269,57 @@ export function testrailRoutes(deps: AppDeps): Router {
       } catch {
         /* names best-effort */
       }
+      // Suites for all projects in parallel, then all (project, suite) case
+      // lists through a bounded pool — the old serial loops cost up to
+      // projects × suites sequential round trips on a cold cache.
+      const suiteLists = await Promise.all(
+        projectIds.map(async (pid) => {
+          try {
+            const suites = (await service.cachedJson(`suites:${pid}`, () => client.getSuites(pid), false)) as Array<{
+              id: number;
+              name: string;
+            }>;
+            return suites.map((s) => ({ pid, suite: s }));
+          } catch {
+            return []; // unreadable project
+          }
+        }),
+      );
+      const pairs = suiteLists.flat();
       const out: Array<Record<string, unknown>> = [];
-      for (const pid of projectIds) {
-        let suites;
-        try {
-          suites = await service.cachedJson(`suites:${pid}`, () => client.getSuites(pid), false);
-        } catch {
-          continue; // unreadable project
-        }
-        for (const suite of suites as Array<{ id: number; name: string }>) {
-          if (out.length >= 100) break;
-          let cases;
+      let next = 0;
+      const worker = async (): Promise<void> => {
+        for (;;) {
+          const i = next++;
+          if (i >= pairs.length || out.length >= 100) return;
+          const { pid, suite } = pairs[i];
           try {
             // Same key shape as GET /projects/:id/cases so the cache is shared.
-            cases = await service.cachedJson(
+            const cases = (await service.cachedJson(
               `cases:${pid}:${suite.id}:`,
               () => client.getCases(pid, suite.id),
               false,
-            );
-          } catch {
-            continue;
-          }
-          for (const c of cases as Array<{ id: number; title: string; refs: string | null; suiteId: number | null }>) {
-            if ((c.refs ?? '').toUpperCase().includes(ref)) {
-              out.push({
-                id: c.id,
-                title: c.title,
-                refs: c.refs,
-                suiteId: c.suiteId ?? suite.id,
-                suiteName: suite.name,
-                projectId: pid,
-                projectName: projectNames.get(pid) ?? '',
-              });
-              if (out.length >= 100) break;
+            )) as Array<{ id: number; title: string; refs: string | null; suiteId: number | null }>;
+            for (const c of cases) {
+              if (out.length >= 100) return;
+              if ((c.refs ?? '').toUpperCase().includes(ref)) {
+                out.push({
+                  id: c.id,
+                  title: c.title,
+                  refs: c.refs,
+                  suiteId: c.suiteId ?? suite.id,
+                  suiteName: suite.name,
+                  projectId: pid,
+                  projectName: projectNames.get(pid) ?? '',
+                });
+              }
             }
+          } catch {
+            /* unreadable suite */
           }
         }
-      }
+      };
+      await Promise.all(Array.from({ length: Math.min(6, pairs.length) }, () => worker()));
       res.json(out);
     }),
   );

@@ -143,8 +143,8 @@ describe('JiraIssueService search', () => {
 
     calls.length = 0;
     const capped = await svc.searchAll('project = ISW', 150);
-    expect(searchCalls()).toHaveLength(2); // stops once 200 >= 150 collected
-    expect(capped.length).toBe(200);
+    expect(searchCalls()).toHaveLength(2); // page 1 + one parallel page to reach the cap
+    expect(capped.length).toBe(150); // hard cap now exact (no overshoot)
     svc.resetFieldCache();
   });
 });
