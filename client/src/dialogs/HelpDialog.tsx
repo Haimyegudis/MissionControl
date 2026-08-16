@@ -74,6 +74,12 @@ function JiraTab() {
           picker shows any teammate's sprint.
         </Item>
         <Item name="Backlog">your issues as kanban or grid, saved queries (with JSON import/export), bulk actions on multi-selected rows.</Item>
+        <Item name="Bulk operations (Backlog table)">
+          Select rows like in Explorer — click one, <b>Ctrl+Click</b> to add/remove, <b>Shift+Click</b> for a
+          range — then right-click any selected row: <b>Bulk change status</b> (type the target status, matched
+          per issue), <b>Bulk assign</b> (searchable user picker), bulk add comment, bulk add label, open all,
+          copy keys.
+        </Item>
         <Item name="Incidents">sticky incident filters with dashboard links.</Item>
         <Item name="Boards">sprint boards with Jira quick filters.</Item>
         <Item name="Filters">saved JQL filters with an editor and preview.</Item>
@@ -105,8 +111,19 @@ function TestRailTab() {
       <Section title="Case Library">
         Suite picker (or ★ All suites), section tree with per-row "+" (top level: add subsection; subsection: add
         case there), search matching title / C-id / steps / section names, owner and assigned-to filters, column
-        chooser + drag-resize, section-grouped rows with collapse, bulk copy/move (cross-project with search),
-        CSV export, never-ran coverage check, typed-name confirms for deletion.
+        chooser + drag-resize, section-grouped rows with collapse, CSV export, never-ran coverage check,
+        typed-name confirms for deletion.
+      </Section>
+      <Section title="Bulk operations (Case Library)">
+        Check cases with the row checkboxes (header checkbox or a section row's checkbox selects a whole group) —
+        the bulk bar appears with: <b>Edit…</b> (set Assigned to / Test case owner via searchable pickers, plus
+        Priority and Type — only picked fields change), <b>Copy to…</b> / <b>Move to…</b> (cross-project with
+        target search), <b>Export CSV</b> and <b>Delete</b> (typed confirmation for 5+).
+      </Section>
+      <Section title="Bulk operations (Run execution)">
+        In a run, check tests → the bulk bar marks all of them Passed / Failed / Blocked / Retest at once (with
+        Undo in the toast), or opens "Result with details…" to record one detailed result for the whole
+        selection.
       </Section>
       <Section title="Case editor (WYSIWYG)">
         Bold / italic / code / lists (Enter continues numbering) / tables (any size, add-remove rows and columns) /

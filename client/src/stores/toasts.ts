@@ -88,3 +88,8 @@ export function dismissToast(id: number): void {
 export function markToastsSeen(): void {
   toastSeenStore.set(Date.now());
 }
+
+export function clearToastHistory(): void {
+  toastHistoryStore.set([]);
+  toastSeenStore.set(Date.now());
+}

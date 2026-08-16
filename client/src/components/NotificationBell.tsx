@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
+  clearToastHistory,
   markToastsSeen,
   toastHistoryStore,
   toastSeenStore,
@@ -38,12 +39,17 @@ export function NotificationBell() {
 
   useEffect(() => {
     if (!open) return;
+    const dismiss = () => {
+      setOpen(false);
+      // Viewed = cleared — the panel closes empty for next time.
+      clearToastHistory();
+    };
     const close = (e: PointerEvent) => {
       const t = e.target as Node;
-      if (!host.current?.contains(t) && !panelRef.current?.contains(t)) setOpen(false);
+      if (!host.current?.contains(t) && !panelRef.current?.contains(t)) dismiss();
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') dismiss();
     };
     window.addEventListener('pointerdown', close);
     window.addEventListener('keydown', onKey);
@@ -53,12 +59,19 @@ export function NotificationBell() {
     };
   }, [open]);
 
+  const closeAndClear = () => {
+    setOpen(false);
+    clearToastHistory();
+  };
+
   const toggle = () => {
     setOpen((v) => {
       if (!v) {
         markToastsSeen();
         const rect = host.current?.getBoundingClientRect();
         if (rect) setAnchor({ top: rect.bottom + 6, right: Math.max(8, window.innerWidth - rect.right) });
+      } else {
+        clearToastHistory(); // closing after viewing = clear
       }
       return !v;
     });
@@ -109,7 +122,14 @@ export function NotificationBell() {
             padding: 8,
           }}
         >
-          <div style={{ fontSize: 12, fontWeight: 700, padding: '4px 8px 8px' }}>Notifications</div>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '4px 8px 8px' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, flex: 1 }}>Notifications</span>
+            {history.length > 0 ? (
+              <button className="btn" style={{ padding: '1px 8px', fontSize: 11 }} onClick={closeAndClear}>
+                Clear
+              </button>
+            ) : null}
+          </div>
           {history.length === 0 ? (
             <div className="muted" style={{ fontSize: 12, padding: '8px 8px 12px' }}>
               Nothing yet — events from this session show up here.
