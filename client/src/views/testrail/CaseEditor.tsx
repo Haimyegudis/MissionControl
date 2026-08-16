@@ -124,6 +124,7 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
       pushToast({ title: 'TestRail', body: 'Title is required.' });
       return;
     }
+    const filledSteps = steps.filter((s) => s.action.trim() || s.expected.trim());
     const payload = {
       title: title.trim(),
       typeId: Number(typeId) || null,
@@ -133,6 +134,8 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
       description: null,
       preconds: preconds.trim() || null,
       steps: stepsToText(steps) || null,
+      // The template displays separated steps — this is the field that counts.
+      stepsSeparated: filledSteps.map((s) => ({ content: s.action, expected: s.expected })),
       expected: expected.trim() || null,
       ownerId: Number(ownerId) || null,
     };

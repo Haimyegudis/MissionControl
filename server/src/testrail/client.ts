@@ -407,7 +407,16 @@ function caseBody(payload: TrAddCasePayload): Record<string, unknown> {
   if (hasText(payload.refs)) body.refs = payload.refs;
   if (hasText(payload.description)) body.custom_description = payload.description;
   if (hasText(payload.preconds)) body.custom_preconds = payload.preconds;
-  if (hasText(payload.steps)) body.custom_steps = payload.steps;
+  // The instance's case template shows separated steps — write that field
+  // when structured rows are present; plain-text custom_steps otherwise.
+  const sep = (payload.stepsSeparated ?? []).filter(
+    (s) => s.content.trim().length > 0 || s.expected.trim().length > 0,
+  );
+  if (sep.length > 0) {
+    body.custom_steps_separated = sep.map((s) => ({ content: s.content, expected: s.expected }));
+  } else if (hasText(payload.steps)) {
+    body.custom_steps = payload.steps;
+  }
   if (hasText(payload.expected)) body.custom_expected = payload.expected;
   if (typeof payload.ownerId === 'number') body.custom_testcaseowner = payload.ownerId;
   return body;

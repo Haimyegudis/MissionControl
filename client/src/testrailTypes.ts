@@ -145,6 +145,8 @@ export interface TrAddCasePayload {
   description?: string | null;
   preconds?: string | null;
   steps?: string | null;
+  /** Structured step rows → custom_steps_separated (the template's field). */
+  stepsSeparated?: Array<{ content: string; expected: string }> | null;
   expected?: string | null;
   ownerId?: number | null;
 }

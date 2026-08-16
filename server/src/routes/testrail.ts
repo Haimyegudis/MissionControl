@@ -50,9 +50,24 @@ function casePayload(body: Record<string, unknown>): TrAddCasePayload {
     description: optStr(body.description),
     preconds: optStr(body.preconds),
     steps: optStr(body.steps),
+    stepsSeparated: stepRows(body.stepsSeparated),
     expected: optStr(body.expected),
     ownerId: optInt(body.ownerId),
   };
+}
+
+/** [{content, expected}] rows for custom_steps_separated; null when absent. */
+function stepRows(value: unknown): Array<{ content: string; expected: string }> | null {
+  if (!Array.isArray(value)) return null;
+  return value
+    .map((row) => {
+      const r = (row ?? {}) as Record<string, unknown>;
+      return {
+        content: typeof r.content === 'string' ? r.content : '',
+        expected: typeof r.expected === 'string' ? r.expected : '',
+      };
+    })
+    .filter((r) => r.content.trim().length > 0 || r.expected.trim().length > 0);
 }
 
 function emptyCredentials(): Credentials {
