@@ -295,6 +295,11 @@ export function DataGrid<T>({
               return (
                 <tr
                   key={key}
+                  onMouseDown={(e) => {
+                    // Shift/Ctrl+click extends the ROW selection — stop the
+                    // browser from also highlighting the cell text.
+                    if (multiSelect && (e.shiftKey || e.ctrlKey || e.metaKey)) e.preventDefault();
+                  }}
                   onClick={(e) => onRowClick(row, e)}
                   onDoubleClick={() => onRowDoubleClick?.(row)}
                   onContextMenu={(e) => {
