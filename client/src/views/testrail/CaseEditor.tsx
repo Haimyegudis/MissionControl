@@ -21,10 +21,14 @@ interface StepRow {
   expected: string;
 }
 
-/** Everything the user can type — persisted as a draft between sessions. */
+/**
+ * Everything the user can type — persisted as a draft between sessions.
+ * The target section is intentionally NOT part of the draft: it always
+ * follows the tree selection, so a restored draft never hijacks the
+ * section/subsection the user just picked.
+ */
 interface CaseDraft {
   title: string;
-  sectionId: number | null;
   typeId: string;
   priorityId: string;
   estimate: string;
@@ -74,7 +78,6 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
   const baseline = useMemo<CaseDraft>(
     () => ({
       title: existing?.title ?? '',
-      sectionId: defaultSection,
       typeId: existing?.typeId ? String(existing.typeId) : '',
       priorityId: existing?.priorityId ? String(existing.priorityId) : '',
       estimate: existing?.estimate ?? '',
@@ -98,7 +101,8 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
   const init = restored?.data ?? baseline;
 
   const [title, setTitle] = useState(init.title);
-  const [sectionId, setSectionId] = useState<number | null>(init.sectionId);
+  // Section always starts at the current tree selection — never the draft.
+  const [sectionId, setSectionId] = useState<number | null>(defaultSection);
   const [typeId, setTypeId] = useState<string>(init.typeId);
   const [priorityId, setPriorityId] = useState<string>(init.priorityId);
   const [estimate, setEstimate] = useState(init.estimate);
@@ -114,14 +118,14 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
     richTarget.current = el;
   };
 
-  const current: CaseDraft = { title, sectionId, typeId, priorityId, estimate, refs, ownerId, preconds, expected, steps };
+  const current: CaseDraft = { title, typeId, priorityId, estimate, refs, ownerId, preconds, expected, steps };
   useDraftAutosave(dKey, current, JSON.stringify(current) === JSON.stringify(baseline));
 
   const discardDraft = () => {
     clearDraft(dKey);
     setBanner(null);
     setTitle(baseline.title);
-    setSectionId(baseline.sectionId);
+    setSectionId(defaultSection);
     setTypeId(baseline.typeId);
     setPriorityId(baseline.priorityId);
     setEstimate(baseline.estimate);
