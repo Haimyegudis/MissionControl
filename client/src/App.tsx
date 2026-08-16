@@ -2,6 +2,7 @@
 // Real views land in Task B4; placeholders keep every route reachable.
 
 import { lazy, Suspense, useEffect } from 'react';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Shell } from './components/Shell';
 import { pruneDrafts } from './lib/drafts';
 import { ToastHost } from './components/Toast';
@@ -75,7 +76,11 @@ function ActiveView() {
         return <DashboardView />;
     }
   })();
-  return <Suspense fallback={viewFallback}>{view}</Suspense>;
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={viewFallback}>{view}</Suspense>
+    </ErrorBoundary>
+  );
 }
 
 /** Shell + views, wired to the dialog openers (must render under DialogHost). */

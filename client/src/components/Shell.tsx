@@ -5,7 +5,8 @@ import { settings as settingsApi } from '../api/client';
 import { formatClock, formatElapsed } from '../lib/format';
 import { boardHash } from '../lib/viewMyWorkJql';
 import { CONFLUENCE_ROUTES, navigate, ROUTES, TESTRAIL_ROUTES, routeStore, type RouteId } from '../router';
-import { pinnedBoardsStore, refreshPinnedBoards, unpinBoard } from '../stores/pinnedBoards';
+import { pinBoard, pinnedBoardsStore, refreshPinnedBoards, unpinBoard } from '../stores/pinnedBoards';
+import { errText } from '../lib/errors';
 import { pausePomodoro, pomodoroStore, resumePomodoro, statusText, stopPomodoro } from '../stores/pomodoro';
 import { lastRefreshStore, triggerNow } from '../stores/scheduler';
 import { sessionStore } from '../stores/session';
@@ -152,7 +153,7 @@ function PomodoroWidget({ onPickIssue }: { onPickIssue: () => void }) {
     const key = state.issueKey;
     const elapsed = await stopPomodoro();
     if (elapsed >= 60 && key) {
-      window.alert(`Logged ${Math.floor(elapsed / 60)}m on ${key}`);
+      pushToast({ title: 'Pomodoro', body: `Logged ${Math.floor(elapsed / 60)}m on ${key}`, severity: 'success' });
     }
   };
   return (
@@ -244,8 +245,21 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
   const unpin = async (board: PinnedBoard) => {
     try {
       await unpinBoard(board.id);
+      pushToast({
+        title: 'Board unpinned',
+        body: board.name,
+        severity: 'info',
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            void pinBoard({ boardId: board.boardId, name: board.name, filterId: board.filterId ?? null }).catch(
+              (err) => pushToast({ title: 'Re-pin failed', body: errText(err), severity: 'error' }),
+            );
+          },
+        },
+      });
     } catch (err) {
-      pushToast({ title: 'Unpin failed', body: err instanceof Error ? err.message : String(err) });
+      pushToast({ title: 'Unpin failed', body: errText(err), severity: 'error' });
     }
   };
 

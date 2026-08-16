@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { confluence } from '../../api/client';
 import { DraftBanner } from '../../components/DraftBanner';
+import { useTextPrompt } from '../../components/TextPrompt';
 import { clearDraft, draftKey, loadDraft } from '../../lib/drafts';
 import { useDraftAutosave } from '../../lib/useDraftAutosave';
 import { updateSettings } from '../../stores/settings';
@@ -202,8 +203,30 @@ function editorToStorage(editor: HTMLDivElement): string {
 function EditorToolbar({ editor }: { editor: React.RefObject<HTMLDivElement> }) {
   const focus = () => editor.current?.focus();
   const exec = (command: string, value?: string) => { focus(); tool(command, value); };
-  const link = () => { const value = window.prompt('Link URL'); if (value) exec('createLink', value); };
-  const image = () => { const value = window.prompt('Image URL'); if (value) exec('insertImage', value); };
+  const { element: promptElement, prompt } = useTextPrompt();
+  const savedRange = useRef<Range | null>(null);
+  const saveSel = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) savedRange.current = sel.getRangeAt(0).cloneRange();
+  };
+  const restoreSel = () => {
+    if (!savedRange.current) return;
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(savedRange.current);
+  };
+  const link = () => {
+    saveSel();
+    void prompt('Insert link', 'Link URL:', 'https://').then((value) => {
+      if (value) { focus(); restoreSel(); tool('createLink', value); }
+    });
+  };
+  const image = () => {
+    saveSel();
+    void prompt('Insert image', 'Image URL:', 'https://').then((value) => {
+      if (value) { focus(); restoreSel(); tool('insertImage', value); }
+    });
+  };
   const table = () => exec('insertHTML', '<table><tbody><tr><th>Heading</th><th>Heading</th></tr><tr><td><br></td><td><br></td></tr></tbody></table><p><br></p>');
   const layout = (type: 'single' | 'two_equal' | 'three_equal') => {
     const count = type === 'single' ? 1 : type === 'two_equal' ? 2 : 3;
@@ -211,6 +234,7 @@ function EditorToolbar({ editor }: { editor: React.RefObject<HTMLDivElement> }) 
   };
   return (
     <div className="cf-editor-toolbar" onMouseDown={(e) => { if ((e.target as HTMLElement).tagName === 'BUTTON') e.preventDefault(); }}>
+      {promptElement}
       <select aria-label="Text style" defaultValue="p" onChange={(e) => exec('formatBlock', e.target.value)}><option value="p">Paragraph</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option><option value="h4">Heading 4</option><option value="pre">Code block</option></select>
       <button title="Bold" onClick={() => exec('bold')}><b>B</b></button><button title="Italic" onClick={() => exec('italic')}><i>I</i></button><button title="Underline" onClick={() => exec('underline')}><u>U</u></button><button title="Strikethrough" onClick={() => exec('strikeThrough')}><s>S</s></button>
       <span className="cf-tool-sep" />

@@ -28,19 +28,42 @@ const cardStyle: CSSProperties = {
   pointerEvents: 'auto',
 };
 
+const SEVERITY_EDGE: Record<string, string> = {
+  success: 'var(--accent-green)',
+  error: 'var(--accent-red)',
+  info: 'var(--accent-cyan)',
+};
+
 export function ToastHost() {
   const toasts = useStore(toastsStore);
   if (toasts.length === 0) return null;
   return (
     <div style={hostStyle}>
       {toasts.map((t) => (
-        <div key={t.id} style={cardStyle} role="status">
+        <div
+          key={t.id}
+          style={{ ...cardStyle, borderLeft: `3px solid ${SEVERITY_EDGE[t.severity] ?? SEVERITY_EDGE.info}` }}
+          // Errors must interrupt screen readers; the rest stay polite.
+          role={t.severity === 'error' ? 'alert' : 'status'}
+        >
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--toast-title)' }}>{t.title}</div>
               <div style={{ fontSize: 12, color: 'var(--toast-body)', marginTop: 4, overflowWrap: 'break-word' }}>
                 {t.body}
               </div>
+              {t.action ? (
+                <button
+                  className="btn"
+                  style={{ marginTop: 8, padding: '2px 12px', fontSize: 12 }}
+                  onClick={() => {
+                    t.action?.onClick();
+                    dismissToast(t.id);
+                  }}
+                >
+                  {t.action.label}
+                </button>
+              ) : null}
             </div>
             <button
               onClick={() => dismissToast(t.id)}

@@ -6,13 +6,23 @@ import { create as createApi } from '../api/client';
 import { Modal } from '../components/Modal';
 import { computePriority } from '../lib/priorityAutomation';
 import { sessionStore } from '../stores/session';
+import { getSettings } from '../stores/settings';
 import { pushToast } from '../stores/toasts';
 import { useStore } from '../stores/useStore';
 import type { JiraCreateFieldMeta } from '../types';
 
-const PROJECT = 'ISW';
 const ISSUE_TYPE = 'Incident';
-const DEFAULTS_KEY = `${PROJECT}:${ISSUE_TYPE}`;
+/** Project follows Settings → default project (was hardcoded 'ISW'). */
+function projectKey(): string {
+  try {
+    return getSettings().defaultProjectKey || 'ISW';
+  } catch {
+    return 'ISW';
+  }
+}
+function defaultsKey(): string {
+  return `${projectKey()}:${ISSUE_TYPE}`;
+}
 
 export type FieldKind = 'text' | 'longtext' | 'select' | 'multiselect' | 'date' | 'datetime' | 'number' | 'user';
 
@@ -152,7 +162,7 @@ export function CreateIssue({ onClose }: { onClose: () => void }) {
     (async () => {
       let metaFields: JiraCreateFieldMeta[] = [];
       try {
-        const meta = await createApi.meta(PROJECT, ISSUE_TYPE);
+        const meta = await createApi.meta(projectKey(), ISSUE_TYPE);
         metaFields = meta.fields ?? [];
       } catch (err) {
         if (cancelled) return;
@@ -164,7 +174,7 @@ export function CreateIssue({ onClose }: { onClose: () => void }) {
       // Empty meta → hardcoded fallback skeleton. Preserve Jira response order.
       const flds = metaFields.length > 0 ? metaFields : fallbackSkeleton();
       try {
-        defaultsRef.current = (await createApi.getDefaults(DEFAULTS_KEY)) ?? {};
+        defaultsRef.current = (await createApi.getDefaults(defaultsKey())) ?? {};
       } catch {
         defaultsRef.current = {};
       }
@@ -225,7 +235,7 @@ export function CreateIssue({ onClose }: { onClose: () => void }) {
     setBusy(true);
     setStatus(null);
     try {
-      const res = await createApi.issue({ project: PROJECT, type: ISSUE_TYPE, fields: shaped });
+      const res = await createApi.issue({ project: projectKey(), type: ISSUE_TYPE, fields: shaped });
       if (createAnother) {
         setStatus({ text: `Created ${res.key}.`, ok: true });
         // Reset only text | longtext | number; keep selects; re-apply defaults.
@@ -259,7 +269,7 @@ export function CreateIssue({ onClose }: { onClose: () => void }) {
       }
     }
     try {
-      await createApi.putDefaults(DEFAULTS_KEY, toSave);
+      await createApi.putDefaults(defaultsKey(), toSave);
       defaultsRef.current = toSave;
       const n = Object.keys(toSave).length;
       setStatus({ text: `Saved ${n} default(s) — auto-applied next time.`, ok: true });
@@ -270,7 +280,7 @@ export function CreateIssue({ onClose }: { onClose: () => void }) {
 
   const clearDefaults = async () => {
     try {
-      await createApi.deleteDefaults(DEFAULTS_KEY);
+      await createApi.deleteDefaults(defaultsKey());
       defaultsRef.current = {};
       setStatus({ text: 'Defaults cleared.', ok: true });
     } catch (err) {

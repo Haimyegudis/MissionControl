@@ -8,6 +8,8 @@
 
 import { useEffect, useState } from 'react';
 import { issues as issuesApi } from '../api/client';
+import { errText } from '../lib/errors';
+import { pushToast } from '../stores/toasts';
 import type { JiraIssue, JiraTransition, JiraTransitionField } from '../types';
 import type { MenuEntry } from './ContextMenu';
 
@@ -43,8 +45,8 @@ async function chooseTransition(issueKey: string, transition: JiraTransition, ha
     await issuesApi.performTransition(issueKey, { id: transition.id });
     const details = await issuesApi.details(issueKey);
     handlers.onPatched(details.issue);
-  } catch {
-    alert('Transition failed');
+  } catch (err) {
+    pushToast({ title: 'Transition failed', body: errText(err), severity: 'error' });
   }
 }
 

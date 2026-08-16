@@ -412,7 +412,7 @@ export function IncidentsView() {
   const openInJira = () => {
     const url = getSettings().incidentDashboardUrl ?? '';
     if (!/^https?:\/\//i.test(url)) {
-      alert('Dashboard URL must be http or https.');
+      pushToast({ title: 'Invalid URL', body: 'Dashboard URL must be http or https.', severity: 'error' });
       return;
     }
     window.open(url, '_blank', 'noopener');

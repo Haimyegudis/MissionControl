@@ -6,7 +6,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { issues as issuesApi } from '../api/client';
 import { trApi } from '../api/testrail';
+import { errText } from '../lib/errors';
 import { fmtDuration, parseTimeInStatus } from '../lib/timeInStatus';
+import { pushToast } from '../stores/toasts';
 import { IssueTestRailPanel } from './IssueTestRailPanel';
 import type { TrRun } from '../testrailTypes';
 import { Modal } from '../components/Modal';
@@ -249,13 +251,16 @@ export function IssueDetails({ request, onClose }: IssueDetailsProps) {
       }
       await issuesApi.performTransition(currentKey, { id: t.id });
       await reloadWithStatus();
-    } catch {
-      alert('Transition failed');
+    } catch (err) {
+      pushToast({ title: 'Transition failed', body: errText(err), severity: 'error' });
     }
   };
 
   const copyKey = () => {
-    void navigator.clipboard?.writeText(currentKey);
+    navigator.clipboard
+      ?.writeText(currentKey)
+      .then(() => pushToast({ title: 'Copied', body: currentKey, severity: 'success', duration: 2500 }))
+      .catch((err) => pushToast({ title: 'Copy failed', body: errText(err), severity: 'error' }));
   };
 
   const openInJira = () => {

@@ -147,12 +147,18 @@ export function CaseLibraryView() {
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
   const [covProgress, setCovProgress] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Load sections eagerly + cases async for the selected suite (or all).
   useEffect(() => {
     if (st.phase !== 'connected' || st.selSuiteId == null) return;
+    setLoadError(null);
     void ensureSections(st.selSuiteId).catch((err) => pushToast({ title: 'Sections failed', body: errText(err) }));
-    void ensureCases(st.selSuiteId).catch((err) => pushToast({ title: 'Cases failed', body: errText(err) }));
+    void ensureCases(st.selSuiteId).catch((err) => {
+      // Without this the table read "loading cases…" forever after a failure.
+      setLoadError(errText(err));
+      pushToast({ title: 'Cases failed', body: errText(err) });
+    });
   }, [st.phase, st.selSuiteId, st.projectId]);
 
   // Palette wiring: open the requested case once its suite data is present.
@@ -480,7 +486,11 @@ export function CaseLibraryView() {
       <tr key="empty">
         <td colSpan={span}>
           <div className="tr-empty-note">
-            {casesLoaded(st) ? 'Nothing here. Adjust the filter or add a case.' : 'loading cases for this suite…'}
+            {loadError
+              ? `✕ Failed to load cases: ${loadError} — use ↻ Refresh to retry.`
+              : casesLoaded(st)
+                ? 'Nothing here. Adjust the filter or add a case.'
+                : 'loading cases for this suite…'}
           </div>
         </td>
       </tr>,
@@ -488,7 +498,7 @@ export function CaseLibraryView() {
   }
   return rows;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groups, st.collapsedSecs, st.caseSel, sections, st.suites, st.selSuiteId, cols, cellCtx, span, visible.length]);
+  }, [groups, st.collapsedSecs, st.caseSel, sections, st.suites, st.selSuiteId, cols, cellCtx, span, visible.length, loadError]);
 
   const suiteOptions = (
     <>

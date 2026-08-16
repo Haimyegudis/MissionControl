@@ -36,6 +36,16 @@ export function agingDotVisible(updatedIso: string | null | undefined, now: Date
  * PriorityToBrush: highest/critical/blocker `#EF4444` · high/s3 `#FFA13A` ·
  * medium/s4 `#FFD23A` · low/s5/s6/default `#8AA0BF`. Case-insensitive substring.
  */
+/** Chip color per issue type — epics must be visually distinct from tasks. */
+export function issueTypeColor(type: string): string {
+  const t = type.toLowerCase();
+  if (t.includes('epic')) return '#b558f6';
+  if (t.includes('story')) return '#22d38f';
+  if (t.includes('bug') || t.includes('defect') || t.includes('incident')) return '#e5484d';
+  if (t.includes('sub')) return '#8aa0bf';
+  return '#4f9cf9'; // task & everything else
+}
+
 export function priorityColor(priority: string | null | undefined): string {
   const p = (priority ?? '').toLowerCase();
   if (p.includes('highest') || p.includes('critical') || p.includes('blocker')) return '#EF4444';

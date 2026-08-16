@@ -9,14 +9,17 @@ import { issues as issuesApi, teams as teamsApi } from '../api/client';
 import { StackedBarsH } from '../charts/StackedBarsH';
 import { DataGrid } from '../components/DataGrid';
 import type { GridColumn } from '../components/DataGrid';
+import { errText } from '../lib/errors';
 import { fmtHours, fmtHours1 } from '../lib/viewFormat';
 import { computeTeamRows, otherCount, type TeamMemberRow } from '../lib/viewTeam';
 import { sessionStore } from '../stores/session';
 import { getSettings, loadSettings, updateSettings } from '../stores/settings';
+import { pushToast } from '../stores/toasts';
 import { useStore } from '../stores/useStore';
 import type { Team } from '../types';
 import { MemberDetail } from './team/MemberDetail';
 import { TeamEditor } from './team/TeamEditor';
+import { ConfirmDialog, type ConfirmSpec } from './testrail/common';
 
 export function TeamView() {
   const session = useStore(sessionStore);
@@ -30,6 +33,7 @@ export function TeamView() {
   const [error, setError] = useState<string | null>(null);
   const [editor, setEditor] = useState<{ existing: Team | null } | null>(null);
   const [detail, setDetail] = useState<TeamMemberRow | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
   const loadSeq = useRef(0);
   const projectDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -103,15 +107,27 @@ export function TeamView() {
     }, 600);
   };
 
-  const deleteTeam = async () => {
+  const deleteTeam = () => {
     if (!selectedTeam) return;
-    if (!window.confirm(`Delete team '${selectedTeam.name}'?`)) return;
-    try {
-      await teamsApi.remove(selectedTeam.id);
-      await reloadTeams(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
+    const team = selectedTeam;
+    setConfirm({
+      title: 'Delete team',
+      message: (
+        <span>
+          Delete team <b>{team.name}</b>?
+        </span>
+      ),
+      confirmLabel: 'Delete team',
+      onConfirm: async () => {
+        try {
+          await teamsApi.remove(team.id);
+          await reloadTeams(null);
+          pushToast({ title: 'Team deleted', body: team.name, severity: 'success' });
+        } catch (err) {
+          setError(errText(err));
+        }
+      },
+    });
   };
 
   const onEditorClose = (saved: Team | null) => {
@@ -272,6 +288,7 @@ export function TeamView() {
 
       {editor ? <TeamEditor existing={editor.existing} onClose={onEditorClose} /> : null}
       {detail ? <MemberDetail member={detail.member} issues={detail.issues} onClose={() => setDetail(null)} /> : null}
+      {confirm ? <ConfirmDialog spec={confirm} onClose={() => setConfirm(null)} /> : null}
     </div>
   );
 }

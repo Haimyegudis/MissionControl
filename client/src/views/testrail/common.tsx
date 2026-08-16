@@ -1,7 +1,7 @@
 // Shared TestRail view pieces (Phase 3): distribution bars, stat tiles,
 // typed-confirm dialog, connection gate. Styles live in theme.css.
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Modal } from '../../components/Modal';
 import { Stamp, statusVariant } from '../../components/Stamp';
 import type { RunCounts } from '../../lib/testrail';
@@ -132,7 +132,11 @@ export function ConfirmDialog({ spec, onClose }: { spec: ConfirmSpec; onClose: (
 // ---------------------------------------------------------------------------
 
 export function Drawer({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+  const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    // Focus moves into the drawer on open and returns to the trigger on close.
+    const previous = document.activeElement as HTMLElement | null;
+    panelRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
@@ -140,12 +144,17 @@ export function Drawer({ onClose, children }: { onClose: () => void; children: R
       }
     };
     window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
+    return () => {
+      window.removeEventListener('keydown', onKey, true);
+      previous?.focus?.();
+    };
   }, [onClose]);
   return (
     <>
       <div className="tr-drawer-veil" onMouseDown={onClose} />
-      <div className="tr-drawer">{children}</div>
+      <div className="tr-drawer" role="dialog" aria-modal="true" tabIndex={-1} ref={panelRef} style={{ outline: 'none' }}>
+        {children}
+      </div>
     </>
   );
 }
@@ -231,6 +240,4 @@ export function PageTitle({ kicker, title, lede }: { kicker: ReactNode; title: R
   );
 }
 
-export function errText(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
+export { errText } from '../../lib/errors';

@@ -63,10 +63,16 @@ function JiraConnection() {
     }
   };
 
-  const doLogout = async () => {
-    if (!window.confirm('Disconnect from Jira and clear the stored token?')) return;
-    await logout();
-  };
+  const [logoutConfirm, setLogoutConfirm] = useState<ConfirmSpec | null>(null);
+  const doLogout = () =>
+    setLogoutConfirm({
+      title: 'Disconnect Jira',
+      message: 'Disconnect from Jira and clear the stored token?',
+      confirmLabel: 'Disconnect',
+      onConfirm: async () => {
+        await logout();
+      },
+    });
 
   const connected = session.phase === 'connected';
   return (
@@ -99,12 +105,13 @@ function JiraConnection() {
           <button className="btn btn-primary" onClick={() => void updateToken()} disabled={busy}>
             {busy ? 'Updating…' : 'Update'}
           </button>
-          <button className="btn" onClick={() => void doLogout()}>
+          <button className="btn" onClick={doLogout}>
             Log out
           </button>
         </div>
         <ConnNote text={status} />
       </Field>
+      {logoutConfirm ? <ConfirmDialog spec={logoutConfirm} onClose={() => setLogoutConfirm(null)} /> : null}
     </ConnBlock>
   );
 }
@@ -271,21 +278,27 @@ function ConfluenceConnection() {
     }
   };
 
-  const disconnect = async () => {
-    if (!window.confirm('Disconnect Confluence and remove its stored token?')) return;
-    setBusy(true);
-    setNote('');
-    try {
-      await confluence.disconnect();
-      setStatus({ configured: false, connected: false, baseUrl: null, user: null });
-      setPat('');
-      setNote('Confluence disconnected.');
-    } catch (e) {
-      setNote(`✕ ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const [discConfirm, setDiscConfirm] = useState<ConfirmSpec | null>(null);
+  const disconnect = () =>
+    setDiscConfirm({
+      title: 'Disconnect Confluence',
+      message: 'Disconnect Confluence and remove its stored token?',
+      confirmLabel: 'Disconnect',
+      onConfirm: async () => {
+        setBusy(true);
+        setNote('');
+        try {
+          await confluence.disconnect();
+          setStatus({ configured: false, connected: false, baseUrl: null, user: null });
+          setPat('');
+          setNote('Confluence disconnected.');
+        } catch (e) {
+          setNote(`✕ ${e instanceof Error ? e.message : String(e)}`);
+        } finally {
+          setBusy(false);
+        }
+      },
+    });
 
   const connected = Boolean(status?.connected);
   return (
@@ -322,13 +335,14 @@ function ConfluenceConnection() {
             {busy ? 'Connecting…' : 'Save & connect'}
           </button>
           {status?.configured ? (
-            <button className="btn" onClick={() => void disconnect()} disabled={busy}>
+            <button className="btn" onClick={disconnect} disabled={busy}>
               Disconnect
             </button>
           ) : null}
         </div>
         <ConnNote text={note} />
       </Field>
+      {discConfirm ? <ConfirmDialog spec={discConfirm} onClose={() => setDiscConfirm(null)} /> : null}
     </ConnBlock>
   );
 }

@@ -355,7 +355,7 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
       const transitions = await issuesApi.transitions(issue.key);
       const transition = pickTransition(transitions, columnTitle);
       if (!transition) {
-        alert(`No workflow transition leads from '${issue.status}' to '${columnTitle}'.`);
+        pushToast({ title: 'No transition', body: `No workflow transition leads from '${issue.status}' to '${columnTitle}'.`, severity: 'error' });
         return;
       }
       const screen = await issuesApi.transitionScreen(issue.key, transition.id);

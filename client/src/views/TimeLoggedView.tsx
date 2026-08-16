@@ -17,6 +17,7 @@ import { UserSearchPicker } from '../components/UserSearchPicker';
 import { dialogs } from '../dialogs/DialogHost';
 import { statusColor } from '../lib/colors';
 import { buildCsv, downloadCsv } from '../lib/csv';
+import { errText } from '../lib/errors';
 import { formatTimeSpan } from '../lib/format';
 import { addDays, formatDMmmYy, hoursDisplay, startOfWeekSunday, ymd } from '../lib/viewFormat';
 import {
@@ -83,9 +84,10 @@ async function exportSvgPng(container: HTMLElement | null, filename: string, wid
     } finally {
       URL.revokeObjectURL(url);
     }
-  } catch {
-    // Best-effort — theme CSS variables inside the SVG may not resolve
-    // off-document; the CSVs are the canonical export.
+  } catch (err) {
+    // Theme CSS variables inside the SVG may not resolve off-document; the
+    // CSVs are the canonical export — but tell the user instead of a no-op.
+    pushToast({ title: 'PNG export failed', body: errText(err), severity: 'error' });
   }
 }
 
@@ -139,16 +141,16 @@ export function TimeLoggedView() {
       const today = new Date();
       const r = await timeloggedApi.range(ymd(addDays(today, -91)), ymd(addDays(today, 1)));
       setHeatmapHours(aggregateDailyHours(r.dailyByIssue));
-    } catch {
-      /* best-effort */
+    } catch (err) {
+      pushToast({ title: 'Heatmap unavailable', body: errText(err), severity: 'error' });
     }
   };
 
   const loadTimesheet = async (start: Date) => {
     try {
       setWeekReport(await timeloggedApi.range(ymd(start), ymd(addDays(start, 7))));
-    } catch {
-      /* best-effort */
+    } catch (err) {
+      pushToast({ title: 'Timesheet unavailable', body: errText(err), severity: 'error' });
     }
   };
 

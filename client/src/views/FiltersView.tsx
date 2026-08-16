@@ -10,6 +10,7 @@ import type { GridColumn } from '../components/DataGrid';
 import { JqlEditor } from '../components/JqlEditor';
 import { dialogs } from '../dialogs/DialogHost';
 import { priorityColor, statusColor } from '../lib/colors';
+import { pushToast } from '../stores/toasts';
 import type { JiraIssue, SavedFilter } from '../types';
 
 function newFilterId(): string {
@@ -65,7 +66,7 @@ export function FiltersView() {
 
   const save = async () => {
     if (!editorName.trim() || !editorJql.trim()) {
-      window.alert('Name and JQL are required.');
+      pushToast({ title: 'Missing fields', body: 'Name and JQL are required.', severity: 'error' });
       return;
     }
     const filter: SavedFilter = selected

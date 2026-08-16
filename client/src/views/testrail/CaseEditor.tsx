@@ -10,7 +10,7 @@ import { RichTextArea } from '../../components/RichTextArea';
 import { RichToolbar, useRichTarget } from '../../components/RichToolbar';
 import { clearDraft, draftKey, loadDraft } from '../../lib/drafts';
 import { useDraftAutosave } from '../../lib/useDraftAutosave';
-import { stepsToText } from '../../lib/testrail';
+import { sectionPath, stepsToText } from '../../lib/testrail';
 import { pushToast } from '../../stores/toasts';
 import { currentSections, userName, type TestRailState } from '../../stores/testrail';
 import type { TrCase } from '../../testrailTypes';
@@ -57,18 +57,10 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
     [st],
   );
   // Full breadcrumb per section ("ISW-xxx / Manual") — the flat name alone is
-  // ambiguous once subsections exist.
-  const sectionPath = useMemo(() => {
-    const byId = new Map(sections.map((s) => [s.id, s]));
+  // ambiguous once subsections exist. Reuses lib/testrail's sectionPath.
+  const sectionPathById = useMemo(() => {
     const path = new Map<number, string>();
-    for (const s of sections) {
-      const names: string[] = [];
-      for (let cur: typeof s | undefined = s; cur; cur = cur.parentId != null ? byId.get(cur.parentId) : undefined) {
-        names.unshift(cur.name);
-        if (names.length > 10) break; // cycle guard
-      }
-      path.set(s.id, names.join(' / '));
-    }
+    for (const s of sections) path.set(s.id, sectionPath(s.id, sections));
     return path;
   }, [sections]);
   const defaultSection = existing?.sectionId ?? st.selSectionId ?? sections[0]?.id ?? null;
@@ -217,7 +209,7 @@ export function CaseEditor({ st, existing, onClose, onSaved }: CaseEditorProps) 
             <select value={sectionId ?? ''} onChange={(e) => setSectionId(Number(e.target.value) || null)}>
               {sections.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {sectionPath.get(s.id) ?? s.name}
+                  {sectionPathById.get(s.id) ?? s.name}
                 </option>
               ))}
             </select>

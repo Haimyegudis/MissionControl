@@ -58,6 +58,10 @@
         --sp-c3: #0895a8;
         --sp-c4: #c2199f;
       }
+      /* OS-level reduced-motion: keep the splash but freeze its animations. */
+      @media (prefers-reduced-motion: reduce) {
+        #splash *, #splash *::before, #splash *::after { animation: none !important; }
+      }
       #splash.done {
         animation: sp-out 0.4s ease forwards;
         pointer-events: none;

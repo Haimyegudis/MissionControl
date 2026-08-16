@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { issues as issuesApi } from '../api/client';
 import { Modal } from '../components/Modal';
+import { issueTypeColor } from '../lib/colors';
 import { navigate, ROUTES, TESTRAIL_ROUTES, type RouteId } from '../router';
 import { settingsStore } from '../stores/settings';
 import { allLoadedCases, openCase, trStore } from '../stores/testrail';
@@ -22,15 +23,6 @@ export interface PaletteRow {
   action?: () => void;
 }
 
-/** Chip color per issue type — epics must be visually distinct from tasks. */
-export function issueTypeColor(type: string): string {
-  const t = type.toLowerCase();
-  if (t.includes('epic')) return '#b558f6';
-  if (t.includes('story')) return '#22d38f';
-  if (t.includes('bug') || t.includes('defect') || t.includes('incident')) return '#e5484d';
-  if (t.includes('sub')) return '#8aa0bf';
-  return '#4f9cf9'; // task & everything else
-}
 
 const ISSUE_KEY_RE = /^[A-Za-z][A-Za-z0-9_]*-\d+$/;
 

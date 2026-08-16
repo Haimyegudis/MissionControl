@@ -77,7 +77,7 @@
   --border-soft: #e5decb;
   --border-strong: #d8d0bb;
   --text-primary: #23201a;
-  --muted: #8a8069;
+  --muted: #6e6552; /* was #8a8069 — ~3:1 on the paper bg; now ≥4.5:1 (AA) */
   --accent-cyan: #c7431d;
   --accent-green: #2e7d4a;
   --accent-yellow: #a87b14;

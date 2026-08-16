@@ -3,6 +3,7 @@
 // Serialization to TestRail markdown happens in RichTextArea.
 
 import { useRef, useState } from 'react';
+import { useTextPrompt } from './TextPrompt';
 
 export interface RichTarget {
   current: HTMLElement | null;
@@ -71,9 +72,12 @@ export function RichToolbar({ target }: { target: RichTarget }) {
     exec('insertHTML', `<code>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code>`);
   };
 
+  const { element: promptElement, prompt } = useTextPrompt();
   const insertLink = () => {
-    const url = window.prompt('Link URL:', 'https://');
-    if (url) exec('createLink', url);
+    saveSelection();
+    void prompt('Insert link', 'Link URL:', 'https://').then((url) => {
+      if (url) exec('createLink', url);
+    });
   };
 
   const notifyInput = () => target.current?.dispatchEvent(new Event('input', { bubbles: true }));
@@ -143,6 +147,7 @@ export function RichToolbar({ target }: { target: RichTarget }) {
 
   return (
     <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+      {promptElement}
       {buttons.map((b) => (
         <button
           key={b.label}

@@ -151,6 +151,11 @@ export function RunDetailView() {
   }, [loadTests, loadMyResults]);
 
   const quickMark = async (testList: TrTest[], statusId: number) => {
+    // Snapshot previous statuses for Undo (untested can't be restored —
+    // TestRail results are append-only and 'untested' is not postable).
+    const previous = testList
+      .filter((t) => t.statusId !== 3 && t.statusId !== statusId)
+      .map((t) => ({ id: t.id, statusId: t.statusId }));
     let failed = 0;
     for (const t of testList) {
       try {
@@ -166,6 +171,26 @@ export function RunDetailView() {
         : testList.length === 1
           ? `Recorded ${statusLabel(st, statusId)}.`
           : `Recorded ${testList.length} results.`,
+      severity: failed ? 'error' : 'success',
+      action:
+        previous.length > 0
+          ? {
+              label: `Undo (${previous.length})`,
+              onClick: () => {
+                void (async () => {
+                  for (const p of previous) {
+                    try {
+                      await trApi.addResult(p.id, { statusId: p.statusId });
+                    } catch {
+                      /* best effort */
+                    }
+                  }
+                  pushToast({ title: 'TestRail', body: 'Previous statuses restored.', severity: 'success' });
+                  await refresh();
+                })();
+              },
+            }
+          : undefined,
     });
     setSel(new Set());
     await refresh();
