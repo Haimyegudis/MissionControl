@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { initRouter } from './router';
 import { initSession } from './stores/session';
+import { isNativeApp } from './native/platform';
 import './theme.css';
 
 /**
@@ -31,8 +32,28 @@ async function bootstrap(): Promise<void> {
   await fetch('/api/bootstrap', { method: 'POST', headers }).catch(() => undefined);
 }
 
+/**
+ * Android has no server to bootstrap against: build the core in-process behind
+ * the biometric gate instead. Imported lazily so the desktop bundle never
+ * pulls the native modules in.
+ */
+async function startNative(): Promise<boolean> {
+  const { bootstrapNative, installAppListeners } = await import('./native/bootstrap');
+  const { unlocked } = await bootstrapNative();
+  if (!unlocked) {
+    document.body.textContent = 'Locked. Reopen MissionControl to unlock.';
+    return false;
+  }
+  installAppListeners();
+  return true;
+}
+
 async function start(): Promise<void> {
-  await bootstrap();
+  if (isNativeApp()) {
+    if (!(await startNative())) return;
+  } else {
+    await bootstrap();
+  }
   initRouter();
   void initSession();
   createRoot(document.getElementById('root')!).render(
