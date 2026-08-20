@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
   // call's payload. That both leaked the Jira PAT into logcat on each request
   // and turned a multi-megabyte cache write into a heap-exhausting string
   // copy. 'production' keeps errors and drops the payload dumps.
-  loggingBehavior: 'production',
+  loggingBehavior: 'none',
   android: {
     // The app talks only to https://*.external.hp.com.
     allowMixedContent: false,

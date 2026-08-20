@@ -13,11 +13,13 @@
 //                                 ├ Cases    ├ Confluence
 //                                 └ Runs     └ Settings
 
-import { lazy, Suspense, useState, type CSSProperties } from 'react';
+import { lazy, Suspense, useEffect, useState, type CSSProperties } from 'react';
 import { DialogHost } from '../dialogs/DialogHost';
 import { ToastHost } from '../components/Toast';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { sessionStore } from '../stores/session';
+import { loadSettings } from '../stores/settings';
+import { useSplashDismiss, useThemeSync } from '../lib/appChrome';
 import { useStore } from '../stores/useStore';
 import { LoginPage } from '../views/LoginPage';
 import { Loading, Sheet, tapReset } from './ui';
@@ -53,6 +55,15 @@ export function MobileApp() {
   const [tab, setTab] = useState<MobileTab>('dashboard');
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreScreen, setMoreScreen] = useState<MoreScreen>(null);
+
+  useThemeSync();
+  // A phone is opened many times a day; the desktop's 2.8s radar would be a
+  // toll booth. Without this call at all the splash never leaves and the app
+  // looks stuck on the welcome screen with everything rendered underneath.
+  useSplashDismiss(600);
+  useEffect(() => {
+    void loadSettings();
+  }, []);
 
   if (session.phase !== 'connected') {
     return (

@@ -14,7 +14,24 @@
 //   - no hover-dependent affordances
 //   - text wraps or truncates, never widens its container
 
-import { useEffect, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
+
+/* ---------------------------------------------------------------- scale --- */
+/**
+ * Fluid type. A 360px Android and a 430px Pro Max are both "mobile" but a
+ * third apart in width, and the tablet case is wider still — fixed px sizes
+ * are either cramped on one or wasteful on the other. clamp() gives a floor,
+ * a viewport-relative middle and a ceiling, so one scale covers XS through MD.
+ */
+export const type = {
+  title: 'clamp(1.15rem, 5.2vw, 1.6rem)',
+  body: 'clamp(0.875rem, 3.7vw, 1rem)',
+  meta: 'clamp(0.72rem, 3vw, 0.8rem)',
+  stat: 'clamp(1.25rem, 6vw, 1.75rem)',
+} as const;
+
+/** Visible focus for keyboard and switch users; there is no hover to fall back on. */
+export const focusRing: CSSProperties = { outline: 'none' };
 
 /* -------------------------------------------------------------- screen --- */
 
@@ -61,7 +78,7 @@ export function Screen({
           <h1
             style={{
               margin: 0,
-              fontSize: 21,
+              fontSize: type.title,
               lineHeight: 1.15,
               fontFamily: 'var(--font-display)',
               fontWeight: 700,
@@ -77,11 +94,16 @@ export function Screen({
       </header>
       <div
         ref={scrollRef}
+        className="mob-scroll"
         style={{
           flex: 1,
           minHeight: 0,
           overflowY: 'auto',
           overflowX: 'hidden',
+          // Stops a scroll at the end of this list from dragging the page
+          // behind it — the rubber-band effect that makes nested lists feel
+          // broken on a phone.
+          overscrollBehavior: 'contain',
           padding: '10px 12px calc(16px + env(safe-area-inset-bottom))',
           WebkitOverflowScrolling: 'touch',
         }}
@@ -157,9 +179,21 @@ export function ListCard({
     origin = null;
   };
 
+  const activate = () => onClick?.();
+
   return (
     <div
-      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      className="mob-card"
+      onKeyDown={(e: ReactKeyboardEvent<HTMLDivElement>) => {
+        if (!onClick) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          activate();
+        }
+      }}
+      onClick={activate}
       onTouchStart={(e) => {
         if (!onLongPress) return;
         const t = e.touches[0];
@@ -195,7 +229,7 @@ export function ListCard({
       ) : null}
       <div
         style={{
-          fontSize: 14,
+          fontSize: type.body,
           lineHeight: 1.35,
           display: '-webkit-box',
           WebkitLineClamp: 3,
@@ -219,7 +253,14 @@ export function ListCard({
 
 export function StatGrid({ children }: { children: ReactNode }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, marginBottom: 12 }}>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(148px, 100%), 1fr))',
+        gap: 8,
+        marginBottom: 12,
+      }}
+    >
       {children}
     </div>
   );
@@ -265,7 +306,9 @@ export function StatTile({
       >
         {label}
       </div>
-      <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1, color: tone ?? 'var(--text-primary)' }}>{value}</div>
+      <div style={{ fontSize: type.stat, fontWeight: 700, lineHeight: 1, color: tone ?? 'var(--text-primary)' }}>
+        {value}
+      </div>
     </div>
   );
 }
@@ -370,9 +413,11 @@ export function Sheet({
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        className="mob-scroll"
         style={{
           width: '100%',
           maxHeight: '86dvh',
+          overscrollBehavior: 'contain',
           display: 'flex',
           flexDirection: 'column',
           background: 'var(--bg-panel-high)',

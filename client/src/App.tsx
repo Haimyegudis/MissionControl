@@ -8,10 +8,11 @@ import { pruneDrafts } from './lib/drafts';
 import { ToastHost } from './components/Toast';
 import { DialogHost, useDialogs } from './dialogs/DialogHost';
 import { isRouteAvailable, navigate, routeStore } from './router';
+import { useSplashDismiss, useThemeSync } from './lib/appChrome';
 import { isNativeApp } from './native/platform';
 import { initScheduler } from './stores/scheduler';
 import { sessionStore } from './stores/session';
-import { isSettingsLoaded, loadSettings, resolveTheme, settingsStore } from './stores/settings';
+import { loadSettings } from './stores/settings';
 import { pushToast } from './stores/toasts';
 import { useStore } from './stores/useStore';
 import { LoginPage } from './views/LoginPage';
@@ -117,42 +118,6 @@ function ConnectedShell() {
       <ActiveView />
     </Shell>
   );
-}
-
-/** Keep <html data-theme> in sync with settings (theme applies live). Waits
- *  for the first real load so the boot splash's persisted theme survives,
- *  then mirrors the resolved value to localStorage for the splash script. */
-function useThemeSync() {
-  const settings = useStore(settingsStore);
-  useEffect(() => {
-    if (!isSettingsLoaded()) return;
-    const resolved = resolveTheme(settings.theme);
-    document.documentElement.dataset.theme = resolved;
-    try {
-      localStorage.setItem('jiraweb.theme', resolved);
-    } catch {
-      /* mirror is best-effort */
-    }
-  }, [settings]);
-}
-
-/** Dismiss the boot splash (client/index.html) after the full radar animation.
- *  The user wants the animation on EVERY load/refresh — no fast-load skip:
- *  the ~2.8s sequence always completes, then fades out (.4s). */
-function useSplashDismiss() {
-  useEffect(() => {
-    const el = document.getElementById('splash');
-    if (!el || el.dataset.closing) return;
-    el.dataset.closing = '1';
-    const started = Number(el.dataset.start ?? '0');
-    const elapsed = started > 0 ? Date.now() - started : 0;
-    window.setTimeout(() => {
-      el.classList.add('done');
-      window.setTimeout(() => el.remove(), 450);
-    }, Math.max(0, 2800 - elapsed));
-    // No cleanup: the splash must be dismissed exactly once, even under
-    // StrictMode's mount → unmount → remount cycle.
-  }, []);
 }
 
 export default function App() {
