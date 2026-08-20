@@ -9,7 +9,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, boards as boardsApi, issues as issuesApi, metadataExtra } from '../api/client';
 import { ContextMenu, type MenuEntry } from '../components/ContextMenu';
-import { DataGrid, type GridColumn } from '../components/DataGrid';
+import type { GridColumn } from '../components/DataGrid';
+import { ResponsiveGrid } from '../components/ResponsiveGrid';
 import { Modal } from '../components/Modal';
 import { PageHeader } from '../components/PageHeader';
 import { Kanban } from '../components/Kanban';
@@ -1027,7 +1028,7 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
               </div>
             ))}
           </div>
-          <DataGrid
+          <ResponsiveGrid
             stateKey="MyWork.Issues"
             columns={columns}
             rows={viewRows}

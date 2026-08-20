@@ -13,7 +13,8 @@ import {
   resolveRunCaseFilter,
   sectionPath,
 } from '../../lib/testrail';
-import { DataGrid, type GridColumn } from '../../components/DataGrid';
+import type { GridColumn } from '../../components/DataGrid';
+import { ResponsiveGrid } from '../../components/ResponsiveGrid';
 import { Modal } from '../../components/Modal';
 import { navigateTestRailRun } from '../../router';
 import { pushToast } from '../../stores/toasts';
@@ -306,7 +307,7 @@ export function RunsView() {
 
       {/* Unified DataGrid: sort by any column, drag-resize, right-click header
           for column chooser + CSV export, scroll-windowed rendering. */}
-      <DataGrid<TrRun>
+      <ResponsiveGrid<TrRun>
         stateKey="TestRail.Runs"
         columns={runColumns}
         rows={filtered}
