@@ -93,13 +93,18 @@ describe('auth', () => {
   });
 
   it('logout blanks only the Jira fields, keeping TestRail credentials', async () => {
-    const { dispatch, saved } = harness();
+    const { core, dispatch, saved } = harness();
+    // Stub the TestRail handshake: the real one would hit the network, which
+    // would make this test depend on the gateway being reachable.
+    vi.spyOn(core.testrail, 'connect').mockResolvedValue({ id: 1, name: 'Me' } as never);
     await dispatch('POST', '/api/auth/login', { email: 'me@hp.com', pat: 'pat' });
-    await dispatch('POST', '/api/testrail/session', { email: 'me@hp.com', apiKey: 'trkey' }).catch(() => undefined);
-    const before = saved();
+    await dispatch('POST', '/api/testrail/session', { email: 'me@hp.com', apiKey: 'trkey' });
+    expect(saved()?.testRailApiKey).toBe('trkey');
+
     expect(await dispatch('POST', '/api/auth/logout')).toEqual({ status: 204, body: undefined });
     expect(saved()?.jiraPat).toBe('');
-    expect(saved()?.testRailApiKey).toBe(before?.testRailApiKey);
+    expect(saved()?.email).toBe('');
+    expect(saved()?.testRailApiKey).toBe('trkey');
   });
 });
 
