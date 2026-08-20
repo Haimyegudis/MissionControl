@@ -51,6 +51,7 @@ export {
 
 // --- Jira --------------------------------------------------------------------
 export { JiraSession, type SessionChangedListener } from './jira/session.js';
+export { setCookieProvider, type CookieProvider } from './httpCookies.js';
 export {
   JiraError,
   agilePrefix,

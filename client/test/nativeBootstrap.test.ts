@@ -122,6 +122,23 @@ describe('buildNativeRuntime', () => {
     });
   });
 
+  it('activates the Jira session under SSO with no stored token', async () => {
+    // Regression: the boot path gated activation on a non-empty token, so an
+    // SSO profile — which stores none — was treated as signed out and the app
+    // returned to the login screen after every reload.
+    const runtime = await buildNativeRuntime(
+      deps({
+        credentials: {
+          hydrate: async () => {},
+          load: () => ({ ...CREDS, jiraPat: '', authMode: 'sso' as const }),
+          save: () => {},
+          clear: () => {},
+        } as RuntimeDeps['credentials'],
+      }),
+    );
+    expect(runtime.core.session.isConnected).toBe(true);
+  });
+
   it('reconnects TestRail under SSO even with no stored API key', async () => {
     // The SAML cookie is the credential in this mode, so an empty key must not
     // short-circuit the reconnect the way it does for token auth.

@@ -24,7 +24,6 @@ import { sessionStore } from '../stores/session';
 import { loadSettings } from '../stores/settings';
 import { useSplashDismiss, useThemeSync } from '../lib/appChrome';
 import { useStore } from '../stores/useStore';
-import { LoginPage } from '../views/LoginPage';
 import { MobileSsoLogin } from './MobileSsoLogin';
 import { Loading, tapReset } from './ui';
 import { pushBackHandler } from './backHandler';
@@ -173,12 +172,12 @@ export function MobileApp() {
   );
 
   if (session.phase !== 'connected') {
-    // The SSO button sits above the shared LoginPage rather than inside it, so
-    // the desktop component stays exactly as the desktop renders it.
+    // HP OneUID is the only way in on the phone. The desktop keeps its own
+    // token-based LoginPage; this screen deliberately does not use it, so no
+    // token can be entered or stored on a device that leaves the building.
     return (
       <>
         <MobileSsoLogin />
-        <LoginPage />
         <ToastHost />
       </>
     );

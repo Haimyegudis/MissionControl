@@ -5,6 +5,7 @@
 import {
   createCore,
   createDispatcher,
+  setCookieProvider,
   type Core,
   type CredentialsPort,
   type Dispatch,
@@ -12,6 +13,7 @@ import {
   type PeopleStore,
 } from '@mc/core';
 import { setNativeDispatch } from '../api/client';
+import { cookiesFor } from './ssoSession';
 import { LOCK_TIMEOUT_MS, requireUnlock } from './biometric';
 import { handleBack } from '../mobile/backHandler';
 import { KeystoreCredentials } from './credentials';
@@ -39,11 +41,20 @@ export async function buildNativeRuntime(deps: RuntimeDeps): Promise<NativeRunti
   await deps.people.hydrate();
   await deps.credentials.hydrate();
 
+  // Cookie-authenticated requests need the jar spelled out as a header; the
+  // native layer will not attach it on its own.
+  setCookieProvider(cookiesFor);
+
   const core = createCore({ kv: deps.kv, people: deps.people, credentials: deps.credentials });
   deps.installDispatch(createDispatcher(core));
 
   const saved = deps.credentials.load();
-  if (saved && saved.jiraPat.trim().length > 0) {
+  // An SSO profile stores no token on purpose, so a token is not what proves a
+  // session exists. Testing for one here meant every reload after an HP OneUID
+  // sign-in landed back on the login screen with the sign-in silently discarded.
+  const hasCredential =
+    saved !== null && (saved.authMode === 'sso' || saved.jiraPat.trim().length > 0);
+  if (saved && hasCredential) {
     // Activate immediately so the UI is usable, then resolve who we are.
     //
     // The user is not cosmetic: TimeLoggedService attributes a worklog by

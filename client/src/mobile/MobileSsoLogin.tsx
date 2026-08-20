@@ -17,9 +17,9 @@ export function MobileSsoLogin() {
   const signIn = async () => {
     setBusy(true);
     try {
-      const signedIn = await signInWithSso('jira', JIRA_URL);
-      if (!signedIn) {
-        pushToast({ title: 'Sign in', body: 'Cancelled.', severity: 'error' });
+      const result = await signInWithSso('jira', JIRA_URL);
+      if (!result.ok) {
+        pushToast({ title: 'Sign in', body: result.reason ?? 'Cancelled.', severity: 'error' });
         return;
       }
       // No token at all: the SAML cookie in the shared jar is the credential,

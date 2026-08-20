@@ -1,5 +1,6 @@
 import type { Credentials, JiraInstanceType } from '../types.js';
 import { base64Utf8 } from '../base64.js';
+import { cookieHeaderFor } from '../httpCookies.js';
 import type { JiraSession } from './session.js';
 
 /**
@@ -131,6 +132,9 @@ export async function jiraFetch(
   // instance, verified against POST /rest/api/2/search.
   if (!ssoMode || session.cookieExpired === true) {
     if (hasToken) headers.Authorization = authHeader(profile);
+  } else {
+    const cookie = await cookieHeaderFor(url.toString());
+    if (cookie) headers.Cookie = cookie;
   }
 
   let body: string | undefined;

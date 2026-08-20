@@ -1,5 +1,6 @@
 import type { TrConnection } from './types.js';
 import { base64Utf8 } from '../base64.js';
+import { cookieHeaderFor } from '../httpCookies.js';
 
 /**
  * TestRail HTTP client (Phase 2 — unified-deck plan T6).
@@ -129,7 +130,14 @@ export class TestRailHttp {
     // concatenation (they may hold their own `&param=value` pairs).
     const url = this.apiBaseUrl + cmd;
     const headers: Record<string, string> = { Accept: 'application/json' };
-    if (withAuthHeader) headers.Authorization = this.authorization;
+    if (withAuthHeader) {
+      headers.Authorization = this.authorization;
+    } else {
+      // The native layer does not attach the jar itself, so the session has to
+      // be spelled out. Empty when no provider is installed (i.e. on desktop).
+      const cookie = await cookieHeaderFor(url);
+      if (cookie) headers.Cookie = cookie;
+    }
 
     let body: string | undefined;
     if (payload !== undefined) {

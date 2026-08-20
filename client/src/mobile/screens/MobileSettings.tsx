@@ -18,8 +18,6 @@ import { signInWithSso } from '../../native/sso';
 export function MobileSettings() {
   const session = useStore(sessionStore);
   const tr = useStore(trStore);
-  const [trKey, setTrKey] = useState('');
-  const [showKey, setShowKey] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,9 +31,9 @@ export function MobileSettings() {
   const switchJiraToSso = async () => {
     setBusy('jira-sso');
     try {
-      const signedIn = await signInWithSso('jira', JIRA_URL);
-      if (!signedIn) {
-        pushToast({ title: 'Sign in', body: 'Cancelled.', severity: 'error' });
+      const result = await signInWithSso('jira', JIRA_URL);
+      if (!result.ok) {
+        pushToast({ title: 'Sign in', body: result.reason ?? 'Cancelled.', severity: 'error' });
         return;
       }
       await auth.login({
@@ -124,15 +122,18 @@ export function MobileSettings() {
                 }
                 setBusy('tr-sso');
                 try {
-                  const signedIn = await signInWithSso('testrail', TESTRAIL_URL);
-                  if (!signedIn) {
-                    pushToast({ title: 'TestRail', body: 'Sign-in cancelled.', severity: 'error' });
+                  const result = await signInWithSso('testrail', TESTRAIL_URL);
+                  if (!result.ok) {
+                    pushToast({
+                      title: 'TestRail',
+                      body: result.reason ?? 'Sign-in cancelled.',
+                      severity: 'error',
+                    });
                     return;
                   }
                   // The SAML cookie now lives in the shared jar and is the
                   // only credential; no key is stored.
                   await connectTestRail(TESTRAIL_URL, email, '', true);
-                  setTrKey('');
                   pushToast({ title: 'TestRail', body: 'Signed in.' });
                 } catch (e) {
                   pushToast({
@@ -146,42 +147,6 @@ export function MobileSettings() {
               }}
             />
 
-            <button
-              onClick={() => setShowKey((v) => !v)}
-              style={{ ...tapReset, background: 'none', border: 'none', color: 'var(--muted)', fontSize: 12, minHeight: 40 }}
-            >
-              {showKey ? 'Hide API key' : 'Use an API key instead'}
-            </button>
-
-            {showKey ? (
-              <>
-                <Field value={trKey} onChange={setTrKey} placeholder="TestRail API key" secret />
-                <Action
-                  label="Connect with key"
-                  busy={busy === 'tr'}
-                  onClick={async () => {
-                    if (!trKey.trim() || !email) {
-                      pushToast({ title: 'TestRail', body: 'Enter your API key.', severity: 'error' });
-                      return;
-                    }
-                    setBusy('tr');
-                    try {
-                      await connectTestRail(TESTRAIL_URL, email, trKey.trim());
-                      setTrKey('');
-                      pushToast({ title: 'TestRail', body: 'Connected.' });
-                    } catch (e) {
-                      pushToast({
-                        title: 'TestRail',
-                        body: e instanceof Error ? e.message : String(e),
-                        severity: 'error',
-                      });
-                    } finally {
-                      setBusy(null);
-                    }
-                  }}
-                />
-              </>
-            ) : null}
           </>
         )}
       </Block>
@@ -229,38 +194,6 @@ function Block({
       <div style={{ fontSize: 11, color: 'var(--muted)', overflowWrap: 'anywhere' }}>{url}</div>
       {children}
     </div>
-  );
-}
-
-function Field({
-  value,
-  onChange,
-  placeholder,
-  secret,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-  secret?: boolean;
-}) {
-  return (
-    <input
-      type={secret ? 'password' : 'text'}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      autoComplete="off"
-      style={{
-        width: '100%',
-        minHeight: 44,
-        padding: '0 12px',
-        borderRadius: 10,
-        border: '1px solid var(--border-soft)',
-        background: 'var(--input-bg)',
-        color: 'var(--text-primary)',
-        fontSize: 15,
-      }}
-    />
   );
 }
 
