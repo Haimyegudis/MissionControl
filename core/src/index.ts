@@ -23,6 +23,15 @@ export {
   type MetadataCacheEntry,
 } from './storage/repos.js';
 
+// --- composition -------------------------------------------------------------
+export {
+  createCore,
+  type ConnectionProbe,
+  type Core,
+  type CorePorts,
+  type CredentialsPort,
+} from './composition.js';
+
 // --- Jira --------------------------------------------------------------------
 export { JiraSession, type SessionChangedListener } from './jira/session.js';
 export {

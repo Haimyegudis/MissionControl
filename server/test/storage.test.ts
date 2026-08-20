@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { openDb, type Db } from '../src/storage/db.js';
 import { BoardWorkspaceRepo, PinnedBoardRepo, SavedFilterRepo, TeamRepo } from '../src/storage/repositories.js';
-import { SqliteKvStore } from '../src/storage/sqliteKv.js';
+import { SqliteKvStore, SqlitePeopleStore } from '../src/storage/sqliteKv.js';
 import { AppSettingsRepo, IssueCacheRepo, MetadataCacheRepo } from '@mc/core';
 import { CreateDefaultsStore, CreateMetaCache } from '../src/storage/fileStores.js';
 import { defaultAppSettings } from '@mc/core';
@@ -496,5 +496,76 @@ describe('file stores', () => {
       expect(fs.existsSync(file)).toBe(false);
       expect(cache.load('ISW:Bug')).toBeNull();
     });
+  });
+});
+
+
+describe('SqliteKvStore', () => {
+  const FIXED = 1_700_000_000_000;
+
+  it('maps appSettings onto the single-row table with no timestamp column', () => {
+    const db = openDb(':memory:');
+    const kv = new SqliteKvStore(db);
+    kv.set('appSettings', '1', '{"Theme":"Light"}', FIXED);
+    expect(kv.get('appSettings', '1')).toEqual({ json: '{"Theme":"Light"}', updatedAt: 0 });
+  });
+
+  it('stores issue-cache timestamps as ISO text and reads them back as epoch ms', () => {
+    const db = openDb(':memory:');
+    const kv = new SqliteKvStore(db);
+    kv.set('issueCache', 'mywork', '[]', FIXED);
+    expect(kv.get('issueCache', 'mywork')).toEqual({ json: '[]', updatedAt: FIXED });
+    const row = db.prepare('SELECT UpdatedUtc FROM IssueCache WHERE CacheKey = @k').get({ k: 'mywork' }) as {
+      UpdatedUtc: string;
+    };
+    expect(row.UpdatedUtc).toBe(new Date(FIXED).toISOString());
+  });
+
+  it('stores TestRail cache timestamps as epoch milliseconds', () => {
+    const db = openDb(':memory:');
+    const kv = new SqliteKvStore(db);
+    kv.set('trCache', 'runs', '[]', FIXED);
+    const row = db.prepare('SELECT updatedAt FROM TestRailCache WHERE key = @k').get({ k: 'runs' }) as {
+      updatedAt: number;
+    };
+    expect(row.updatedAt).toBe(FIXED);
+  });
+
+  it('upserts rather than duplicating, and returns null after delete', () => {
+    const db = openDb(':memory:');
+    const kv = new SqliteKvStore(db);
+    kv.set('metadataCache', 'projects', '["A"]', FIXED);
+    kv.set('metadataCache', 'projects', '["B"]', FIXED + 1000);
+    expect(kv.get('metadataCache', 'projects')).toEqual({ json: '["B"]', updatedAt: FIXED + 1000 });
+    kv.delete('metadataCache', 'projects');
+    expect(kv.get('metadataCache', 'projects')).toBeNull();
+  });
+
+  it('clear empties only the named table', () => {
+    const db = openDb(':memory:');
+    const kv = new SqliteKvStore(db);
+    kv.set('trCache', 'runs', '[]', FIXED);
+    kv.set('issueCache', 'mywork', '[]', FIXED);
+    kv.clear('trCache');
+    expect(kv.get('trCache', 'runs')).toBeNull();
+    expect(kv.get('issueCache', 'mywork')).not.toBeNull();
+  });
+});
+
+describe('SqlitePeopleStore', () => {
+  it('round-trips people, upserting by id', () => {
+    const db = openDb(':memory:');
+    const people = new SqlitePeopleStore(db);
+    people.upsertMany([
+      { id: 2, name: 'B' },
+      { id: 1, name: 'A' },
+    ]);
+    people.upsertMany([{ id: 2, name: 'B2' }]);
+    expect(people.all()).toEqual([
+      { id: 1, name: 'A' },
+      { id: 2, name: 'B2' },
+    ]);
+    people.clear();
+    expect(people.all()).toEqual([]);
   });
 });
