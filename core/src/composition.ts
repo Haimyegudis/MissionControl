@@ -14,6 +14,7 @@ import { TimeLoggedService } from './jira/timeLogged.js';
 import { AppSettingsRepo, IssueCacheRepo, MetadataCacheRepo } from './storage/repos.js';
 import {
   KvBoardWorkspaceRepo,
+  KvCreateDefaultsRepo,
   KvPinnedBoardRepo,
   KvSavedFilterRepo,
   KvTeamRepo,
@@ -59,6 +60,7 @@ export interface Core {
   createIssues: JiraCreateIssueService;
   aggregator: DashboardAggregator;
   savedFilters: KvSavedFilterRepo;
+  createDefaults: KvCreateDefaultsRepo;
   teams: KvTeamRepo;
   pinnedBoards: KvPinnedBoardRepo;
   boardWorkspaces: KvBoardWorkspaceRepo;
@@ -101,6 +103,7 @@ export function createCore(ports: CorePorts): Core {
     createIssues,
     aggregator,
     savedFilters: new KvSavedFilterRepo(ports.kv),
+    createDefaults: new KvCreateDefaultsRepo(ports.kv),
     teams: new KvTeamRepo(ports.kv),
     pinnedBoards: new KvPinnedBoardRepo(ports.kv),
     boardWorkspaces: new KvBoardWorkspaceRepo(ports.kv),

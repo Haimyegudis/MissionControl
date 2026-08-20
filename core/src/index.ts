@@ -24,6 +24,7 @@ export {
 } from './storage/repos.js';
 export {
   KvBoardWorkspaceRepo,
+  KvCreateDefaultsRepo,
   KvPinnedBoardRepo,
   KvSavedFilterRepo,
   KvTeamRepo,

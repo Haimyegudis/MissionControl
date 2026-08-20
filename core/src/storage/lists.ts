@@ -169,3 +169,30 @@ export class KvTeamRepo {
     this.list.write(this.list.read().filter((t) => t.id !== id));
   }
 }
+
+
+/**
+ * Remembered field values for the create-issue dialog, keyed by
+ * "{project}:{issuetype}". The desktop keeps these in a JSON file next to the
+ * database; on a phone they ride in the same KV list table as everything else.
+ */
+export class KvCreateDefaultsRepo {
+  private readonly list: JsonList<[string, Record<string, unknown>]>;
+
+  constructor(kv: KvStore) {
+    this.list = new JsonList(kv, 'createDefaults');
+  }
+
+  get(key: string): Record<string, unknown> {
+    return this.list.read().find(([k]) => k === key)?.[1] ?? {};
+  }
+
+  put(key: string, values: Record<string, unknown>): void {
+    const rows = this.list.read().filter(([k]) => k !== key);
+    this.list.write([...rows, [key, values]]);
+  }
+
+  delete(key: string): void {
+    this.list.write(this.list.read().filter(([k]) => k !== key));
+  }
+}

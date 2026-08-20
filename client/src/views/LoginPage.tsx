@@ -3,6 +3,8 @@
 // after a passing test → POST /api/auth/login.
 
 import { useState, type CSSProperties, type FormEvent } from 'react';
+import { isNativeApp } from '../native/platform';
+import { JIRA_URL } from '../lib/serviceUrls';
 import { auth } from '../api/client';
 import { login } from '../stores/session';
 import type { InstanceType, JiraUser } from '../types';
@@ -16,7 +18,9 @@ type TestState =
   | { kind: 'error'; message: string };
 
 export function LoginPage() {
-  const [baseUrl, setBaseUrl] = useState('https://hp-jira.external.hp.com');
+  // Prefilled on the phone only: typing a long URL on a touch keyboard is
+  // painful, and both backends default to this host when the field is blank.
+  const [baseUrl, setBaseUrl] = useState(() => (isNativeApp() ? JIRA_URL : ''));
   const [email, setEmail] = useState('');
   const [pat, setPat] = useState('');
   const [instanceType, setInstanceType] = useState<InstanceType>('datacenter');
@@ -59,7 +63,7 @@ export function LoginPage() {
   };
 
   return (
-    <div style={{ height: '100%', display: 'grid', placeItems: 'center', padding: 16 }}>
+    <div style={{ height: '100%', display: 'grid', placeItems: 'center', padding: 24 }}>
       <form className="card" onSubmit={signIn} style={{ width: '100%', maxWidth: 420, padding: 28, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '0.06em' }}>
