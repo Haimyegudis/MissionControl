@@ -1,17 +1,20 @@
 // Mobile application shell.
 //
-// This is a separate UI from the desktop one, not a responsive skin over it.
-// The desktop app is a dense multi-pane workspace; a phone gets one thing at a
-// time, chosen from five thumb-reachable tabs. Both consume the same stores,
-// the same typed API and the same in-process dispatcher, so there is one data
-// layer and two presentations.
+// A separate UI from the desktop one, not a responsive skin over it. Both
+// consume the same stores, the same typed API and the same in-process
+// dispatcher, so there is one data layer and two presentations.
 //
-// Six destinations on five tabs, because six tabs is one too many to hit
-// reliably at this width:
+// The three back ends are kept apart at the top level, because they are three
+// different products and folding their screens into one flat tab bar made it
+// unclear which system you were looking at:
 //
-//   Dashboard │ Time │ Incidents │ Tests │ More
-//                                 ├ Cases    ├ Confluence
-//                                 └ Runs     └ Settings
+//   Jira            TestRail        Wiki            More
+//   ├ Dashboard     ├ Cases         └ Spaces        └ Settings
+//   ├ Incidents     └ Runs
+//   └ Time
+//
+// The area lives in the tab bar; the screen within it lives in a tab strip
+// under it. Two levels, both reachable by thumb.
 
 import { lazy, Suspense, useEffect, useState, type CSSProperties } from 'react';
 import { DialogHost } from '../dialogs/DialogHost';
@@ -22,25 +25,38 @@ import { loadSettings } from '../stores/settings';
 import { useSplashDismiss, useThemeSync } from '../lib/appChrome';
 import { useStore } from '../stores/useStore';
 import { LoginPage } from '../views/LoginPage';
-import { Loading, Sheet, tapReset } from './ui';
+import { Loading, tapReset } from './ui';
 
 const MobileDashboard = lazy(() => import('./screens/MobileDashboard').then((m) => ({ default: m.MobileDashboard })));
 const MobileTimeSpent = lazy(() => import('./screens/MobileTimeSpent').then((m) => ({ default: m.MobileTimeSpent })));
 const MobileIncidents = lazy(() => import('./screens/MobileIncidents').then((m) => ({ default: m.MobileIncidents })));
-const MobileTests = lazy(() => import('./screens/MobileTests').then((m) => ({ default: m.MobileTests })));
+const MobileCases = lazy(() => import('./screens/MobileCases').then((m) => ({ default: m.MobileCases })));
+const MobileRuns = lazy(() => import('./screens/MobileRuns').then((m) => ({ default: m.MobileRuns })));
 const MobileConfluence = lazy(() => import('./screens/MobileConfluence').then((m) => ({ default: m.MobileConfluence })));
 const MobileSettings = lazy(() => import('./screens/MobileSettings').then((m) => ({ default: m.MobileSettings })));
 
-export type MobileTab = 'dashboard' | 'time' | 'incidents' | 'tests' | 'more';
-type MoreScreen = 'confluence' | 'settings' | null;
+export type Area = 'jira' | 'testrail' | 'confluence' | 'more';
 
-const TABS: ReadonlyArray<{ id: MobileTab; label: string; icon: string }> = [
-  { id: 'dashboard', label: 'Home', icon: '◈' },
-  { id: 'time', label: 'Time', icon: '◷' },
-  { id: 'incidents', label: 'Incidents', icon: '⚠' },
-  { id: 'tests', label: 'Tests', icon: '✓' },
+const AREAS: ReadonlyArray<{ id: Area; label: string; icon: string }> = [
+  { id: 'jira', label: 'Jira', icon: '◈' },
+  { id: 'testrail', label: 'TestRail', icon: '✓' },
+  { id: 'confluence', label: 'Wiki', icon: '▤' },
   { id: 'more', label: 'More', icon: '⋯' },
 ];
+
+const SUB: Record<Area, ReadonlyArray<{ id: string; label: string }>> = {
+  jira: [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'incidents', label: 'Incidents' },
+    { id: 'time', label: 'Time' },
+  ],
+  testrail: [
+    { id: 'cases', label: 'Cases' },
+    { id: 'runs', label: 'Runs' },
+  ],
+  confluence: [],
+  more: [],
+};
 
 const barStyle: CSSProperties = {
   display: 'flex',
@@ -52,14 +68,18 @@ const barStyle: CSSProperties = {
 
 export function MobileApp() {
   const session = useStore(sessionStore);
-  const [tab, setTab] = useState<MobileTab>('dashboard');
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [moreScreen, setMoreScreen] = useState<MoreScreen>(null);
+  const [area, setArea] = useState<Area>('jira');
+  const [sub, setSub] = useState<Record<Area, string>>({
+    jira: 'dashboard',
+    testrail: 'cases',
+    confluence: '',
+    more: '',
+  });
 
   useThemeSync();
-  // A phone is opened many times a day; the desktop's 2.8s radar would be a
-  // toll booth. Without this call at all the splash never leaves and the app
-  // looks stuck on the welcome screen with everything rendered underneath.
+  // Without this the splash overlay never leaves and the app looks stuck on
+  // the welcome screen with everything rendered underneath. 600ms rather than
+  // the desktop's 2.8s radar: a phone is opened many times a day.
   useSplashDismiss(600);
   useEffect(() => {
     void loadSettings();
@@ -74,31 +94,60 @@ export function MobileApp() {
     );
   }
 
-  const openMore = (screen: Exclude<MoreScreen, null>) => {
-    setMoreScreen(screen);
-    setMoreOpen(false);
-    setTab('more');
-  };
-
+  const current = sub[area];
   const screen = (() => {
-    switch (tab) {
-      case 'time':
-        return <MobileTimeSpent />;
-      case 'incidents':
-        return <MobileIncidents />;
-      case 'tests':
-        return <MobileTests />;
-      case 'more':
-        return moreScreen === 'confluence' ? <MobileConfluence /> : <MobileSettings />;
-      case 'dashboard':
-      default:
-        return <MobileDashboard />;
-    }
+    if (area === 'confluence') return <MobileConfluence />;
+    if (area === 'more') return <MobileSettings />;
+    if (area === 'testrail') return current === 'runs' ? <MobileRuns /> : <MobileCases />;
+    if (current === 'incidents') return <MobileIncidents />;
+    if (current === 'time') return <MobileTimeSpent />;
+    return <MobileDashboard />;
   })();
+
+  const tabs = SUB[area];
 
   return (
     <DialogHost>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+        {tabs.length > 0 ? (
+          <div
+            role="tablist"
+            style={{
+              display: 'flex',
+              flexShrink: 0,
+              gap: 2,
+              padding: '6px 10px 0',
+              background: 'var(--bg-panel)',
+              borderBottom: '1px solid var(--border-soft)',
+            }}
+          >
+            {tabs.map((t) => {
+              const active = t.id === current;
+              return (
+                <button
+                  key={t.id}
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setSub((prev) => ({ ...prev, [area]: t.id }))}
+                  style={{
+                    ...tapReset,
+                    flex: 1,
+                    minHeight: 40,
+                    border: 'none',
+                    background: 'none',
+                    borderBottom: `2px solid ${active ? 'var(--accent-cyan)' : 'transparent'}`,
+                    color: active ? 'var(--accent-cyan)' : 'var(--muted)',
+                    fontWeight: active ? 650 : 450,
+                    fontSize: 13,
+                  }}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+
         <div style={{ flex: 1, minHeight: 0 }}>
           <ErrorBoundary>
             <Suspense fallback={<Loading />}>{screen}</Suspense>
@@ -106,19 +155,13 @@ export function MobileApp() {
         </div>
 
         <nav style={barStyle} aria-label="Primary">
-          {TABS.map((t) => {
-            const active = tab === t.id;
+          {AREAS.map((a) => {
+            const active = area === a.id;
             return (
               <button
-                key={t.id}
+                key={a.id}
                 aria-current={active ? 'page' : undefined}
-                onClick={() => {
-                  if (t.id === 'more') {
-                    setMoreOpen(true);
-                    return;
-                  }
-                  setTab(t.id);
-                }}
+                onClick={() => setArea(a.id)}
                 style={{
                   ...tapReset,
                   flex: 1,
@@ -135,10 +178,10 @@ export function MobileApp() {
                 }}
               >
                 <span aria-hidden style={{ fontSize: 15, lineHeight: 1 }}>
-                  {t.icon}
+                  {a.icon}
                 </span>
                 <span style={{ fontSize: 10.5, letterSpacing: '0.03em', fontWeight: active ? 650 : 450 }}>
-                  {t.label}
+                  {a.label}
                 </span>
               </button>
             );
@@ -146,35 +189,7 @@ export function MobileApp() {
         </nav>
       </div>
 
-      <Sheet open={moreOpen} title="More" onClose={() => setMoreOpen(false)}>
-        <MoreRow label="Confluence" hint="Requires corporate VPN" onClick={() => openMore('confluence')} />
-        <MoreRow label="Settings" hint="Connections and preferences" onClick={() => openMore('settings')} />
-      </Sheet>
-
       <ToastHost />
     </DialogHost>
-  );
-}
-
-function MoreRow({ label, hint, onClick }: { label: string; hint: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        ...tapReset,
-        display: 'block',
-        width: '100%',
-        textAlign: 'left',
-        minHeight: 60,
-        padding: '12px 4px',
-        background: 'none',
-        border: 'none',
-        borderBottom: '1px solid var(--border-soft)',
-        color: 'var(--text-primary)',
-      }}
-    >
-      <div style={{ fontSize: 15, fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{hint}</div>
-    </button>
   );
 }

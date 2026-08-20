@@ -1,111 +1,143 @@
-// Home. Six KPI tiles over the recently-updated list.
+// Jira → Dashboard. KPI tiles over my work grouped by status.
 //
-// The desktop Dashboard also carries a Kanban board and several charts; on a
-// phone those are a swipe-fest that answers no question you actually have on a
-// phone. What survives is: how bad is it right now, and what just changed.
+// The list is grouped rather than flat because the first question on a phone
+// is "what is in progress / what is waiting on review", not "what changed most
+// recently". Each card opens the issue and offers Log work directly, since
+// logging time is the most common thing to do away from a desk.
 
-import { useCallback, useEffect, useState } from 'react';
-import { dashboard as dashboardApi } from '../../api/client';
+import { useCallback } from 'react';
+import { dashboard as dashboardApi, issues as issuesApi } from '../../api/client';
 import { dialogs } from '../../dialogs/DialogHost';
 import { priorityColor, statusColor } from '../../lib/colors';
 import { formatTimeSpan } from '../../lib/format';
-import type { DashboardSnapshot } from '../../types';
+import type { DashboardSnapshot, JiraIssue, PagedResult } from '../../types';
+import { useCached } from '../cache';
+import { groupByStatus, StatusSection } from '../statusGroups';
 import { Empty, ErrorNote, ListCard, Loading, Muted, Pill, Screen, StatGrid, StatTile, tapReset } from '../ui';
 
+/** My open work, which is what the status groups are built from. */
+const MY_WORK_JQL =
+  'assignee = currentUser() AND resolution = Unresolved ORDER BY updated DESC';
+
 export function MobileDashboard() {
-  const [snap, setSnap] = useState<DashboardSnapshot | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const snap = useCached<DashboardSnapshot>('dashboard:snapshot', () => dashboardApi.snapshot(), {
+    ttlMs: 60_000,
+  });
+  const mine = useCached<PagedResult<JiraIssue>>(
+    'dashboard:mywork',
+    () => issuesApi.search(MY_WORK_JQL, 0, 100),
+    { ttlMs: 60_000 },
+  );
 
-  const load = useCallback(async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      setSnap(await dashboardApi.snapshot());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  }, []);
+  const refresh = useCallback(() => {
+    snap.refresh();
+    mine.refresh();
+  }, [snap, mine]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const busy = snap.refreshing || mine.refreshing;
+  const groups = groupByStatus(mine.data?.items ?? []);
 
   return (
     <Screen
       kicker="Jira"
       title="Dashboard"
       action={
-        <button className="btn" onClick={() => void load()} disabled={busy} style={{ ...tapReset, minHeight: 40 }}>
+        <button className="btn" onClick={refresh} disabled={busy} style={{ ...tapReset, minHeight: 40 }}>
           {busy ? '…' : '↻'}
         </button>
       }
     >
-      {error ? <ErrorNote onRetry={() => void load()}>{error}</ErrorNote> : null}
-      {!snap && !error ? <Loading what="Loading dashboard" /> : null}
+      {snap.error ? <ErrorNote onRetry={refresh}>{snap.error}</ErrorNote> : null}
 
-      {snap ? (
-        <>
-          <StatGrid>
-            <StatTile label="Open issues" value={snap.openIssues} />
-            <StatTile
-              label="Critical incidents"
-              value={snap.criticalIncidents}
-              tone={snap.criticalIncidents > 0 ? 'var(--accent-red)' : undefined}
-            />
-            <StatTile
-              label="Blocked"
-              value={snap.blocked}
-              tone={snap.blocked > 0 ? 'var(--accent-orange)' : undefined}
-            />
-            <StatTile label="Updated today" value={snap.updatedToday} />
-            <StatTile label="Logged today" value={formatTimeSpan(snap.timeLoggedToday)} tone="var(--accent-green)" />
-            <StatTile label="Logged this week" value={formatTimeSpan(snap.timeLoggedThisWeek)} tone="var(--accent-green)" />
-          </StatGrid>
-
-          <div
-            style={{
-              fontSize: 10.5,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: 'var(--muted)',
-              margin: '4px 2px 8px',
-            }}
-          >
-            Recently updated
-          </div>
-
-          {snap.recentlyUpdated.length === 0 ? (
-            <Empty>Nothing has changed recently.</Empty>
-          ) : (
-            snap.recentlyUpdated.map((issue) => (
-              <ListCard
-                key={issue.key}
-                accent={statusColor(issue.status)}
-                onClick={() => dialogs.openIssueDetails(issue.key)}
-                lead={
-                  <>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-cyan)', fontWeight: 700 }}>
-                      {issue.key}
-                    </span>
-                    <Muted>{issue.issueType}</Muted>
-                  </>
-                }
-                title={issue.summary}
-                footer={
-                  <>
-                    <Pill tone={statusColor(issue.status)}>{issue.status}</Pill>
-                    {issue.priority ? <Pill tone={priorityColor(issue.priority)}>{issue.priority}</Pill> : null}
-                    {issue.assignee ? <Muted>{issue.assignee}</Muted> : null}
-                  </>
-                }
-              />
-            ))
-          )}
-        </>
+      {snap.data ? (
+        <StatGrid>
+          <StatTile label="Open issues" value={snap.data.openIssues} />
+          <StatTile
+            label="Critical incidents"
+            value={snap.data.criticalIncidents}
+            tone={snap.data.criticalIncidents > 0 ? 'var(--accent-red)' : undefined}
+          />
+          <StatTile
+            label="Blocked"
+            value={snap.data.blocked}
+            tone={snap.data.blocked > 0 ? 'var(--accent-orange)' : undefined}
+          />
+          <StatTile label="Updated today" value={snap.data.updatedToday} />
+          <StatTile label="Logged today" value={formatTimeSpan(snap.data.timeLoggedToday)} tone="var(--accent-green)" />
+          <StatTile
+            label="Logged this week"
+            value={formatTimeSpan(snap.data.timeLoggedThisWeek)}
+            tone="var(--accent-green)"
+          />
+        </StatGrid>
+      ) : snap.loading ? (
+        <Loading what="Loading dashboard" />
       ) : null}
+
+      <div
+        style={{
+          fontSize: 10.5,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          color: 'var(--muted)',
+          margin: '6px 2px 8px',
+        }}
+      >
+        My work by status
+      </div>
+
+      {mine.error ? <ErrorNote onRetry={() => mine.refresh()}>{mine.error}</ErrorNote> : null}
+      {mine.loading ? <Loading what="Loading issues" /> : null}
+      {mine.data && groups.length === 0 ? <Empty>Nothing assigned to you is open.</Empty> : null}
+
+      {groups.map(({ group, issues }) => (
+        <StatusSection key={group} group={group} count={issues.length}>
+          {issues.map((issue) => (
+            <IssueCard key={issue.key} issue={issue} onChanged={refresh} />
+          ))}
+        </StatusSection>
+      ))}
     </Screen>
+  );
+}
+
+export function IssueCard({ issue, onChanged }: { issue: JiraIssue; onChanged?: () => void }) {
+  return (
+    <ListCard
+      accent={statusColor(issue.status)}
+      onClick={() => dialogs.openIssueDetails(issue.key)}
+      lead={
+        <>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-cyan)', fontWeight: 700 }}>
+            {issue.key}
+          </span>
+          <Muted>{issue.issueType}</Muted>
+          {(issue.timeSpent ?? 0) > 0 ? (
+            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--accent-green)', fontWeight: 600 }}>
+              {formatTimeSpan(issue.timeSpent ?? 0)}
+            </span>
+          ) : null}
+        </>
+      }
+      title={issue.summary}
+      footer={
+        <>
+          <Pill tone={statusColor(issue.status)}>{issue.status}</Pill>
+          {issue.priority ? <Pill tone={priorityColor(issue.priority)}>{issue.priority}</Pill> : null}
+          {issue.sprint ? <Muted>{issue.sprint}</Muted> : null}
+          <button
+            className="btn"
+            onClick={(e) => {
+              e.stopPropagation(); // logging work is not opening the issue
+              dialogs.openLogWork(issue.key);
+              onChanged?.();
+            }}
+            style={{ ...tapReset, marginLeft: 'auto', minHeight: 34, padding: '0 12px', fontSize: 12 }}
+          >
+            Log work
+          </button>
+        </>
+      }
+    />
   );
 }

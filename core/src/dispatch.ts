@@ -285,7 +285,37 @@ function errorResponse(err: unknown): DispatchResponse {
 // Dispatcher
 // ---------------------------------------------------------------------------
 
+/**
+ * Time-boxed memo with in-flight de-duplication.
+ *
+ * The dashboard snapshot is the most expensive call in the product and the
+ * client can poll it on a timer; the Express routes always wrapped it this way
+ * and the first mobile dispatcher did not, so every visit to Home paid full
+ * price. Concurrent callers share one promise so a burst cannot stampede.
+ */
+function ttlMemo<T>(ttlMs: number, load: () => Promise<T>): (fresh: boolean) => Promise<T> {
+  let cached: { at: number; value: T } | null = null;
+  let inflight: Promise<T> | null = null;
+  return (fresh: boolean) => {
+    const now = Date.now();
+    if (!fresh && cached && now - cached.at < ttlMs) return Promise.resolve(cached.value);
+    if (!inflight) {
+      inflight = load()
+        .then((value) => {
+          cached = { at: Date.now(), value };
+          return value;
+        })
+        .finally(() => {
+          inflight = null;
+        });
+    }
+    return inflight;
+  };
+}
+
 export function createDispatcher(core: Core, options: DispatcherOptions = {}): Dispatch {
+  const snapshot = ttlMemo(60_000, () => core.aggregator.buildDashboardSnapshot());
+  const dashboardList = ttlMemo(10 * 60_000, () => core.dashboards.getDashboards());
   // Default to the graph's own clock so freshness checks and cache stamps agree.
   const now = options.now ?? (() => new Date(core.now()));
 
@@ -1100,12 +1130,12 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
         return workspacesRoute(method, rest, b);
       case 'dashboard':
         return method === 'GET' && rest[0] === 'snapshot'
-          ? ok(await core.aggregator.buildDashboardSnapshot())
+          ? ok(await snapshot(isFresh(query)))
           : NOT_FOUND;
       case 'dashboards':
         if (method !== 'GET') return NOT_FOUND;
         return rest.length === 0
-          ? ok(await core.dashboards.getDashboards())
+          ? ok(await dashboardList(isFresh(query)))
           : ok(await core.dashboards.getDashboardDetails(rest[0]));
       case 'filters':
         return filtersRoute(method, rest, b);
