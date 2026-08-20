@@ -16,7 +16,7 @@ type TestState =
   | { kind: 'error'; message: string };
 
 export function LoginPage() {
-  const [baseUrl, setBaseUrl] = useState('');
+  const [baseUrl, setBaseUrl] = useState('https://hp-jira.external.hp.com');
   const [email, setEmail] = useState('');
   const [pat, setPat] = useState('');
   const [instanceType, setInstanceType] = useState<InstanceType>('datacenter');

@@ -37,11 +37,25 @@ async function bootstrap(): Promise<void> {
  * the biometric gate instead. Imported lazily so the desktop bundle never
  * pulls the native modules in.
  */
+/**
+ * Locked screen with a retry. The prompt can be cancelled by something outside
+ * the user's control — another app stealing focus is enough — so dead-ending
+ * here would force a force-stop to get back in.
+ */
+function showLocked(): void {
+  document.body.innerHTML =
+    '<div id="mc-locked" style="height:100%;display:grid;place-items:center;padding:24px;text-align:center;gap:16px">' +
+    '<div><div style="font-size:15px;font-weight:600;margin-bottom:6px">MissionControl is locked</div>' +
+    '<div style="opacity:.7;font-size:13px">Unlock to reach your Jira and TestRail credentials.</div></div>' +
+    '<button id="mc-unlock" class="btn btn-primary" style="padding:10px 20px">Unlock</button></div>';
+  document.getElementById('mc-unlock')?.addEventListener('click', () => window.location.reload());
+}
+
 async function startNative(): Promise<boolean> {
   const { bootstrapNative, installAppListeners } = await import('./native/bootstrap');
   const { unlocked } = await bootstrapNative();
   if (!unlocked) {
-    document.body.textContent = 'Locked. Reopen MissionControl to unlock.';
+    showLocked();
     return false;
   }
   installAppListeners();
