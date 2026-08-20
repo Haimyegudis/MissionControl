@@ -15,6 +15,11 @@ function developmentApiToken(): string {
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    // Resolve the workspace package to TypeScript source so the client does
+    // not need core/dist prebuilt and keeps HMR on shared logic.
+    alias: { '@mc/core': path.resolve(__dirname, '../core/src/index.ts') },
+  },
   build: {
     rollupOptions: {
       output: {

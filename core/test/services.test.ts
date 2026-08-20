@@ -20,10 +20,10 @@ import {
   type BoardServiceLike,
   type MetadataServiceLike,
 } from '../src/jira/cached.js';
-import { openDb, type Db } from '../src/storage/db.js';
-import { MetadataCacheRepo } from '../src/storage/repositories.js';
+import { MemoryKvStore } from '../src/storage/kv.js';
+import { MetadataCacheRepo } from '../src/storage/repos.js';
 import type { BoardLoadResult, JiraBoard } from '../src/types.js';
-import type { JiraInstanceType } from '../src/config/credentialsStore.js';
+import type { JiraInstanceType } from '../src/types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -978,17 +978,18 @@ class FakeBoardService implements BoardServiceLike {
 
 describe('CachedBoardService', () => {
   function setup() {
-    const db: Db = openDb(':memory:');
-    const repo = new MetadataCacheRepo(db);
+    const kv = new MemoryKvStore();
+    const repo = new MetadataCacheRepo(kv);
     const inner = new FakeBoardService();
     const svc = new CachedBoardService(inner, repo);
-    return { db, repo, inner, svc };
+    return { kv, repo, inner, svc };
   }
 
-  function backdate(db: Db, ms: number): void {
-    db.prepare('UPDATE MetadataCache SET UpdatedUtc = @u').run({
-      u: new Date(Date.now() - ms).toISOString(),
-    });
+  /** Age every cached entry, the analogue of UPDATE ... SET UpdatedUtc. */
+  function backdate(kv: MemoryKvStore, ms: number): void {
+    for (const [key, record] of kv.snapshot('metadataCache')) {
+      kv.set('metadataCache', key, record.json, Date.now() - ms);
+    }
   }
 
   it('uses the exact cache key meta:default:boards', async () => {
@@ -1023,9 +1024,9 @@ describe('CachedBoardService', () => {
   });
 
   it('stale hit returns immediately and queues a background refetch+store', async () => {
-    const { db, repo, inner, svc } = setup();
+    const { kv, repo, inner, svc } = setup();
     await svc.getBoards();
-    backdate(db, 31 * 24 * 60 * 60 * 1000); // older than 30 d TTL
+    backdate(kv, 31 * 24 * 60 * 60 * 1000); // older than 30 d TTL
 
     inner.result = boardResult([makeBoard(2, 'Fresh')]);
     const cached = await svc.getBoards();
@@ -1092,11 +1093,11 @@ class FakeMetadataService implements MetadataServiceLike {
 
 describe('CachedMetadataService', () => {
   function setup() {
-    const db: Db = openDb(':memory:');
-    const repo = new MetadataCacheRepo(db);
+    const kv = new MemoryKvStore();
+    const repo = new MetadataCacheRepo(kv);
     const inner = new FakeMetadataService();
     const svc = new CachedMetadataService(inner, repo);
-    return { db, repo, inner, svc };
+    return { kv, repo, inner, svc };
   }
 
   it('stores under meta:v10:default:{suffix} and serves hits without refetch', async () => {
@@ -1117,11 +1118,11 @@ describe('CachedMetadataService', () => {
   });
 
   it('stale hit returns immediately then refreshes in the background', async () => {
-    const { db, repo, inner, svc } = setup();
+    const { kv, repo, inner, svc } = setup();
     await svc.getProjects();
-    db.prepare('UPDATE MetadataCache SET UpdatedUtc = @u').run({
-      u: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // > 14 d
-    });
+    for (const [key, record] of kv.snapshot('metadataCache')) {
+      kv.set('metadataCache', key, record.json, Date.now() - 15 * 24 * 60 * 60 * 1000); // > 14 d
+    }
 
     const stale = await svc.getProjects();
     expect(stale).toEqual(['ISW', 'ZZZ']); // immediate

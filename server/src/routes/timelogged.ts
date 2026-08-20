@@ -1,8 +1,8 @@
 // /api/timelogged — period, sprint and range reports (Task A7).
 
 import { Router } from 'express';
-import { jqlQuote } from '../jira/jqlEscape.js';
-import type { TimeLoggedPeriod } from '../jira/timeLogged.js';
+import { jqlQuote } from '@mc/core';
+import type { TimeLoggedPeriod } from '@mc/core';
 import { defaultProjectKey, h, HttpError, qstr, type AppDeps } from './deps.js';
 
 const PERIODS: ReadonlySet<string> = new Set([

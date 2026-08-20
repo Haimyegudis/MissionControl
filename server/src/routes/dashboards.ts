@@ -1,7 +1,7 @@
 // /api/dashboard/snapshot (KPI aggregator) + /api/dashboards (Jira dashboards).
 
 import { Router } from 'express';
-import type { DashboardSnapshot } from '../types.js';
+import type { DashboardSnapshot } from '@mc/core';
 import { h, qstr, type AppDeps } from './deps.js';
 
 /** The snapshot is the most expensive call in the app and the client can

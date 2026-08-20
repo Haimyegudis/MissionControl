@@ -1,9 +1,9 @@
 // /api/boards + /api/pinned-boards (Task A7).
 
 import { Router } from 'express';
-import { BOARDS_CACHE_KEY } from '../jira/cached.js';
-import { apiPrefix, jiraFetch } from '../jira/httpClient.js';
-import type { PinnedBoard } from '../types.js';
+import { BOARDS_CACHE_KEY } from '@mc/core';
+import { apiPrefix, jiraFetch } from '@mc/core';
+import type { PinnedBoard } from '@mc/core';
 import { h, HttpError, qstr, type AppDeps } from './deps.js';
 
 /** Single-profile deployment — fixed pinned-board profile id. */

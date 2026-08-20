@@ -6,9 +6,9 @@
 
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import type { Credentials } from '../config/credentialsStore.js';
-import { TestRailApiError } from '../testrail/httpClient.js';
-import { TestRailNotConnectedError } from '../testrail/service.js';
-import type { TrAddCasePayload } from '../testrail/types.js';
+import { TestRailApiError } from '@mc/core';
+import { TestRailNotConnectedError } from '@mc/core';
+import type { TrAddCasePayload } from '@mc/core';
 import { h, qstr, requireString, HttpError, type AppDeps } from './deps.js';
 
 /** `?fresh=1` (or `true`) bypasses the cache and re-fills it. */

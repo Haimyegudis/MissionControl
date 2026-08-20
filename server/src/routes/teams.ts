@@ -1,7 +1,7 @@
 // /api/teams — team CRUD (Task A7).
 
 import { Router } from 'express';
-import type { Team } from '../types.js';
+import type { Team } from '@mc/core';
 import { h, requireString, type AppDeps } from './deps.js';
 
 export function teamRoutes(deps: AppDeps): Router {

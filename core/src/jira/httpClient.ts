@@ -1,4 +1,4 @@
-import type { Credentials, JiraInstanceType } from '../config/credentialsStore.js';
+import type { Credentials, JiraInstanceType } from '../types.js';
 import type { JiraSession } from './session.js';
 
 /**

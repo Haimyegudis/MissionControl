@@ -1,5 +1,4 @@
-import type { Credentials } from '../config/credentialsStore.js';
-import type { JiraUser } from '../types.js';
+import type { Credentials, JiraUser } from '../types.js';
 
 export type SessionChangedListener = () => void;
 

@@ -4,16 +4,20 @@
 
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { Credentials } from '../config/credentialsStore.js';
-import type { JiraSession } from '../jira/session.js';
-import type { BoardServiceLike, MetadataServiceLike } from '../jira/cached.js';
-import type { AdjustEstimate } from '../jira/worklogService.js';
-import type { TimeLoggedPeriod } from '../jira/timeLogged.js';
+import type {
+  AdjustEstimate,
+  BoardServiceLike,
+  JiraSession,
+  MetadataCacheEntry,
+  MetadataServiceLike,
+  TimeLoggedPeriod,
+} from '@mc/core';
 import type { LumoResult, LumoTurn } from '../ai/lumoAgent.js';
 import type { CreateDefaultsEntry, CreateMetaEntry } from '../storage/fileStores.js';
-import type { MetadataCacheEntry } from '../storage/repositories.js';
-import type { TestRailClientLike } from '../testrail/client.js';
-import type { TrMeta, TrPrefetchProgress, TrSessionStatus } from '../testrail/service.js';
-import type { TrConnection, TrUser } from '../testrail/types.js';
+
+import type { TestRailClientLike } from '@mc/core';
+import type { TrMeta, TrPrefetchProgress, TrSessionStatus } from '@mc/core';
+import type { TrConnection, TrUser } from '@mc/core';
 import type { ConfluenceService } from '../confluence/service.js';
 import type {
   AppSettings,
@@ -33,7 +37,7 @@ import type {
   SavedFilter,
   Team,
   TimeLoggedReport,
-} from '../types.js';
+} from '@mc/core';
 
 // ---------------------------------------------------------------------------
 // Narrow service interfaces (structurally satisfied by the real services)

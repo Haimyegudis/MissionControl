@@ -1,6 +1,8 @@
 // Composition root (Task A7): open the SQLite DB, build the real services,
 // auto-activate the saved session, and serve /api + client/dist on 127.0.0.1.
 
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { askLumo } from './ai/lumoAgent.js';
@@ -9,31 +11,49 @@ import { buildLumoTools } from './ai/lumoTools.js';
 import { createApp } from './app.js';
 import { dbFile, ensureDataDir } from './config/appPaths.js';
 import { CredentialsStore, type Credentials } from './config/credentialsStore.js';
-import { DashboardAggregator } from './jira/aggregator.js';
-import { JiraBoardService } from './jira/boardService.js';
-import { CachedBoardService, CachedMetadataService } from './jira/cached.js';
-import { JiraCreateIssueService } from './jira/createIssueService.js';
-import { JiraDashboardService } from './jira/dashboardService.js';
-import { JiraIssueService } from './jira/issueService.js';
-import { JiraMetadataService } from './jira/metadataService.js';
-import { JiraSession } from './jira/session.js';
-import { TimeLoggedService } from './jira/timeLogged.js';
-import { metadataWarmup } from './jira/warmup.js';
-import { JiraWorklogService } from './jira/worklogService.js';
+import {
+  AppSettingsRepo,
+  CachedBoardService,
+  CachedMetadataService,
+  DashboardAggregator,
+  IssueCacheRepo,
+  JiraBoardService,
+  JiraCreateIssueService,
+  JiraDashboardService,
+  JiraIssueService,
+  JiraMetadataService,
+  JiraSession,
+  JiraWorklogService,
+  MetadataCacheRepo,
+  TestRailService,
+  TimeLoggedService,
+  metadataWarmup,
+  parsePeople,
+  type JiraUser,
+  type TestRailPerson,
+} from '@mc/core';
 import { loadOrCreateApiToken } from './security.js';
 import { openDb } from './storage/db.js';
 import { CreateDefaultsStore, CreateMetaCache } from './storage/fileStores.js';
-import { TestRailService } from './testrail/service.js';
-import {
-  AppSettingsRepo,
-  IssueCacheRepo,
-  MetadataCacheRepo,
-  PinnedBoardRepo,
-  SavedFilterRepo,
-  TeamRepo,
-} from './storage/repositories.js';
-import type { JiraUser } from './types.js';
+import { PinnedBoardRepo, SavedFilterRepo, TeamRepo } from './storage/repositories.js';
+import { SqliteKvStore, SqlitePeopleStore } from './storage/sqliteKv.js';
 import { ConfluenceService } from './confluence/service.js';
+
+/** %APPDATA%\TestRailWeb\people.json — the standalone app's people store. */
+function legacyPeople(): TestRailPerson[] | null {
+  const appData =
+    process.env.APPDATA && process.env.APPDATA.trim().length > 0
+      ? process.env.APPDATA
+      : path.join(os.homedir(), 'AppData', 'Roaming');
+  try {
+    const raw = fs.readFileSync(path.join(appData, 'TestRailWeb', 'people.json'), 'utf8');
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    return parsePeople(parsed as Record<string, unknown>);
+  } catch {
+    return null; // missing or unreadable legacy store — nothing to import
+  }
+}
 
 const dataDir = ensureDataDir();
 const db = openDb(dbFile());
@@ -41,9 +61,12 @@ const db = openDb(dbFile());
 const session = new JiraSession();
 const credentials = new CredentialsStore();
 
-const appSettings = new AppSettingsRepo(db);
-const issueCache = new IssueCacheRepo(db);
-const metadataCache = new MetadataCacheRepo(db);
+const kv = new SqliteKvStore(db);
+const people = new SqlitePeopleStore(db);
+
+const appSettings = new AppSettingsRepo(kv);
+const issueCache = new IssueCacheRepo(kv);
+const metadataCache = new MetadataCacheRepo(kv);
 const savedFilters = new SavedFilterRepo(db);
 const teams = new TeamRepo(db);
 const pinnedBoards = new PinnedBoardRepo(db);
@@ -58,7 +81,7 @@ const timeLogged = new TimeLoggedService(session, issueService, worklogService);
 const aggregator = new DashboardAggregator(session, issueService, timeLogged);
 const createDefaults = new CreateDefaultsStore();
 const createMetaCache = new CreateMetaCache();
-const testRail = new TestRailService(db);
+const testRail = new TestRailService(kv, people, undefined, legacyPeople);
 const confluence = new ConfluenceService(credentials);
 testRail.importLegacyPeopleIfEmpty();
 

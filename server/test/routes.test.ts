@@ -5,9 +5,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { createApp, translateError, type AppDeps } from '../src/app.js';
-import { JiraError } from '../src/jira/httpClient.js';
-import { JiraSession } from '../src/jira/session.js';
-import { defaultAppSettings, type JiraIssue, type JiraUser, type PagedResult } from '../src/types.js';
+import { JiraError } from '@mc/core';
+import { JiraSession } from '@mc/core';
+import { defaultAppSettings, type JiraIssue, type JiraUser, type PagedResult } from '@mc/core';
 
 // ---------------------------------------------------------------------------
 // Fixtures + harness

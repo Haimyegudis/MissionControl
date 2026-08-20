@@ -2,8 +2,8 @@
 // transitions, comments, labels, worklogs (Task A7; ui-parity-contract.md §2).
 
 import { Router } from 'express';
-import type { AdjustEstimate } from '../jira/worklogService.js';
-import type { JiraIssue } from '../types.js';
+import type { AdjustEstimate } from '@mc/core';
+import type { JiraIssue } from '@mc/core';
 import { h, HttpError, requireString, type AppDeps } from './deps.js';
 
 /** Issue-cache freshness window (ui-parity §2): 1 hour. */

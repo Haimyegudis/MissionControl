@@ -2,9 +2,9 @@
 // resolution (Task A7; ui-parity-contract.md §3).
 
 import { Router } from 'express';
-import { INCIDENT_FILTERS } from '../jira/incidentCatalog.js';
-import { buildIncidentJql } from '../jira/jqlBuilder.js';
-import type { JiraFilterSelection } from '../types.js';
+import { INCIDENT_FILTERS } from '@mc/core';
+import { buildIncidentJql } from '@mc/core';
+import type { JiraFilterSelection } from '@mc/core';
 import { defaultProjectKey, h, HttpError, type AppDeps } from './deps.js';
 
 const INCIDENT_MAX_RESULTS = 200;

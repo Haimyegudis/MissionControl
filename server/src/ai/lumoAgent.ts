@@ -8,8 +8,8 @@
  * [TOOL RESULTS] block with per-tool truncation budgets. Post-processing
  * ports Lumo's operator-answer scrubber and card-source filtering.
  */
-import type { JiraSession } from '../jira/session.js';
-import type { JiraIssue, JiraIssueDetails, PagedResult } from '../types.js';
+import type { JiraSession } from '@mc/core';
+import type { JiraIssue, JiraIssueDetails, PagedResult } from '@mc/core';
 import type { LumoToolContext, LumoToolset } from './lumoTools.js';
 
 // ---------------------------------------------------------------------------

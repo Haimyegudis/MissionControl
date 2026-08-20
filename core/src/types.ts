@@ -1,3 +1,23 @@
+export type JiraInstanceType = 'cloud' | 'datacenter';
+
+/**
+ * Connection profile for all three back ends. Lives in core because the Jira
+ * HTTP client and session need it; the Windows DPAPI store that persists it
+ * stays in the server, and the Android Keystore store is its mobile twin.
+ */
+export interface Credentials {
+  email: string;
+  jiraBaseUrl: string;
+  jiraPat: string;
+  instanceType: JiraInstanceType;
+  defaultProjectKey: string;
+  testRailBaseUrl: string;
+  testRailEmail: string;
+  testRailApiKey: string;
+  confluenceBaseUrl: string;
+  confluencePat: string;
+}
+
 // Domain models for JiraWeb — camelCase on the wire.
 // TimeSpans are seconds (number | null); dates are ISO-8601 strings.
 // Source of truth: docs/reference/jira-rest-layer.md §3, docs/reference/storage-layer.md §3.

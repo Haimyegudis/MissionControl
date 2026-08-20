@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { JiraSession } from '../src/jira/session.js';
+import { JiraSession } from '@mc/core';
 import {
   askLumo,
   extractFirstJsonObject,
@@ -29,7 +29,7 @@ import { selectRelevantExcerpt } from '../src/ai/lumoTools.js';
 import { parseEnvFile } from '../src/ai/lumo/env.js';
 import { parseCsv } from '../src/ai/lumo/configControl.js';
 import { parseConfluenceUrl } from '../src/ai/lumo/confluence.js';
-import type { JiraIssue, JiraIssueDetails, PagedResult } from '../src/types.js';
+import type { JiraIssue, JiraIssueDetails, PagedResult } from '@mc/core';
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -10,14 +10,14 @@ import path from 'node:path';
 import os from 'node:os';
 import { createApp, type AppDeps } from '../src/app.js';
 import type { Credentials } from '../src/config/credentialsStore.js';
-import { JiraSession } from '../src/jira/session.js';
+import { JiraSession } from '@mc/core';
 import { openDb, type Db } from '../src/storage/db.js';
-import { trCacheGet } from '../src/storage/repositories.js';
-import type { TestRailClientLike } from '../src/testrail/client.js';
-import { TestRailApiError } from '../src/testrail/httpClient.js';
-import { TestRailService } from '../src/testrail/service.js';
-import type { TrUser } from '../src/testrail/types.js';
-import { defaultAppSettings, type JiraIssue } from '../src/types.js';
+import { SqliteKvStore, SqlitePeopleStore } from '../src/storage/sqliteKv.js';
+import type { TestRailClientLike } from '@mc/core';
+import { TestRailApiError } from '@mc/core';
+import { TestRailService } from '@mc/core';
+import type { TrUser } from '@mc/core';
+import { defaultAppSettings, type JiraIssue } from '@mc/core';
 
 // ---------------------------------------------------------------------------
 // Fixtures + harness
@@ -75,11 +75,7 @@ function makeDeps(): Harness {
   let stored: Credentials | null = null;
   const db = openDb(':memory:');
   const client = makeMockClient();
-  const service = new TestRailService(
-    db,
-    () => client,
-    path.join(os.tmpdir(), 'jiraweb-tests', 'missing-people.json'),
-  );
+  const service = new TestRailService(new SqliteKvStore(db), new SqlitePeopleStore(db), () => client);
   const deps: AppDeps = {
     session,
     credentials: {
@@ -283,7 +279,7 @@ describe('testrail cached routes', () => {
     const second = await json(await fetch(`${base}/api/testrail/projects`));
     expect(second).toEqual(first);
     expect(harness.client.getProjects).toHaveBeenCalledTimes(1);
-    expect(trCacheGet(harness.db, 'projects')).not.toBeNull();
+    expect(new SqliteKvStore(harness.db).get('trCache', 'projects')).not.toBeNull();
   });
 
   it('fresh=1 bypasses and re-fills the cache', async () => {
@@ -304,7 +300,7 @@ describe('testrail cached routes', () => {
 
     await fetch(`${base}/api/testrail/projects`);
     expect(await fetch(`${base}/api/testrail/cache`, { method: 'DELETE' }).then((r) => r.status)).toBe(204);
-    expect(trCacheGet(harness.db, 'projects')).toBeNull();
+    expect(new SqliteKvStore(harness.db).get('trCache', 'projects')).toBeNull();
     await fetch(`${base}/api/testrail/projects`);
     expect(harness.client.getProjects).toHaveBeenCalledTimes(2);
   });
@@ -318,10 +314,10 @@ describe('testrail cached routes', () => {
     await fetch(`${base}/api/testrail/projects/1/sections?suiteId=3`);
     await fetch(`${base}/api/testrail/projects/1/cases?suiteId=3`);
     await fetch(`${base}/api/testrail/projects/1/cases?suiteId=3&sectionId=7`);
-    expect(trCacheGet(harness.db, 'suites:1')).not.toBeNull();
-    expect(trCacheGet(harness.db, 'sections:1:3')).not.toBeNull();
-    expect(trCacheGet(harness.db, 'cases:1:3:')).not.toBeNull();
-    expect(trCacheGet(harness.db, 'cases:1:3:7')).not.toBeNull();
+    expect(new SqliteKvStore(harness.db).get('trCache', 'suites:1')).not.toBeNull();
+    expect(new SqliteKvStore(harness.db).get('trCache', 'sections:1:3')).not.toBeNull();
+    expect(new SqliteKvStore(harness.db).get('trCache', 'cases:1:3:')).not.toBeNull();
+    expect(new SqliteKvStore(harness.db).get('trCache', 'cases:1:3:7')).not.toBeNull();
     expect(harness.client.getCases).toHaveBeenCalledWith(1, 3, null);
     expect(harness.client.getCases).toHaveBeenCalledWith(1, 3, 7);
   });
@@ -337,7 +333,7 @@ describe('testrail cached routes', () => {
     const res = await fetch(`${base}/api/testrail/meta?projectId=1`);
     expect(res.status).toBe(200);
     expect(await json(res)).toEqual({ users: [], statuses: [], caseTypes: [], priorities: [] });
-    expect(trCacheGet(harness.db, 'meta:1')).not.toBeNull();
+    expect(new SqliteKvStore(harness.db).get('trCache', 'meta:1')).not.toBeNull();
   });
 
   it('a TestRail API failure surfaces as a structured 502', async () => {
@@ -384,11 +380,11 @@ describe('testrail prefetch and people', () => {
     const status = await json(await fetch(`${base}/api/testrail/prefetch/status`));
     // 1 project * 3 + 1 suite * 2
     expect(status).toEqual({ active: false, done: 5, total: 5 });
-    expect(trCacheGet(harness.db, 'suites:1')).not.toBeNull();
-    expect(trCacheGet(harness.db, 'runs:1')).not.toBeNull();
-    expect(trCacheGet(harness.db, 'meta:1')).not.toBeNull();
-    expect(trCacheGet(harness.db, 'sections:1:3')).not.toBeNull();
-    expect(trCacheGet(harness.db, 'cases:1:3:')).not.toBeNull();
+    expect(new SqliteKvStore(harness.db).get('trCache', 'suites:1')).not.toBeNull();
+    expect(new SqliteKvStore(harness.db).get('trCache', 'runs:1')).not.toBeNull();
+    expect(new SqliteKvStore(harness.db).get('trCache', 'meta:1')).not.toBeNull();
+    expect(new SqliteKvStore(harness.db).get('trCache', 'sections:1:3')).not.toBeNull();
+    expect(new SqliteKvStore(harness.db).get('trCache', 'cases:1:3:')).not.toBeNull();
 
     // Already-warm projects are skipped wholesale on the next prefetch.
     await fetch(`${base}/api/testrail/prefetch`, {

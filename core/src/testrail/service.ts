@@ -1,16 +1,4 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import type { Db } from '../storage/db.js';
-import {
-  trCacheClear,
-  trCacheGet,
-  trCacheSet,
-  trPeopleAll,
-  trPeopleClear,
-  trPeopleUpsertMany,
-  type TestRailPerson,
-} from '../storage/repositories.js';
+import type { KvStore, PeopleStore, TestRailPerson } from '../storage/kv.js';
 import { TestRailClient, type TestRailClientLike } from './client.js';
 import { TestRailApiError, TestRailHttp } from './httpClient.js';
 import type { TrCaseType, TrConnection, TrPriority, TrStatus, TrUser } from './types.js';
@@ -55,15 +43,6 @@ function defaultClientFactory(connection: TrConnection): TestRailClientLike {
   return new TestRailClient(new TestRailHttp(connection));
 }
 
-/** %APPDATA%\TestRailWeb\people.json — the standalone app's people store. */
-function legacyPeopleFile(): string {
-  const appData =
-    process.env.APPDATA && process.env.APPDATA.trim().length > 0
-      ? process.env.APPDATA
-      : path.join(os.homedir(), 'AppData', 'Roaming');
-  return path.join(appData, 'TestRailWeb', 'people.json');
-}
-
 export class TestRailService {
   private client: TestRailClientLike | null = null;
   private connection: TrConnection | null = null;
@@ -71,9 +50,10 @@ export class TestRailService {
   private readonly progress: TrPrefetchProgress = { active: false, done: 0, total: 0 };
 
   constructor(
-    private readonly db: Db,
+    private readonly kv: KvStore,
+    private readonly people: PeopleStore,
     private readonly clientFactory: (connection: TrConnection) => TestRailClientLike = defaultClientFactory,
-    private readonly peopleFile: string = legacyPeopleFile(),
+    private readonly legacyPeople: () => TestRailPerson[] | null = () => null,
   ) {}
 
   // -------------------------------------------------------------------------
@@ -131,10 +111,10 @@ export class TestRailService {
     return 60 * 60_000; // structure/meta: 1 hour
   }
 
-  /** Serve from SQLite when present; `fresh` bypasses and re-fills the entry. */
+  /** Serve from the KV store when present; `fresh` bypasses and re-fills it. */
   async cachedJson(key: string, fetchFn: () => Promise<unknown>, fresh: boolean): Promise<unknown> {
     if (!fresh) {
-      const hit = trCacheGet(this.db, key);
+      const hit = this.kv.get('trCache', key);
       if (hit) {
         try {
           const value = JSON.parse(hit.json);
@@ -143,7 +123,7 @@ export class TestRailService {
             // Stale: serve it now, refresh behind the response.
             this.refreshing.add(key);
             void fetchFn()
-              .then((freshValue) => trCacheSet(this.db, key, JSON.stringify(freshValue ?? null)))
+              .then((freshValue) => this.kv.set('trCache', key, JSON.stringify(freshValue ?? null)))
               .catch(() => undefined)
               .finally(() => this.refreshing.delete(key));
           }
@@ -154,12 +134,12 @@ export class TestRailService {
       }
     }
     const value = await fetchFn();
-    trCacheSet(this.db, key, JSON.stringify(value ?? null));
+    this.kv.set('trCache', key, JSON.stringify(value ?? null));
     return value;
   }
 
   clearCache(): void {
-    trCacheClear(this.db);
+    this.kv.clear('trCache');
   }
 
   /** Reference data is nice-to-have; a 403 on one part (e.g. get_users for
@@ -205,25 +185,25 @@ export class TestRailService {
       const client = this.requireClient();
       for (const pid of projectIds) {
         // Already warmed (e.g. page refresh) — skip; `fresh=1` paths keep entries current.
-        if (trCacheGet(this.db, `suites:${pid}`)) {
+        if (this.kv.get('trCache', `suites:${pid}`)) {
           this.progress.done += 3;
           continue;
         }
 
         const suites = await client.getSuites(pid);
-        trCacheSet(this.db, `suites:${pid}`, JSON.stringify(suites));
+        this.kv.set('trCache', `suites:${pid}`, JSON.stringify(suites));
         this.progress.total += suites.length * 2;
         this.progress.done++;
 
         const runsTask = client.getRuns(pid).then((runs) => {
-          trCacheSet(this.db, `runs:${pid}`, JSON.stringify(runs));
+          this.kv.set('trCache', `runs:${pid}`, JSON.stringify(runs));
           this.progress.done++;
         });
 
         const metaTask = (async () => {
           try {
             const meta = await this.fetchMeta(pid);
-            trCacheSet(this.db, `meta:${pid}`, JSON.stringify(meta));
+            this.kv.set('trCache', `meta:${pid}`, JSON.stringify(meta));
           } catch (err) {
             if (!(err instanceof TestRailApiError)) throw err;
           }
@@ -239,10 +219,10 @@ export class TestRailService {
             if (i >= suites.length) return;
             const suite = suites[i];
             const sections = await client.getSections(pid, suite.id);
-            trCacheSet(this.db, `sections:${pid}:${suite.id}`, JSON.stringify(sections));
+            this.kv.set('trCache', `sections:${pid}:${suite.id}`, JSON.stringify(sections));
             this.progress.done++;
             const cases = await client.getCases(pid, suite.id, null);
-            trCacheSet(this.db, `cases:${pid}:${suite.id}:`, JSON.stringify(cases));
+            this.kv.set('trCache', `cases:${pid}:${suite.id}:`, JSON.stringify(cases));
             this.progress.done++;
           }
         };
@@ -265,36 +245,31 @@ export class TestRailService {
 
   getPeople(): Record<string, string> {
     const map: Record<string, string> = {};
-    for (const person of trPeopleAll(this.db)) map[String(person.id)] = person.name;
+    for (const person of this.people.all()) map[String(person.id)] = person.name;
     return map;
   }
 
   /** Full replacement, matching the standalone app's PUT /people semantics. */
   setPeople(people: Record<string, unknown>): void {
     const rows = parsePeople(people);
-    trPeopleClear(this.db);
-    trPeopleUpsertMany(this.db, rows);
+    this.people.clear();
+    this.people.upsertMany(rows);
   }
 
   /**
-   * Boot-time one-time import of %AppData%\TestRailWeb\people.json into
-   * TestRailPeople when the table is empty. Absent/corrupt files are ignored.
+   * Boot-time one-time seed of the people store from the standalone app's
+   * export, supplied by the host (the server reads the file; Android does not).
    */
   importLegacyPeopleIfEmpty(): void {
-    try {
-      if (trPeopleAll(this.db).length > 0) return;
-      const raw = fs.readFileSync(this.peopleFile, 'utf8');
-      const parsed = JSON.parse(raw);
-      if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return;
-      const rows = parsePeople(parsed as Record<string, unknown>);
-      if (rows.length > 0) trPeopleUpsertMany(this.db, rows);
-    } catch {
-      // missing or unreadable legacy store — nothing to import
-    }
+    if (this.people.all().length > 0) return;
+    const rows = this.legacyPeople();
+    if (rows === null || rows.length === 0) return;
+    this.people.upsertMany(rows);
   }
 }
 
-function parsePeople(people: Record<string, unknown>): TestRailPerson[] {
+/** Parse the standalone app's people.json shape: { "<id>": "<name>" }. */
+export function parsePeople(people: Record<string, unknown>): TestRailPerson[] {
   const rows: TestRailPerson[] = [];
   for (const [key, value] of Object.entries(people)) {
     const id = Number.parseInt(key, 10);

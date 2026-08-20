@@ -1,7 +1,7 @@
 // /api/filters — saved JQL filters (Task A7).
 
 import { Router } from 'express';
-import type { SavedFilter } from '../types.js';
+import type { SavedFilter } from '@mc/core';
 import { h, requireString, type AppDeps } from './deps.js';
 
 export function filterRoutes(deps: AppDeps): Router {

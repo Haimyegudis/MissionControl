@@ -1,7 +1,7 @@
 // /api/settings — AppSettings load/merge/save + cache maintenance (Task A7).
 
 import { Router } from 'express';
-import { DEFAULT_APP_SETTINGS, type AppSettings } from '../types.js';
+import { DEFAULT_APP_SETTINGS, type AppSettings } from '@mc/core';
 import { h, HttpError, type AppDeps } from './deps.js';
 
 const KNOWN_KEYS = new Set(Object.keys(DEFAULT_APP_SETTINGS));

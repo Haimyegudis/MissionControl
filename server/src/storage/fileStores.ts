@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createDefaultsFile, createMetaCacheFile } from '../config/appPaths.js';
-import { toCamelKeys, toPascalKeys } from './repositories.js';
-import type { JiraCreateIssueMeta } from '../types.js';
+import { toCamelKeys, toPascalKeys } from '@mc/core';
+import type { JiraCreateIssueMeta } from '@mc/core';
 
 // ---------------------------------------------------------------------------
 // Shared file helpers — corrupt/missing file reads as {}

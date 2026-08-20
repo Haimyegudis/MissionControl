@@ -4,7 +4,7 @@
 import express, { type Express, type NextFunction, type Request, type Response } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
-import { JiraError } from './jira/httpClient.js';
+import { JiraError } from '@mc/core';
 import { authRoutes } from './routes/auth.js';
 import { boardRoutes, pinnedBoardRoutes } from './routes/boards.js';
 import { createRoutes } from './routes/create.js';

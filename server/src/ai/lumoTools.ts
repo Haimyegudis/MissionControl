@@ -7,7 +7,7 @@
  * Every tool returns a plain data object; failures come back as
  * {error: '...'} — never a throw — so the agent loop can feed the model.
  */
-import type { JiraSession } from '../jira/session.js';
+import type { JiraSession } from '@mc/core';
 import sanitizeHtml from 'sanitize-html';
 import type { ConfluenceService } from '../confluence/service.js';
 import { parseConfluenceUrl } from './lumo/confluence.js';

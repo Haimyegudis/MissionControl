@@ -4,8 +4,8 @@
 import { Router } from 'express';
 import { Readable } from 'node:stream';
 import { resolveJiraUsername } from '../ai/lumo/jiraSearch.js';
-import { normalizeBaseUrl } from '../jira/httpClient.js';
-import type { JiraUser } from '../types.js';
+import { normalizeBaseUrl } from '@mc/core';
+import type { JiraUser } from '@mc/core';
 import { defaultProjectKey, h, HttpError, qstr, requireString, type AppDeps } from './deps.js';
 
 /** The client consumes JiraUser[]; DC assignable-user search yields names. */

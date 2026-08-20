@@ -3,18 +3,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { openDb, type Db } from '../src/storage/db.js';
-import {
-  AppSettingsRepo,
-  IssueCacheRepo,
-  MetadataCacheRepo,
-  SavedFilterRepo,
-  PinnedBoardRepo,
-  BoardWorkspaceRepo,
-  TeamRepo,
-} from '../src/storage/repositories.js';
+import { BoardWorkspaceRepo, PinnedBoardRepo, SavedFilterRepo, TeamRepo } from '../src/storage/repositories.js';
+import { SqliteKvStore } from '../src/storage/sqliteKv.js';
+import { AppSettingsRepo, IssueCacheRepo, MetadataCacheRepo } from '@mc/core';
 import { CreateDefaultsStore, CreateMetaCache } from '../src/storage/fileStores.js';
-import { defaultAppSettings } from '../src/types.js';
-import type { JiraIssue, SavedFilter, BoardWorkspace, Team, PinnedBoard } from '../src/types.js';
+import { defaultAppSettings } from '@mc/core';
+import type { JiraIssue, SavedFilter, BoardWorkspace, Team, PinnedBoard } from '@mc/core';
 
 function makeIssue(key: string, overrides: Partial<JiraIssue> = {}): JiraIssue {
   return {
@@ -70,12 +64,12 @@ afterEach(() => {
 
 describe('AppSettingsRepo', () => {
   it('get() returns full defaults when no row exists', () => {
-    const repo = new AppSettingsRepo(db);
+    const repo = new AppSettingsRepo(new SqliteKvStore(db));
     expect(repo.get()).toEqual(defaultAppSettings());
   });
 
   it('save() then get() round-trips including dictionary keys untouched', () => {
-    const repo = new AppSettingsRepo(db);
+    const repo = new AppSettingsRepo(new SqliteKvStore(db));
     const s = defaultAppSettings();
     s.theme = 'Light';
     s.refreshIntervalSeconds = 300;
@@ -90,7 +84,7 @@ describe('AppSettingsRepo', () => {
   });
 
   it('stores PascalCase keys in the JSON blob (incl. nested), dictionary keys verbatim', () => {
-    const repo = new AppSettingsRepo(db);
+    const repo = new AppSettingsRepo(new SqliteKvStore(db));
     const s = defaultAppSettings();
     s.kanbanWipLimits = { 'In Progress': 3 };
     s.mcpServerEnv = { JIRA_PERSONAL_TOKEN: 'tok' };
@@ -113,7 +107,7 @@ describe('AppSettingsRepo', () => {
     db.prepare('INSERT INTO AppSettings (Id, Json) VALUES (1, ?)').run(
       JSON.stringify({ Theme: 'Light', RefreshIntervalSeconds: 60 }),
     );
-    const repo = new AppSettingsRepo(db);
+    const repo = new AppSettingsRepo(new SqliteKvStore(db));
     const s = repo.get();
     expect(s.theme).toBe('Light');
     expect(s.refreshIntervalSeconds).toBe(60);
@@ -125,7 +119,7 @@ describe('AppSettingsRepo', () => {
   });
 
   it('save() upserts the single row (Id = 1)', () => {
-    const repo = new AppSettingsRepo(db);
+    const repo = new AppSettingsRepo(new SqliteKvStore(db));
     const s1 = defaultAppSettings();
     s1.theme = 'Light';
     repo.save(s1);
@@ -144,19 +138,19 @@ describe('AppSettingsRepo', () => {
 
 describe('IssueCacheRepo', () => {
   it('getCached() returns [] when key absent', () => {
-    const repo = new IssueCacheRepo(db);
+    const repo = new IssueCacheRepo(new SqliteKvStore(db));
     expect(repo.getCached('mywork:x')).toEqual([]);
   });
 
   it('saveCache() then getCached() round-trips issues', () => {
-    const repo = new IssueCacheRepo(db);
+    const repo = new IssueCacheRepo(new SqliteKvStore(db));
     const issues = [makeIssue('ISW-1'), makeIssue('ISW-2', { assignee: null, timeSpent: null })];
     repo.saveCache('mywork:x', issues);
     expect(repo.getCached('mywork:x')).toEqual(issues);
   });
 
   it('stores PascalCase keys in the blob', () => {
-    const repo = new IssueCacheRepo(db);
+    const repo = new IssueCacheRepo(new SqliteKvStore(db));
     repo.saveCache('k', [makeIssue('ISW-1')]);
     const row = db.prepare('SELECT Json FROM IssueCache WHERE CacheKey = ?').get('k') as { Json: string };
     const raw = JSON.parse(row.Json);
@@ -166,7 +160,7 @@ describe('IssueCacheRepo', () => {
   });
 
   it('getLastRefresh() is null when absent, a recent Date after save', () => {
-    const repo = new IssueCacheRepo(db);
+    const repo = new IssueCacheRepo(new SqliteKvStore(db));
     expect(repo.getLastRefresh('k')).toBeNull();
     const before = Date.now();
     repo.saveCache('k', [makeIssue('ISW-1')]);
@@ -177,7 +171,7 @@ describe('IssueCacheRepo', () => {
   });
 
   it('saveCache() overwrites an existing key and bumps UpdatedUtc', () => {
-    const repo = new IssueCacheRepo(db);
+    const repo = new IssueCacheRepo(new SqliteKvStore(db));
     repo.saveCache('k', [makeIssue('ISW-1')]);
     repo.saveCache('k', [makeIssue('ISW-2')]);
     const cached = repo.getCached('k');
@@ -186,7 +180,7 @@ describe('IssueCacheRepo', () => {
   });
 
   it('clearAll() empties the cache', () => {
-    const repo = new IssueCacheRepo(db);
+    const repo = new IssueCacheRepo(new SqliteKvStore(db));
     repo.saveCache('a', [makeIssue('ISW-1')]);
     repo.saveCache('b', [makeIssue('ISW-2')]);
     repo.clearAll();
@@ -201,7 +195,7 @@ describe('IssueCacheRepo', () => {
 
 describe('MetadataCacheRepo', () => {
   it('get() null when absent; set() then get() returns json + updatedUtc Date', () => {
-    const repo = new MetadataCacheRepo(db);
+    const repo = new MetadataCacheRepo(new SqliteKvStore(db));
     expect(repo.get('meta:x')).toBeNull();
     repo.set('meta:x', '["a","b"]');
     const entry = repo.get('meta:x');
@@ -212,14 +206,14 @@ describe('MetadataCacheRepo', () => {
   });
 
   it('set() upserts an existing key', () => {
-    const repo = new MetadataCacheRepo(db);
+    const repo = new MetadataCacheRepo(new SqliteKvStore(db));
     repo.set('k', '1');
     repo.set('k', '2');
     expect(repo.get('k')!.json).toBe('2');
   });
 
   it('delete() removes one key; clearAll() removes everything', () => {
-    const repo = new MetadataCacheRepo(db);
+    const repo = new MetadataCacheRepo(new SqliteKvStore(db));
     repo.set('a', '1');
     repo.set('b', '2');
     repo.delete('a');

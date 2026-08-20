@@ -5,8 +5,8 @@
  * reporter/assignee display-name resolution) and mcpManager.textSearchJira
  * (3-stage progressive text search) + fetchJiraTicket.
  */
-import { apiPrefix, jiraFetch } from '../../jira/httpClient.js';
-import type { JiraSession } from '../../jira/session.js';
+import { apiPrefix, jiraFetch } from '@mc/core';
+import type { JiraSession } from '@mc/core';
 
 type Rec = Record<string, any>;
 
