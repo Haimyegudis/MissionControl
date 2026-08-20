@@ -3,6 +3,8 @@
 import { lazy, Suspense, useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { settings as settingsApi } from '../api/client';
 import { Modal } from './Modal';
+import { BottomTabs } from './BottomTabs';
+import { useIsNarrow } from '../lib/useViewport';
 
 // Lazy — keeps the JQL editor + results grid out of the entry chunk.
 const FiltersView = lazy(() => import('../views/FiltersView').then((m) => ({ default: m.FiltersView })));
@@ -209,6 +211,7 @@ function PomodoroWidget({ onPickIssue }: { onPickIssue: () => void }) {
 
 export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps) {
   const route = useStore(routeStore);
+  const narrow = useIsNarrow();
   const session = useStore(sessionStore);
   const appSettings = useStore(settingsStore);
   const lastRefresh = useStore(lastRefreshStore);
@@ -396,7 +399,7 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
 
       {/* ---------------------------------------------------- body -------- */}
       <div className="mc-body" style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        {sidebarOpen && (
+        {sidebarOpen && !narrow && (
         <nav className="mc-sidebar" style={sidebarStyle} aria-label="Primary navigation">
           <NavGroup id="jira" label="JIRA" emphasized>
             {ROUTES.filter((r) => r.id !== 'settings').map((r) => (
@@ -474,8 +477,17 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
         </nav>
         )}
 
-        <main className="mc-main" style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: 16 }}>{children}</main>
+        <main
+          className="mc-main"
+          style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: narrow ? 8 : 16 }}
+        >
+          {children}
+        </main>
       </div>
+
+      {/* On a phone the 220px sidebar is replaced by a bottom tab bar over the
+          Phase 1 routes. */}
+      {narrow && <BottomTabs active={route} />}
 
       {jqlOpen && (
         <Modal title="JQL search & saved filters" width={1150} maxHeight="90vh" onClose={() => setJqlOpen(false)}>

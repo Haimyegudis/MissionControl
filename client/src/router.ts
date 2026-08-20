@@ -38,6 +38,22 @@ export const ROUTES: Array<{ id: RouteId; label: string }> = [
   { id: 'settings', label: 'Settings' },
 ];
 
+/**
+ * Routes ported to the Android shell in Phase 1. Everything else is desktop
+ * only for now; isRouteAvailable keeps an unported view unreachable there
+ * rather than letting it render against a 404ing dispatcher.
+ */
+export const MOBILE_ROUTE_IDS: ReadonlySet<RouteId> = new Set<RouteId>([
+  'mywork',
+  'testrail-runs',
+  'testrail-run',
+  'settings',
+]);
+
+export function isRouteAvailable(id: RouteId, native: boolean): boolean {
+  return native ? MOBILE_ROUTE_IDS.has(id) : true;
+}
+
 export const TESTRAIL_ROUTES: Array<{ id: RouteId; label: string }> = [
   { id: 'testrail-cases', label: 'Cases' },
   { id: 'testrail-runs', label: 'Runs' },

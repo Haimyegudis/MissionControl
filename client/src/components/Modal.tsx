@@ -2,7 +2,8 @@
 // light focus trap (Tab cycles within the panel).
 
 import { useEffect, useId, useRef } from 'react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { useIsNarrow } from '../lib/useViewport';
 
 export interface ModalProps {
   title?: ReactNode;
@@ -14,6 +15,15 @@ export interface ModalProps {
   /** Close when the backdrop is clicked (default true). */
   closeOnBackdrop?: boolean;
 }
+
+/** Full-screen sheet geometry used below the mobile breakpoint. */
+const sheetStyle: CSSProperties = {
+  width: '100vw',
+  maxWidth: '100vw',
+  height: '100dvh',
+  maxHeight: '100dvh',
+  borderRadius: 0,
+};
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -29,6 +39,9 @@ export function Modal({
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  // On a phone a centred card wastes most of the screen and leaves the content
+  // scrolling inside a scroll; a full-screen sheet is the native shape.
+  const narrow = useIsNarrow();
   // Callers pass inline arrows for onClose; keep the latest in a ref so the
   // effect runs once — re-running it would re-focus the first field and steal
   // focus from whatever the user is typing in.
@@ -90,9 +103,7 @@ export function Modal({
         aria-label={title === undefined ? 'Dialog' : undefined}
         className="card card-high"
         style={{
-          width,
-          maxWidth: 'calc(100vw - 32px)',
-          maxHeight,
+          ...(narrow ? sheetStyle : { width, maxWidth: 'calc(100vw - 32px)', maxHeight }),
           display: 'flex',
           flexDirection: 'column',
           outline: 'none',
