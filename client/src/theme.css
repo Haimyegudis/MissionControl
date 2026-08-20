@@ -1136,3 +1136,166 @@ pre.blocktext {
     opacity: 1 !important;
   }
 }
+
+/* ============================================================================
+   Mobile theme — "flight deck".
+   ============================================================================
+   The phone gets its own identity rather than inheriting the desktop palette.
+   The desktop is a daylight workspace you sit at; the phone is a device you
+   glance at in a press hall, so it commits to near-black with high-chroma
+   instrument colours and reads confidently in bad light.
+
+   Applied by MobileApp via data-mobile="1", so the desktop is untouched and
+   the phone still respects light/dark through the same token names.
+   ========================================================================== */
+
+:root[data-mobile='1'] {
+  --bg-gradient:
+    radial-gradient(120% 80% at 12% -10%, rgba(31, 224, 224, 0.10) 0%, transparent 55%),
+    radial-gradient(100% 70% at 92% 4%, rgba(255, 78, 205, 0.08) 0%, transparent 55%),
+    linear-gradient(180deg, #060a18 0%, #04060f 100%);
+  --bg-panel: rgba(15, 23, 44, 0.66);
+  --bg-panel-high: rgba(23, 34, 62, 0.92);
+  --border-soft: rgba(120, 180, 220, 0.16);
+  --border-strong: rgba(31, 224, 224, 0.42);
+  --text-primary: #eaf2ff;
+  --muted: #7d94b8;
+
+  --accent-cyan: #29f0e0;
+  --accent-green: #3ef2a1;
+  --accent-yellow: #ffd75e;
+  --accent-orange: #ff9d4d;
+  --accent-red: #ff4d6d;
+  --accent-magenta: #ff4ecd;
+  --accent-blue: #5aa9ff;
+
+  --input-bg: rgba(4, 8, 20, 0.72);
+  --shadow-card: 0 8px 28px rgba(0, 0, 0, 0.55);
+  --focus-ring: rgba(41, 240, 224, 0.42);
+
+  color-scheme: dark;
+}
+
+/* A faint instrument grid behind everything, fixed so it does not scroll with
+   content — the "surface" the panels float on. */
+:root[data-mobile='1'] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(120, 180, 220, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 180, 220, 0.05) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: radial-gradient(120% 90% at 50% 0%, #000 25%, transparent 78%);
+}
+
+:root[data-mobile='1'] .card,
+:root[data-mobile='1'] .mob-card {
+  backdrop-filter: blur(12px) saturate(1.15);
+  box-shadow: var(--shadow-card);
+}
+
+/* Pressed state, since there is no hover to signal "this is live". */
+:root[data-mobile='1'] .mob-card:active,
+:root[data-mobile='1'] .btn:active {
+  border-color: var(--border-strong);
+  background: rgba(41, 240, 224, 0.07);
+}
+
+:root[data-mobile='1'] .btn-primary {
+  border-color: var(--accent-cyan);
+  color: #04060f;
+  background: linear-gradient(180deg, var(--accent-cyan), #16bfb4);
+  font-weight: 650;
+}
+
+/* -------------------------------------------------------- reactor loader --- */
+/* Three counter-rotating arcs around a pulsing core, with a sweep line. All
+   transform/opacity so it stays cheap on a mid-range phone. */
+
+.mob-loader {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  margin: 0 auto;
+}
+.mob-loader i {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  display: block;
+}
+.mob-loader i:nth-child(1) {
+  border-top-color: var(--accent-cyan);
+  border-right-color: var(--accent-cyan);
+  animation: mob-spin 1.1s linear infinite;
+}
+.mob-loader i:nth-child(2) {
+  inset: 9px;
+  border-bottom-color: var(--accent-magenta);
+  border-left-color: var(--accent-magenta);
+  animation: mob-spin 1.5s linear infinite reverse;
+  opacity: 0.85;
+}
+.mob-loader i:nth-child(3) {
+  inset: 18px;
+  border-top-color: var(--accent-blue);
+  animation: mob-spin 0.85s linear infinite;
+  opacity: 0.7;
+}
+.mob-loader b {
+  position: absolute;
+  inset: 26px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 14px var(--accent-cyan);
+  animation: mob-core 1.4s ease-in-out infinite;
+}
+
+@keyframes mob-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes mob-core {
+  0%,
+  100% {
+    transform: scale(0.72);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Skeleton shimmer for lists that are refreshing behind cached content. */
+.mob-skeleton {
+  height: 68px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  background: linear-gradient(
+    100deg,
+    rgba(120, 180, 220, 0.06) 30%,
+    rgba(41, 240, 224, 0.13) 50%,
+    rgba(120, 180, 220, 0.06) 70%
+  );
+  background-size: 220% 100%;
+  animation: mob-shimmer 1.3s ease-in-out infinite;
+}
+@keyframes mob-shimmer {
+  to {
+    background-position: -220% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mob-loader i,
+  .mob-loader b,
+  .mob-skeleton {
+    animation: none !important;
+  }
+}

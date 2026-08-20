@@ -4,6 +4,7 @@
 import { useEffect, useId, useRef } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useIsNarrow } from '../lib/useViewport';
+import { pushBackHandler } from '../mobile/backHandler';
 
 export interface ModalProps {
   title?: ReactNode;
@@ -75,7 +76,17 @@ export function Modal({
       }
     };
     window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
+    // An open dialog owns the Android back gesture: it should close the dialog
+    // and return to what was underneath, not navigate the shell. Inert on
+    // desktop, where nothing consults the stack.
+    const release = pushBackHandler(() => {
+      onCloseRef.current();
+      return true;
+    });
+    return () => {
+      window.removeEventListener('keydown', onKey, true);
+      release();
+    };
   }, []);
 
   return (

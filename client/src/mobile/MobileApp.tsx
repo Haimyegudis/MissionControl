@@ -68,15 +68,39 @@ const barStyle: CSSProperties = {
   paddingBottom: 'env(safe-area-inset-bottom)',
 };
 
+interface Location {
+  area: Area;
+  screen: string;
+}
+
+const HOME: Location = { area: 'jira', screen: 'dashboard' };
+
+function sameLocation(a: Location, b: Location): boolean {
+  return a.area === b.area && a.screen === b.screen;
+}
+
 export function MobileApp() {
   const session = useStore(sessionStore);
-  const [area, setArea] = useState<Area>('jira');
-  const [sub, setSub] = useState<Record<Area, string>>({
+  const [here, setHere] = useState<Location>(HOME);
+  // Where each area was left, so returning to a tab resumes it.
+  const [lastScreen, setLastScreen] = useState<Record<Area, string>>({
     jira: 'dashboard',
     testrail: 'cases',
     confluence: '',
     more: '',
   });
+  // Visited screens, most recent last. Back pops this before anything else.
+  const [history, setHistory] = useState<Location[]>([]);
+
+  const goTo = (next: Location) => {
+    setHere((prev) => {
+      if (!sameLocation(prev, next)) setHistory((h) => [...h.slice(-19), prev]);
+      return next;
+    });
+    setLastScreen((prev) => ({ ...prev, [next.area]: next.screen }));
+  };
+
+  const area = here.area;
 
   useThemeSync();
   // Without this the splash overlay never leaves and the app looks stuck on
@@ -85,19 +109,25 @@ export function MobileApp() {
   useSplashDismiss(600);
   useEffect(() => {
     void loadSettings();
+    // Opt the phone into its own palette. The desktop keeps the theme it had.
+    document.documentElement.dataset.mobile = '1';
   }, []);
 
-  // Back gesture: leave a sub-screen first, then return to Jira → Dashboard,
-  // and only ask to exit once already there. Two presses to close, as on any
-  // Android app.
+  // Back gesture, in order: the previously visited screen, then the main
+  // screen, then a confirmed exit. Dialogs, sheets and sub-screens claim the
+  // press before this runs — they sit higher on the handler stack.
   const exitArmed = useRef(false);
   useEffect(
     () =>
       pushBackHandler(() => {
-        const home = area === 'jira' && sub.jira === 'dashboard';
-        if (!home) {
-          setArea('jira');
-          setSub((prev) => ({ ...prev, jira: 'dashboard' }));
+        if (history.length > 0) {
+          const previous = history[history.length - 1];
+          setHistory((h) => h.slice(0, -1));
+          setHere(previous);
+          return true;
+        }
+        if (!sameLocation(here, HOME)) {
+          setHere(HOME);
           return true;
         }
         if (!exitArmed.current) {
@@ -110,7 +140,7 @@ export function MobileApp() {
         }
         return false; // second press within the window closes the app
       }),
-    [area, sub.jira],
+    [here, history],
   );
 
   if (session.phase !== 'connected') {
@@ -122,7 +152,7 @@ export function MobileApp() {
     );
   }
 
-  const current = sub[area];
+  const current = here.screen;
   const screen = (() => {
     if (area === 'confluence') return <MobileConfluence />;
     if (area === 'more') return <MobileSettings />;
@@ -156,7 +186,7 @@ export function MobileApp() {
                   key={t.id}
                   role="tab"
                   aria-selected={active}
-                  onClick={() => setSub((prev) => ({ ...prev, [area]: t.id }))}
+                  onClick={() => goTo({ area, screen: t.id })}
                   style={{
                     ...tapReset,
                     flex: 1,
@@ -189,7 +219,7 @@ export function MobileApp() {
               <button
                 key={a.id}
                 aria-current={active ? 'page' : undefined}
-                onClick={() => setArea(a.id)}
+                onClick={() => goTo({ area: a.id, screen: lastScreen[a.id] || (SUB[a.id][0]?.id ?? '') })}
                 style={{
                   ...tapReset,
                   flex: 1,

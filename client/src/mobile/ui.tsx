@@ -471,7 +471,39 @@ export function Empty({ children }: { children: ReactNode }) {
 }
 
 export function Loading({ what = 'Loading' }: { what?: string }) {
-  return <Empty>{what}…</Empty>;
+  return (
+    <div style={{ padding: '52px 24px', textAlign: 'center' }}>
+      <div className="mob-loader" aria-hidden>
+        <i />
+        <i />
+        <i />
+        <b />
+      </div>
+      <div
+        style={{
+          marginTop: 18,
+          color: 'var(--muted)',
+          fontSize: 11.5,
+          letterSpacing: '0.22em',
+          textTransform: 'uppercase',
+        }}
+        role="status"
+      >
+        {what}
+      </div>
+    </div>
+  );
+}
+
+/** Placeholder rows for a list that is loading for the first time. */
+export function Skeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <div aria-hidden>
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="mob-skeleton" />
+      ))}
+    </div>
+  );
 }
 
 export function ErrorNote({ children, onRetry }: { children: ReactNode; onRetry?: () => void }) {
