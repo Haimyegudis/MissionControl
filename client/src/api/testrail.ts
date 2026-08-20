@@ -98,6 +98,7 @@ export const trApi = {
   disconnect: () => del<void>('/api/testrail/session'),
 
   // ---- reference data ----
+  user: (userId: number) => get<TrUser>(`/api/testrail/users/${userId}`),
   meta: (projectId?: number | null, force?: boolean) =>
     get<TrMeta>(`/api/testrail/meta?projectId=${projectId ?? ''}${freshAmp(force)}`),
   projects: (force?: boolean) => get<TrProject[]>(`/api/testrail/projects${fresh(force)}`),

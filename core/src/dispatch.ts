@@ -629,6 +629,12 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
       return NOT_FOUND;
     }
 
+    if (method === 'GET' && head === 'users' && second !== undefined) {
+      const userId = requireInt(second, 'userId');
+      // Cached like any other reference lookup; names change rarely.
+      return ok(await service.cachedJson(`user:${userId}`, () => service.requireClient().getUser(userId), fresh));
+    }
+
     if (method === 'GET' && head === 'meta') {
       const projectId = optInt(query.get('projectId'));
       return ok(await service.cachedJson(`meta:${projectId ?? ''}`, () => service.fetchMeta(projectId), fresh));

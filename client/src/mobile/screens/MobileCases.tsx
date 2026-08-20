@@ -151,13 +151,56 @@ export function MobileCases() {
   const sections = res.data?.sections ?? [];
   const needle = query.trim().toLowerCase();
 
-  /** id → display name, the same resolution the desktop filter uses. */
+  /**
+   * Names resolved one id at a time.
+   *
+   * get_users is admin-only on this TestRail and returns an empty list, so the
+   * people map and meta.users are both empty on the phone and every owner and
+   * assignee filter had nothing to match. The ids are on the cases, so the
+   * distinct ones are looked up individually and written back to the shared
+   * people store, which persists — the cost is paid once.
+   */
+  const [resolved, setResolved] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const known = { ...st.people, ...resolved };
+    const ids = new Set<number>();
+    for (const c of allCases) {
+      if (c.ownerId !== null && !known[String(c.ownerId)]) ids.add(c.ownerId);
+      if (c.assignedToId !== null && !known[String(c.assignedToId)]) ids.add(c.assignedToId);
+    }
+    if (ids.size === 0) return;
+    let cancelled = false;
+    // Bounded: a suite rarely has many distinct people, and this runs once.
+    void Promise.all(
+      [...ids].slice(0, 60).map((id) =>
+        trApi
+          .user(id)
+          .then((u) => [String(id), u.name] as const)
+          .catch(() => null),
+      ),
+    ).then((pairs) => {
+      if (cancelled) return;
+      const found = Object.fromEntries(pairs.filter((x): x is readonly [string, string] => x !== null));
+      if (Object.keys(found).length === 0) return;
+      setResolved((prev) => ({ ...prev, ...found }));
+      // Persist so other screens and later launches start with the names.
+      void trApi.setPeople({ ...st.people, ...found }).catch(() => undefined);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allCases, st.people]);
+
   const nameOf = useCallback(
     (id: number | null) => {
       if (id === null) return '';
-      return st.people[String(id)] ?? st.meta?.users.find((u) => u.id === id)?.name ?? '';
+      return (
+        st.people[String(id)] ?? resolved[String(id)] ?? st.meta?.users.find((u) => u.id === id)?.name ?? ''
+      );
     },
-    [st.people, st.meta],
+    [st.people, st.meta, resolved],
   );
 
   // filterCases is the desktop's own function, so owner/assignee/title behave
@@ -179,6 +222,19 @@ export function MobileCases() {
       ),
     [allCases, st.filters, nameOf],
   );
+
+  /**
+   * Selectable users: the TestRail people map merged with the project's meta
+   * users. Free text alone meant you had to already know how a name was
+   * spelled before the filter could match it.
+   */
+  const userOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const name of Object.values(st.people)) if (name) names.add(name);
+    for (const name of Object.values(resolved)) if (name) names.add(name);
+    for (const u of st.meta?.users ?? []) if (u.name) names.add(u.name);
+    return [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  }, [st.people, st.meta, resolved]);
 
   const activeFilters =
     (st.filters.titleContains.trim() ? 1 : 0) +
@@ -298,6 +354,7 @@ export function MobileCases() {
       {res.data && roots.length === 0 && orphans.length === 0 ? <Empty>No cases match.</Empty> : null}
 
       {roots
+        .filter((node) => (subtreeIndex.get(node.section.id)?.length ?? 0) > 0)
         .filter((node) => matchesDeep(node, needle))
         .map((node) => (
           <SectionBranch
@@ -380,12 +437,18 @@ export function MobileCases() {
           placeholder="Any title"
         />
         <Label>Owner</Label>
-        <Input value={st.filters.ownerText} onChange={(v) => setFilters({ ownerText: v })} placeholder="Any owner" />
+        <UserField
+          value={st.filters.ownerText}
+          users={userOptions}
+          placeholder="Any owner"
+          onChange={(v) => setFilters({ ownerText: v })}
+        />
         <Label>Assigned to</Label>
-        <Input
+        <UserField
           value={st.filters.assigneeText}
-          onChange={(v) => setFilters({ assigneeText: v })}
+          users={userOptions}
           placeholder="Anyone"
+          onChange={(v) => setFilters({ assigneeText: v })}
         />
         <div style={{ marginTop: 12 }}>
           <Muted>
@@ -571,6 +634,7 @@ function SectionBranch({
       {expanded ? (
         <div style={{ marginTop: 6, marginLeft: 8 }}>
           {node.children
+            .filter((child) => (subtreeIndex.get(child.section.id)?.length ?? 0) > 0)
             .filter((child) => matchesDeep(child, needle))
             .map((child) => (
               <SectionBranch
@@ -604,6 +668,101 @@ function SectionBranch({
               Show more · {shownCases.length - limit} left
             </button>
           ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A name field backed by the real user list. Typing still filters freely — the
+ * store keeps plain text so the desktop and the phone share one filter shape —
+ * but the known names are listed so they can be picked rather than recalled.
+ */
+function UserField({
+  value,
+  users,
+  placeholder,
+  onChange,
+}: {
+  value: string;
+  users: string[];
+  placeholder: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const q = value.trim().toLowerCase();
+  const matches = q ? users.filter((u) => u.toLowerCase().includes(q)) : users;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setOpen(true)}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            minHeight: 44,
+            padding: '0 12px',
+            borderRadius: 10,
+            border: '1px solid var(--border-soft)',
+            background: 'var(--input-bg)',
+            color: 'var(--text-primary)',
+            fontSize: 15,
+          }}
+        />
+        <button
+          className="btn"
+          onClick={() => setOpen((v) => !v)}
+          style={{ ...tapReset, minHeight: 44, padding: '0 12px', fontSize: 12 }}
+        >
+          {open ? 'Hide' : 'List'}
+        </button>
+      </div>
+
+      {open ? (
+        <div
+          style={{
+            maxHeight: '30vh',
+            overflowY: 'auto',
+            border: '1px solid var(--border-soft)',
+            borderRadius: 10,
+            marginTop: 6,
+          }}
+        >
+          {matches.length === 0 ? (
+            <div style={{ padding: 12 }}>
+              <Muted>No matching user.</Muted>
+            </div>
+          ) : (
+            matches.slice(0, 200).map((name) => (
+              <button
+                key={name}
+                onClick={() => {
+                  onChange(name);
+                  setOpen(false);
+                }}
+                style={{
+                  ...tapReset,
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  minHeight: 44,
+                  padding: '0 12px',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: '1px solid var(--border-soft)',
+                  color: 'var(--text-primary)',
+                  fontSize: 14,
+                }}
+              >
+                {name}
+              </button>
+            ))
+          )}
         </div>
       ) : null}
     </div>

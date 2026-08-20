@@ -31,6 +31,7 @@ export interface TestRailClientLike {
   getSections(projectId: number, suiteId?: number | null): Promise<TrSection[]>;
   getCases(projectId: number, suiteId?: number | null, sectionId?: number | null): Promise<TrCase[]>;
   getCurrentUser(): Promise<TrUser>;
+  getUser(userId: number): Promise<TrUser>;
   getUsers(projectId?: number | null): Promise<TrUser[]>;
   getStatuses(): Promise<TrStatus[]>;
   getCaseTypes(): Promise<TrCaseType[]>;
@@ -217,6 +218,15 @@ export class TestRailClient implements TestRailClientLike {
 
   async getCurrentUser(): Promise<TrUser> {
     return readUser(await this.http.getJson('get_current_user'));
+  }
+
+  /**
+   * A single user by id. get_users is admin-only on this instance and returns
+   * nothing, so owner and assignee names have to be resolved one at a time
+   * from the ids the cases carry.
+   */
+  async getUser(userId: number): Promise<TrUser> {
+    return readUser(await this.http.getJson(`get_user/${userId}`));
   }
 
   getUsers(projectId?: number | null): Promise<TrUser[]> {
