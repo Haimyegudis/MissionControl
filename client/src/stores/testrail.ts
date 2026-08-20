@@ -171,6 +171,14 @@ async function afterConnect(session: TrSessionStatus): Promise<void> {
       people[String(session.user.id)] = session.user.name;
       void trApi.setPeople(people).catch(() => {});
     }
+    // The desktop imports %APPDATA%\TestRailWeb\people.json once; the phone
+    // carries the same map, embedded at build time, because TestRail will not
+    // list users for a non-admin account. Server-side names still win.
+    const seed = typeof __MC_PEOPLE__ === 'object' ? __MC_PEOPLE__ : {};
+    for (const [id, personName] of Object.entries(seed)) {
+      if (!people[id]) people[id] = personName;
+    }
+
     const projects = filterIndigoProjects(allProjects);
     const remembered = Number(localStorage.getItem(LS_PROJECT));
     const start = projects.find((p) => p.id === remembered) ?? projects[0] ?? null;

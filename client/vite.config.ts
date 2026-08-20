@@ -83,11 +83,42 @@ function mobileSplash(enabled: boolean) {
   };
 }
 
+/**
+ * TestRail people seed for the Android build.
+ *
+ * TestRail's get_users is admin-only on this instance and returns nothing, so
+ * names cannot be listed from the API. The desktop solved this with a curated
+ * %APPDATA%\TestRailWeb\people.json, imported once into its database. A phone
+ * cannot read that file, so it is embedded at build time instead.
+ *
+ * The names go into the APK, never into the repository: this reads the file
+ * from the build machine and both dist/ and the Android assets are gitignored.
+ * Absent file simply means an empty seed and the per-id lookup still applies.
+ */
+function readPeopleSeed(): Record<string, string> {
+  try {
+    const appData = process.env.APPDATA ?? '';
+    if (!appData) return {};
+    const file = path.join(appData, 'TestRailWeb', 'people.json');
+    const parsed: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const out: Record<string, string> = {};
+    for (const [id, name] of Object.entries(parsed as Record<string, unknown>)) {
+      if (Number.isInteger(Number(id)) && typeof name === 'string' && name.trim()) out[id] = name;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 export default defineConfig({
   plugins: [react(), mobileSplash(process.env.MC_TARGET === 'android')],
   define: {
     // 'android' drops the desktop-only view chunks at build time.
     __MC_TARGET__: JSON.stringify(process.env.MC_TARGET === 'android' ? 'android' : 'desktop'),
+    // Only the Android build carries the seed; the desktop reads the real file.
+    __MC_PEOPLE__: JSON.stringify(process.env.MC_TARGET === 'android' ? readPeopleSeed() : {}),
   },
   resolve: {
     // Resolve the workspace package to TypeScript source so the client does
