@@ -2,30 +2,40 @@
 //
 // Reuses columnForStatus so the phone buckets issues exactly the way the
 // desktop Kanban does — two different answers to "what does In Review mean"
-// would be worse than none. Cancelled is added on top: the Kanban folds
-// rejected work into To Do, which is wrong in a list you are reading to decide
-// what to do next.
+// would be worse than none.
 
 import { useState, type ReactNode } from 'react';
 import { columnForStatus } from '../lib/kanban';
 import type { JiraIssue } from '../types';
 import { tapReset } from './ui';
 
-export const STATUS_ORDER = ['To Do', 'In Progress', 'In Review', 'On Hold', 'Done', 'Cancelled'] as const;
+export const STATUS_ORDER = ['To Do', 'In Progress', 'In Review', 'On Hold', 'Done'] as const;
 export type StatusGroup = (typeof STATUS_ORDER)[number];
 
-const CANCELLED = ['cancel', 'reject', 'abandon', 'duplicate', "won't do", 'wont do'];
-
 export function groupForIssue(issue: JiraIssue): StatusGroup {
-  const s = (issue.status ?? '').toLowerCase();
-  if (CANCELLED.some((m) => s.includes(m))) return 'Cancelled';
   return columnForStatus(issue.status) as StatusGroup;
 }
 
-export function groupByStatus(issues: JiraIssue[]): Array<{ group: StatusGroup; issues: JiraIssue[] }> {
+export interface GroupOptions {
+  /**
+   * Keep only sprint-committed work in To Do. Without this the bucket fills
+   * with the whole backlog, which buries what is actually planned for now.
+   * Incidents are not sprint-scoped, so they leave it off.
+   */
+  toDoSprintOnly?: boolean;
+}
+
+export function groupByStatus(
+  issues: JiraIssue[],
+  { toDoSprintOnly = false }: GroupOptions = {},
+): Array<{ group: StatusGroup; issues: JiraIssue[] }> {
   const buckets = new Map<StatusGroup, JiraIssue[]>();
   for (const g of STATUS_ORDER) buckets.set(g, []);
-  for (const issue of issues) buckets.get(groupForIssue(issue))?.push(issue);
+  for (const issue of issues) {
+    const group = groupForIssue(issue);
+    if (group === 'To Do' && toDoSprintOnly && !issue.sprint) continue;
+    buckets.get(group)?.push(issue);
+  }
   return STATUS_ORDER.map((group) => ({ group, issues: buckets.get(group) ?? [] })).filter(
     (b) => b.issues.length > 0,
   );
@@ -37,7 +47,6 @@ export const GROUP_TONE: Record<StatusGroup, string> = {
   'In Review': 'var(--accent-yellow)',
   'On Hold': 'var(--accent-orange)',
   Done: 'var(--accent-green)',
-  Cancelled: 'var(--accent-red)',
 };
 
 /** Collapsible status section. Open by default; the count stays visible. */

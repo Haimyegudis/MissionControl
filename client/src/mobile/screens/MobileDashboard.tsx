@@ -15,9 +15,13 @@ import { useCached } from '../cache';
 import { groupByStatus, StatusSection } from '../statusGroups';
 import { Empty, ErrorNote, ListCard, Loading, Muted, Pill, Screen, StatGrid, StatTile, tapReset } from '../ui';
 
-/** My open work, which is what the status groups are built from. */
+/**
+ * My work. Unresolved issues plus anything finished recently, so the Done
+ * column reflects what was actually completed rather than staying empty.
+ */
 const MY_WORK_JQL =
-  'assignee = currentUser() AND resolution = Unresolved ORDER BY updated DESC';
+  'assignee = currentUser() AND (resolution = Unresolved OR resolutiondate >= -14d) ' +
+  'ORDER BY updated DESC';
 
 export function MobileDashboard() {
   const snap = useCached<DashboardSnapshot>('dashboard:snapshot', () => dashboardApi.snapshot(), {
@@ -35,7 +39,8 @@ export function MobileDashboard() {
   }, [snap, mine]);
 
   const busy = snap.refreshing || mine.refreshing;
-  const groups = groupByStatus(mine.data?.items ?? []);
+  // To Do is sprint-only: the backlog would otherwise bury the planned work.
+  const groups = groupByStatus(mine.data?.items ?? [], { toDoSprintOnly: true });
 
   return (
     <Screen

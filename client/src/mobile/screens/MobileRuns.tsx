@@ -8,7 +8,7 @@
 // "Assign to epic" is TestRail's `refs` field — the same field the desktop
 // uses to link a run back to a Jira key.
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { trApi } from '../../api/testrail';
 import { initTestRail, selectProject, trStore } from '../../stores/testrail';
 import { useStore } from '../../stores/useStore';
@@ -28,6 +28,13 @@ const RESULTS: ReadonlyArray<{ id: number; label: string; tone: string }> = [
 
 export function MobileRuns() {
   const st = useStore(trStore);
+
+  // The store starts at 'idle', not 'disconnected'. Booting only from the
+  // disconnected branch meant a fresh mount never loaded anything and the
+  // project list came up empty.
+  useEffect(() => {
+    void initTestRail();
+  }, []);
   const [projectOpen, setProjectOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [openRun, setOpenRun] = useState<TrRun | null>(null);
@@ -43,8 +50,15 @@ export function MobileRuns() {
     res.refresh();
   }, [res]);
 
+  if (st.phase === 'idle' || st.phase === 'loading') {
+    return (
+      <Screen kicker="TestRail" title="Runs">
+        <Loading what="Connecting to TestRail" />
+      </Screen>
+    );
+  }
+
   if (st.phase === 'disconnected') {
-    void initTestRail();
     return (
       <Screen kicker="TestRail" title="Runs">
         <Empty>
@@ -60,7 +74,7 @@ export function MobileRuns() {
     return <RunDetail run={openRun} onBack={() => setOpenRun(null)} onChanged={reload} />;
   }
 
-  const project = st.allProjects.find((p) => p.id === st.projectId);
+  const project = st.projects.find((p) => p.id === st.projectId);
   const runs = res.data ?? [];
 
   return (
@@ -137,7 +151,7 @@ export function MobileRuns() {
       })}
 
       <Sheet open={projectOpen} title="Project" onClose={() => setProjectOpen(false)}>
-        {st.allProjects.map((p) => (
+        {st.projects.map((p) => (
           <button
             key={p.id}
             onClick={() => {

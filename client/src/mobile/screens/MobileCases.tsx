@@ -6,7 +6,7 @@
 // mutates happens in a bottom sheet — one job at a time, full width, with room
 // to tap.
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { trApi } from '../../api/testrail';
 import { ensureCases, ensureSections, initTestRail, selectProject, trStore } from '../../stores/testrail';
 import { useStore } from '../../stores/useStore';
@@ -31,6 +31,13 @@ function stepsOf(c: TrCase): StepRow[] {
 
 export function MobileCases() {
   const st = useStore(trStore);
+
+  // The store starts at 'idle', not 'disconnected'. Booting only from the
+  // disconnected branch meant a fresh mount never loaded anything and the
+  // project list came up empty.
+  useEffect(() => {
+    void initTestRail();
+  }, []);
   const [query, setQuery] = useState('');
   const [projectOpen, setProjectOpen] = useState(false);
   const [editing, setEditing] = useState<{ existing: TrCase | null } | null>(null);
@@ -76,8 +83,15 @@ export function MobileCases() {
     return [...map.entries()].map(([sectionId, items]) => ({ sectionId, items }));
   }, [cases, needle]);
 
+  if (st.phase === 'idle' || st.phase === 'loading') {
+    return (
+      <Screen kicker="TestRail" title="Cases">
+        <Loading what="Connecting to TestRail" />
+      </Screen>
+    );
+  }
+
   if (st.phase === 'disconnected') {
-    void initTestRail();
     return (
       <Screen kicker="TestRail" title="Cases">
         <Empty>
@@ -89,7 +103,7 @@ export function MobileCases() {
     );
   }
 
-  const project = st.allProjects.find((p) => p.id === st.projectId);
+  const project = st.projects.find((p) => p.id === st.projectId);
   const selCount = selected.size;
 
   return (
@@ -199,7 +213,7 @@ export function MobileCases() {
       ))}
 
       <Sheet open={projectOpen} title="Project" onClose={() => setProjectOpen(false)}>
-        {st.allProjects.map((p) => (
+        {st.projects.map((p) => (
           <button
             key={p.id}
             onClick={() => {
