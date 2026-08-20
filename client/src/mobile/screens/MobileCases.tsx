@@ -21,6 +21,54 @@ interface StepRow {
   expected: string;
 }
 
+/** Section → subsection → cases. TrSection carries parentId, so the tree is
+ *  reconstructed rather than flattened into paths. */
+interface SectionNode {
+  section: TrSection;
+  children: SectionNode[];
+  cases: TrCase[];
+}
+
+function buildTree(sections: TrSection[], cases: TrCase[]): { roots: SectionNode[]; orphans: TrCase[] } {
+  const nodes = new Map<number, SectionNode>();
+  for (const section of sections) nodes.set(section.id, { section, children: [], cases: [] });
+
+  const orphans: TrCase[] = [];
+  for (const c of cases) {
+    const node = c.sectionId === null ? undefined : nodes.get(c.sectionId);
+    if (node) node.cases.push(c);
+    else orphans.push(c);
+  }
+
+  const roots: SectionNode[] = [];
+  for (const node of nodes.values()) {
+    const parent = node.section.parentId === null ? undefined : nodes.get(node.section.parentId);
+    if (parent) parent.children.push(node);
+    else roots.push(node);
+  }
+
+  const order = (a: SectionNode, b: SectionNode) => a.section.displayOrder - b.section.displayOrder;
+  const sortDeep = (list: SectionNode[]) => {
+    list.sort(order);
+    for (const n of list) sortDeep(n.children);
+  };
+  sortDeep(roots);
+  return { roots, orphans };
+}
+
+/** Every case at or below a node — what ticking a section selects. */
+function casesUnder(node: SectionNode): TrCase[] {
+  return [...node.cases, ...node.children.flatMap(casesUnder)];
+}
+
+/** Does any case in this subtree match the search? Keeps parents visible. */
+function matchesDeep(node: SectionNode, needle: string): boolean {
+  if (!needle) return true;
+  if (node.section.name.toLowerCase().includes(needle)) return true;
+  if (node.cases.some((c) => c.title.toLowerCase().includes(needle) || String(c.id).includes(needle))) return true;
+  return node.children.some((child) => matchesDeep(child, needle));
+}
+
 /**
  * Read the step rows off a case.
  *
@@ -80,19 +128,11 @@ export function MobileCases() {
   const sections = res.data?.sections ?? [];
   const needle = query.trim().toLowerCase();
 
-  const groups = useMemo(() => {
-    const shown = needle
-      ? cases.filter((c) => c.title.toLowerCase().includes(needle) || String(c.id).includes(needle))
-      : cases;
-    const map = new Map<number, TrCase[]>();
-    for (const c of shown) {
-      const id = c.sectionId ?? 0;
-      const list = map.get(id);
-      if (list) list.push(c);
-      else map.set(id, [c]);
-    }
-    return [...map.entries()].map(([sectionId, items]) => ({ sectionId, items }));
-  }, [cases, needle]);
+  const { roots, orphans } = useMemo(() => buildTree(sections, cases), [sections, cases]);
+  const visibleCaseIds = useMemo(
+    () => [...roots.flatMap(casesUnder), ...orphans].map((c) => c.id),
+    [roots, orphans],
+  );
 
   if (st.phase === 'idle' || st.phase === 'loading') {
     return (
@@ -170,8 +210,7 @@ export function MobileCases() {
         <button
           className="btn"
           onClick={() => {
-            const visibleIds = groups.flatMap((g) => g.items.map((c) => c.id));
-            setSelected((prev) => (prev.size >= visibleIds.length ? new Set() : new Set(visibleIds)));
+            setSelected((prev) => (prev.size >= visibleCaseIds.length ? new Set() : new Set(visibleCaseIds)));
           }}
           style={{ ...tapReset, flex: 1, minHeight: 44, justifyContent: 'center', fontSize: 13 }}
         >
@@ -197,75 +236,44 @@ export function MobileCases() {
 
       {res.error ? <ErrorNote onRetry={reload}>{res.error}</ErrorNote> : null}
       {res.loading ? <Loading what="Loading cases" /> : null}
-      {res.data && groups.length === 0 ? <Empty>No cases match.</Empty> : null}
+      {res.data && roots.length === 0 && orphans.length === 0 ? <Empty>No cases match.</Empty> : null}
 
-      {groups.map(({ sectionId, items }) => (
-        <section key={sectionId} style={{ marginBottom: 12 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '6px 4px',
-              borderBottom: '1px solid var(--border-soft)',
-              marginBottom: 8,
+      {roots
+        .filter((node) => matchesDeep(node, needle))
+        .map((node) => (
+          <SectionBranch
+            key={node.section.id}
+            node={node}
+            needle={needle}
+            depth={0}
+            selected={selected}
+            setSelected={setSelected}
+            onEdit={(c) => setEditing({ existing: c })}
+            onTransfer={(mode, ids) => {
+              setSelected(new Set(ids));
+              setTransfer(mode);
             }}
-          >
-            <span
-              style={{
-                flex: 1,
-                minWidth: 0,
-                fontSize: 11,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: 'var(--muted)',
-                overflowWrap: 'anywhere',
-              }}
-            >
-              {sectionPath(sectionId, sections, st.suites, st.selSuiteId === 'all')} · {items.length}
-            </span>
-            <button
-              className="btn"
-              onClick={() =>
-                setSelected((prev) => {
-                  const next = new Set(prev);
-                  const every = items.every((c) => next.has(c.id));
-                  for (const c of items) {
-                    if (every) next.delete(c.id);
-                    else next.add(c.id);
-                  }
-                  return next;
-                })
-              }
-              style={{ ...tapReset, minHeight: 34, padding: '0 10px', fontSize: 11.5 }}
-            >
-              All
-            </button>
-          </div>
-          {items.slice(0, 200).map((c) => (
+          />
+        ))}
+
+      {orphans.length > 0 ? (
+        <div style={{ marginTop: 12 }}>
+          <Muted>Cases with no section</Muted>
+          {orphans.map((c) => (
             <CaseCard
               key={c.id}
               tcase={c}
               selected={selected.has(c.id)}
-              onToggle={() =>
-                setSelected((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(c.id)) next.delete(c.id);
-                  else next.add(c.id);
-                  return next;
-                })
-              }
+              onToggle={() => toggleOne(setSelected, c.id)}
               onEdit={() => setEditing({ existing: c })}
               onTransfer={(mode) => {
-                // Acting on one card targets that card, not the checkbox
-                // selection — the desktop drawer behaves the same way.
                 setSelected(new Set([c.id]));
                 setTransfer(mode);
               }}
             />
           ))}
-        </section>
-      ))}
+        </div>
+      ) : null}
 
       <Sheet open={projectOpen} title="Project" onClose={() => setProjectOpen(false)}>
         {st.projects.map((p) => (
@@ -324,6 +332,8 @@ export function MobileCases() {
         <TransferSheet
           mode={transfer}
           ids={[...selected]}
+          sourceSections={sections}
+          sourceCases={cases}
           onClose={() => setTransfer(null)}
           onDone={() => {
             setTransfer(null);
@@ -333,6 +343,147 @@ export function MobileCases() {
         />
       ) : null}
     </Screen>
+  );
+}
+
+function toggleOne(
+  setSelected: React.Dispatch<React.SetStateAction<ReadonlySet<number>>>,
+  id: number,
+): void {
+  setSelected((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
+}
+
+/**
+ * One section and everything beneath it. Collapsible, and its checkbox covers
+ * the whole subtree — ticking a section selects its subsections' cases too,
+ * which is what "move the section" means in practice.
+ */
+function SectionBranch({
+  node,
+  needle,
+  depth,
+  selected,
+  setSelected,
+  onEdit,
+  onTransfer,
+}: {
+  node: SectionNode;
+  needle: string;
+  depth: number;
+  selected: ReadonlySet<number>;
+  setSelected: React.Dispatch<React.SetStateAction<ReadonlySet<number>>>;
+  onEdit: (c: TrCase) => void;
+  onTransfer: (mode: 'copy' | 'move', ids: number[]) => void;
+}) {
+  const [open, setOpen] = useState(depth < 1);
+  const subtree = casesUnder(node);
+  const allSelected = subtree.length > 0 && subtree.every((c) => selected.has(c.id));
+  const shownCases = needle
+    ? node.cases.filter((c) => c.title.toLowerCase().includes(needle) || String(c.id).includes(needle))
+    : node.cases;
+
+  return (
+    <div style={{ marginLeft: depth === 0 ? 0 : 10, marginBottom: 6 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '6px 8px',
+          background: depth === 0 ? 'var(--bg-panel-high)' : 'transparent',
+          border: '1px solid var(--border-soft)',
+          borderLeft: `3px solid ${depth === 0 ? 'var(--accent-cyan)' : 'var(--border-strong)'}`,
+          borderRadius: 9,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={allSelected}
+          aria-label={`Select all cases in ${node.section.name}`}
+          onChange={() =>
+            setSelected((prev) => {
+              const next = new Set(prev);
+              for (const c of subtree) {
+                if (allSelected) next.delete(c.id);
+                else next.add(c.id);
+              }
+              return next;
+            })
+          }
+          style={{ flexShrink: 0 }}
+        />
+        <button
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          style={{
+            ...tapReset,
+            flex: 1,
+            minWidth: 0,
+            minHeight: 38,
+            textAlign: 'left',
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-primary)',
+            fontSize: 13,
+            fontWeight: depth === 0 ? 650 : 500,
+            overflowWrap: 'anywhere',
+          }}
+        >
+          {open ? '▼' : '▶'} {node.section.name}{' '}
+          <span style={{ color: 'var(--muted)', fontWeight: 400 }}>· {subtree.length}</span>
+        </button>
+        <button
+          className="btn"
+          disabled={subtree.length === 0}
+          onClick={() => onTransfer('copy', subtree.map((c) => c.id))}
+          style={{ ...tapReset, minHeight: 32, padding: '0 8px', fontSize: 11 }}
+        >
+          Copy
+        </button>
+        <button
+          className="btn"
+          disabled={subtree.length === 0}
+          onClick={() => onTransfer('move', subtree.map((c) => c.id))}
+          style={{ ...tapReset, minHeight: 32, padding: '0 8px', fontSize: 11 }}
+        >
+          Move
+        </button>
+      </div>
+
+      {open ? (
+        <div style={{ marginTop: 6, marginLeft: 8 }}>
+          {node.children
+            .filter((child) => matchesDeep(child, needle))
+            .map((child) => (
+              <SectionBranch
+                key={child.section.id}
+                node={child}
+                needle={needle}
+                depth={depth + 1}
+                selected={selected}
+                setSelected={setSelected}
+                onEdit={onEdit}
+                onTransfer={onTransfer}
+              />
+            ))}
+          {shownCases.map((c) => (
+            <CaseCard
+              key={c.id}
+              tcase={c}
+              selected={selected.has(c.id)}
+              onToggle={() => toggleOne(setSelected, c.id)}
+              onEdit={() => onEdit(c)}
+              onTransfer={(mode) => onTransfer(mode, [c.id])}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -668,15 +819,20 @@ function CaseEditorSheet({
 function TransferSheet({
   mode,
   ids,
+  sourceSections,
+  sourceCases,
   onClose,
   onDone,
 }: {
   mode: 'copy' | 'move';
   ids: number[];
+  sourceSections: TrSection[];
+  sourceCases: TrCase[];
   onClose: () => void;
   onDone: () => void;
 }) {
   const st = useStore(trStore);
+  const [keepStructure, setKeepStructure] = useState(true);
   const [projectId, setProjectId] = useState<number | null>(st.projectId);
   const [suiteId, setSuiteId] = useState<number | null>(null);
   const [sectionId, setSectionId] = useState<number | null>(null);
@@ -724,12 +880,56 @@ function TransferSheet({
     };
   }, [projectId, suiteId]);
 
+  /**
+   * With structure on, the source sections holding the selected cases are
+   * recreated under the destination — parents before children — and each case
+   * lands in its own recreated section. TestRail's move_section cannot cross
+   * suites or projects, so rebuilding the shape and moving the cases is the
+   * only way to relocate a whole section elsewhere.
+   */
   const go = async () => {
-    if (sectionId === null) return;
+    if (sectionId === null || projectId === null) return;
     setBusy(true);
     try {
-      if (mode === 'copy') await trApi.copyCases(sectionId, ids);
-      else await trApi.moveCases(sectionId, suiteId, ids);
+      const chosen = new Set(ids);
+      const involved = new Set<number>();
+      for (const c of sourceCases) {
+        if (chosen.has(c.id) && c.sectionId !== null) involved.add(c.sectionId);
+      }
+
+      if (!keepStructure || involved.size <= 1) {
+        if (mode === 'copy') await trApi.copyCases(sectionId, ids);
+        else await trApi.moveCases(sectionId, suiteId, ids);
+      } else {
+        const byId = new Map(sourceSections.map((sec) => [sec.id, sec]));
+        // Parents first, so a child's new parent already exists.
+        const ordered = [...involved]
+          .map((id) => byId.get(id))
+          .filter((sec): sec is TrSection => sec !== undefined)
+          .sort((a, b) => a.depth - b.depth);
+
+        const created = new Map<number, number>();
+        for (const sec of ordered) {
+          const parentNew = sec.parentId !== null ? created.get(sec.parentId) : undefined;
+          const made = await trApi.addSection(projectId, {
+            suiteId,
+            parentId: parentNew ?? sectionId,
+            name: sec.name,
+            description: null,
+          });
+          created.set(sec.id, made.id);
+        }
+
+        for (const sec of ordered) {
+          const target = created.get(sec.id);
+          if (target === undefined) continue;
+          const batch = sourceCases.filter((c) => chosen.has(c.id) && c.sectionId === sec.id).map((c) => c.id);
+          if (batch.length === 0) continue;
+          if (mode === 'copy') await trApi.copyCases(target, batch);
+          else await trApi.moveCases(target, suiteId, batch);
+        }
+      }
+
       pushToast({ title: 'TestRail', body: `${ids.length} case(s) ${mode === 'copy' ? 'copied' : 'moved'}.` });
       onDone();
     } catch (e) {
@@ -755,6 +955,25 @@ function TransferSheet({
         </button>
       }
     >
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          minHeight: 48,
+          padding: '4px 2px',
+          borderBottom: '1px solid var(--border-soft)',
+        }}
+      >
+        <input type="checkbox" checked={keepStructure} onChange={(e) => setKeepStructure(e.target.checked)} />
+        <span style={{ fontSize: 14 }}>
+          Recreate section structure
+          <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
+            Off: every case lands directly in the chosen section.
+          </div>
+        </span>
+      </label>
+
       <Label>Project</Label>
       <Picker
         value={projectId}
