@@ -14,7 +14,7 @@ import { pushToast } from '../../stores/toasts';
 import { sectionPath } from '../../lib/testrail';
 import type { TrAddCasePayload, TrCase, TrSection, TrSuite } from '../../testrailTypes';
 import { invalidate, useCached } from '../cache';
-import { BarButton, Empty, ErrorNote, Loading, Muted, Screen, Sheet, tapReset } from '../ui';
+import { Empty, ErrorNote, Loading, Muted, Screen, Sheet, tapReset } from '../ui';
 
 interface StepRow {
   content: string;
@@ -163,16 +163,37 @@ export function MobileCases() {
         }}
       />
 
-      {selCount > 0 ? (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-          <BarButton onClick={() => setTransfer('copy')} badge={selCount}>
-            Copy to…
-          </BarButton>
-          <BarButton onClick={() => setTransfer('move')} badge={selCount}>
-            Move to…
-          </BarButton>
-        </div>
-      ) : null}
+      {/* Selection bar. Always visible so "select all" is reachable before
+          anything is ticked — previously the only way in was to find and tap a
+          checkbox first. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <button
+          className="btn"
+          onClick={() => {
+            const visibleIds = groups.flatMap((g) => g.items.map((c) => c.id));
+            setSelected((prev) => (prev.size >= visibleIds.length ? new Set() : new Set(visibleIds)));
+          }}
+          style={{ ...tapReset, flex: 1, minHeight: 44, justifyContent: 'center', fontSize: 13 }}
+        >
+          {selCount > 0 ? `Clear (${selCount})` : 'Select all'}
+        </button>
+        <button
+          className="btn"
+          disabled={selCount === 0}
+          onClick={() => setTransfer('copy')}
+          style={{ ...tapReset, flex: 1, minHeight: 44, justifyContent: 'center', fontSize: 13 }}
+        >
+          Copy…
+        </button>
+        <button
+          className="btn"
+          disabled={selCount === 0}
+          onClick={() => setTransfer('move')}
+          style={{ ...tapReset, flex: 1, minHeight: 44, justifyContent: 'center', fontSize: 13 }}
+        >
+          Move…
+        </button>
+      </div>
 
       {res.error ? <ErrorNote onRetry={reload}>{res.error}</ErrorNote> : null}
       {res.loading ? <Loading what="Loading cases" /> : null}
@@ -182,17 +203,44 @@ export function MobileCases() {
         <section key={sectionId} style={{ marginBottom: 12 }}>
           <div
             style={{
-              fontSize: 11,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              color: 'var(--muted)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
               padding: '6px 4px',
               borderBottom: '1px solid var(--border-soft)',
               marginBottom: 8,
-              overflowWrap: 'anywhere',
             }}
           >
-            {sectionPath(sectionId, sections, st.suites, st.selSuiteId === 'all')} · {items.length}
+            <span
+              style={{
+                flex: 1,
+                minWidth: 0,
+                fontSize: 11,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: 'var(--muted)',
+                overflowWrap: 'anywhere',
+              }}
+            >
+              {sectionPath(sectionId, sections, st.suites, st.selSuiteId === 'all')} · {items.length}
+            </span>
+            <button
+              className="btn"
+              onClick={() =>
+                setSelected((prev) => {
+                  const next = new Set(prev);
+                  const every = items.every((c) => next.has(c.id));
+                  for (const c of items) {
+                    if (every) next.delete(c.id);
+                    else next.add(c.id);
+                  }
+                  return next;
+                })
+              }
+              style={{ ...tapReset, minHeight: 34, padding: '0 10px', fontSize: 11.5 }}
+            >
+              All
+            </button>
           </div>
           {items.slice(0, 200).map((c) => (
             <CaseCard
@@ -276,9 +324,6 @@ export function MobileCases() {
         <TransferSheet
           mode={transfer}
           ids={[...selected]}
-          sections={sections}
-          suites={st.suites}
-          allSuites={st.selSuiteId === 'all'}
           onClose={() => setTransfer(null)}
           onDone={() => {
             setTransfer(null);
@@ -610,35 +655,81 @@ function CaseEditorSheet({
 
 /* -------------------------------------------------------------- transfer --- */
 
+/**
+ * Destination picker for copy and move.
+ *
+ * The first version only listed sections of the suite already on screen, so
+ * there was no way to send a case to another suite — let alone another
+ * project. This walks the real hierarchy: project, then suite, then section,
+ * each loaded on demand. Projects come from allProjects rather than the
+ * Indigo-scoped set, because a transfer target may legitimately live outside
+ * the working set.
+ */
 function TransferSheet({
   mode,
   ids,
-  sections,
-  suites,
-  allSuites,
   onClose,
   onDone,
 }: {
   mode: 'copy' | 'move';
   ids: number[];
-  sections: TrSection[];
-  suites: TrSuite[];
-  allSuites: boolean;
   onClose: () => void;
   onDone: () => void;
 }) {
-  const [target, setTarget] = useState<number | null>(sections[0]?.id ?? null);
+  const st = useStore(trStore);
+  const [projectId, setProjectId] = useState<number | null>(st.projectId);
+  const [suiteId, setSuiteId] = useState<number | null>(null);
+  const [sectionId, setSectionId] = useState<number | null>(null);
+  const [suites, setSuites] = useState<TrSuite[] | null>(null);
+  const [sections, setSections] = useState<TrSection[] | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Suites for the chosen project.
+  useEffect(() => {
+    let live = true;
+    setSuites(null);
+    setSuiteId(null);
+    setSections(null);
+    setSectionId(null);
+    if (projectId === null) return;
+    void trApi
+      .suites(projectId)
+      .then((list) => {
+        if (!live) return;
+        setSuites(list);
+        setSuiteId(list[0]?.id ?? null);
+      })
+      .catch(() => live && setSuites([]));
+    return () => {
+      live = false;
+    };
+  }, [projectId]);
+
+  // Sections for the chosen suite.
+  useEffect(() => {
+    let live = true;
+    setSections(null);
+    setSectionId(null);
+    if (projectId === null || suiteId === null) return;
+    void trApi
+      .sections(projectId, suiteId)
+      .then((list) => {
+        if (!live) return;
+        setSections(list);
+        setSectionId(list[0]?.id ?? null);
+      })
+      .catch(() => live && setSections([]));
+    return () => {
+      live = false;
+    };
+  }, [projectId, suiteId]);
+
   const go = async () => {
-    if (target === null) return;
+    if (sectionId === null) return;
     setBusy(true);
     try {
-      if (mode === 'copy') await trApi.copyCases(target, ids);
-      else {
-        const suiteId = sections.find((s) => s.id === target)?.suiteId ?? null;
-        await trApi.moveCases(target, suiteId, ids);
-      }
+      if (mode === 'copy') await trApi.copyCases(sectionId, ids);
+      else await trApi.moveCases(sectionId, suiteId, ids);
       pushToast({ title: 'TestRail', body: `${ids.length} case(s) ${mode === 'copy' ? 'copied' : 'moved'}.` });
       onDone();
     } catch (e) {
@@ -656,7 +747,7 @@ function TransferSheet({
       footer={
         <button
           className="btn btn-primary"
-          disabled={busy || target === null}
+          disabled={busy || sectionId === null}
           onClick={() => void go()}
           style={{ ...tapReset, width: '100%', minHeight: 46, justifyContent: 'center' }}
         >
@@ -664,15 +755,71 @@ function TransferSheet({
         </button>
       }
     >
-      <Muted>Destination section — a section in another suite moves the cases across suites.</Muted>
-      <div style={{ marginTop: 8 }}>
-        {sections.map((sec) => (
-          <button key={sec.id} onClick={() => setTarget(sec.id)} style={rowStyle(sec.id === target)}>
-            {sectionPath(sec.id, sections, suites, allSuites)}
-          </button>
-        ))}
-      </div>
+      <Label>Project</Label>
+      <Picker
+        value={projectId}
+        options={st.allProjects.map((p) => ({ id: p.id, label: p.name }))}
+        onChange={setProjectId}
+      />
+
+      <Label>Suite</Label>
+      {suites === null ? (
+        <Muted>Loading suites…</Muted>
+      ) : suites.length === 0 ? (
+        <Muted>No suites in this project.</Muted>
+      ) : (
+        <Picker value={suiteId} options={suites.map((x) => ({ id: x.id, label: x.name }))} onChange={setSuiteId} />
+      )}
+
+      <Label>Section</Label>
+      {sections === null ? (
+        <Muted>Loading sections…</Muted>
+      ) : sections.length === 0 ? (
+        <Muted>No sections in this suite.</Muted>
+      ) : (
+        <div style={{ maxHeight: '38vh', overflowY: 'auto' }}>
+          {sections.map((sec) => (
+            <button key={sec.id} onClick={() => setSectionId(sec.id)} style={rowStyle(sec.id === sectionId)}>
+              {'\u00a0'.repeat(Math.max(0, (sec.depth ?? 0) * 2))}
+              {sec.name}
+            </button>
+          ))}
+        </div>
+      )}
     </Sheet>
+  );
+}
+
+function Picker({
+  value,
+  options,
+  onChange,
+}: {
+  value: number | null;
+  options: Array<{ id: number; label: string }>;
+  onChange: (id: number) => void;
+}) {
+  return (
+    <select
+      value={value ?? ''}
+      onChange={(e) => onChange(Number(e.target.value))}
+      style={{
+        width: '100%',
+        minHeight: 44,
+        borderRadius: 10,
+        border: '1px solid var(--border-soft)',
+        background: 'var(--input-bg)',
+        color: 'var(--text-primary)',
+        fontSize: 15,
+        padding: '0 10px',
+      }}
+    >
+      {options.map((o) => (
+        <option key={o.id} value={o.id}>
+          {o.label}
+        </option>
+      ))}
+    </select>
   );
 }
 
