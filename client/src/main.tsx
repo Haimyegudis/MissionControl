@@ -53,6 +53,12 @@ function showLocked(): void {
 }
 
 async function startNative(): Promise<boolean> {
+  // Touch styling and the flight-deck theme live here, loaded only in the
+  // native shell so the desktop bundle never sees them.
+  // Stamped before the first paint, because useIsNarrow reads it during
+  // render — setting it in an effect would render one desktop frame first.
+  document.documentElement.dataset.mobile = '1';
+  await import('./mobile/mobile.css');
   const { bootstrapNative, installAppListeners } = await import('./native/bootstrap');
   const { unlocked } = await bootstrapNative();
   if (!unlocked) {

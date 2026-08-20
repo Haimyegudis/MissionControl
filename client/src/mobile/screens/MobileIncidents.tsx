@@ -8,6 +8,7 @@
 
 import { useCallback } from 'react';
 import { incidents as incidentsApi } from '../../api/client';
+import { dialogs } from '../../dialogs/DialogHost';
 import type { JiraIssue } from '../../types';
 import { useCached } from '../cache';
 import { groupByStatus, StatusSection } from '../statusGroups';
@@ -38,9 +39,21 @@ export function MobileIncidents() {
       kicker="Jira"
       title="Incidents"
       action={
-        <button className="btn" onClick={refresh} disabled={res.refreshing} style={{ ...tapReset, minHeight: 40 }}>
-          {res.refreshing ? '…' : '↻'}
-        </button>
+        <>
+          {/* Reuses the desktop create dialog rather than a second form, so the
+              required fields and validation are identical. Modal renders it as
+              a full-screen sheet at this width. */}
+          <button
+            className="btn btn-primary"
+            onClick={() => dialogs.openCreateIssue()}
+            style={{ ...tapReset, minHeight: 40, padding: '0 12px' }}
+          >
+            + Incident
+          </button>
+          <button className="btn" onClick={refresh} disabled={res.refreshing} style={{ ...tapReset, minHeight: 40 }}>
+            {res.refreshing ? '…' : '↻'}
+          </button>
+        </>
       }
     >
       <Segmented

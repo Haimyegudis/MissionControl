@@ -109,8 +109,6 @@ export function MobileApp() {
   useSplashDismiss(600);
   useEffect(() => {
     void loadSettings();
-    // Opt the phone into its own palette. The desktop keeps the theme it had.
-    document.documentElement.dataset.mobile = '1';
   }, []);
 
   // Back gesture, in order: the previously visited screen, then the main

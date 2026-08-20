@@ -47,9 +47,18 @@ export function MobileDashboard() {
       kicker="Jira"
       title="Dashboard"
       action={
-        <button className="btn" onClick={refresh} disabled={busy} style={{ ...tapReset, minHeight: 40 }}>
-          {busy ? '…' : '↻'}
-        </button>
+        <>
+          <button
+            className="btn btn-primary"
+            onClick={() => dialogs.openCreateIssue()}
+            style={{ ...tapReset, minHeight: 40, padding: '0 12px' }}
+          >
+            + Incident
+          </button>
+          <button className="btn" onClick={refresh} disabled={busy} style={{ ...tapReset, minHeight: 40 }}>
+            {busy ? '…' : '↻'}
+          </button>
+        </>
       }
     >
       {snap.error ? <ErrorNote onRetry={refresh}>{snap.error}</ErrorNote> : null}

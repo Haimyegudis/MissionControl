@@ -10,11 +10,18 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { trApi } from '../../api/testrail';
-import { initTestRail, selectProject, selectSuite, trStore } from '../../stores/testrail';
+import {
+  ensureCases,
+  ensureSections,
+  initTestRail,
+  selectProject,
+  selectSuite,
+  trStore,
+} from '../../stores/testrail';
 import { useStore } from '../../stores/useStore';
 import { pushToast } from '../../stores/toasts';
-import { fmtUnixDate, passPct } from '../../lib/testrail';
-import type { TrRun, TrTest } from '../../testrailTypes';
+import { fmtUnixDate, passPct, resolveRunCaseFilter } from '../../lib/testrail';
+import type { TrCase, TrRun, TrSection, TrTest } from '../../testrailTypes';
 import { invalidate, useCached } from '../cache';
 import { pushBackHandler } from '../backHandler';
 import { Empty, ErrorNote, ListCard, Loading, Muted, Pill, Screen, Sheet, tapReset } from '../ui';
@@ -214,13 +221,81 @@ export function MobileRuns() {
 
 /* ------------------------------------------------------------ create run --- */
 
+/**
+ * Create run — the same field set as the desktop RunEditor, so a run made on a
+ * phone is indistinguishable from one made at a desk: name, assignee,
+ * references, description, suite, and how the cases are chosen.
+ *
+ * Case selection has the desktop's three modes and reuses resolveRunCaseFilter
+ * for the dynamic one, so "what will be included" cannot drift between the two
+ * clients.
+ */
 function CreateRunSheet({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const st = useStore(trStore);
   const [name, setName] = useState('');
-  const [epic, setEpic] = useState('');
+  const [refs, setRefs] = useState('');
   const [description, setDescription] = useState('');
-  const [suiteId, setSuiteId] = useState<number | null>(st.suites[0]?.id ?? null);
+  const [suiteId, setSuiteId] = useState<number | null>(
+    typeof st.selSuiteId === 'number' ? st.selSuiteId : (st.suites[0]?.id ?? null),
+  );
+  // Defaults to the connected TestRail user, as TestRail itself does.
+  const [assignedTo, setAssignedTo] = useState<number | ''>(st.session?.user?.id ?? '');
+  const [mode, setMode] = useState<'all' | 'specific' | 'dynamic'>('all');
+  const [sections, setSections] = useState<TrSection[]>([]);
+  const [suiteCases, setSuiteCases] = useState<TrCase[] | null>(null);
+  const [sel, setSel] = useState<ReadonlySet<number>>(() => new Set());
+  const [pickFilter, setPickFilter] = useState('');
+  const [dynSections, setDynSections] = useState<number[]>([]);
+  const [dynPriority, setDynPriority] = useState<number | ''>('');
+  const [dynTitle, setDynTitle] = useState('');
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (suiteId === null) return;
+    let cancelled = false;
+    setSuiteCases(null);
+    setSections([]);
+    setSel(new Set());
+    setDynSections([]);
+    void Promise.all([ensureSections(suiteId), ensureCases(suiteId)])
+      .then(([secLists]) => {
+        if (cancelled) return;
+        setSections([...(secLists[0] ?? [])].sort((a, b) => a.displayOrder - b.displayOrder));
+        setSuiteCases(trStore.get().cases[suiteId] ?? []);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [suiteId]);
+
+  const assignOptions = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const [id, personName] of Object.entries(st.people)) map.set(Number(id), personName);
+    for (const u of st.meta?.users ?? []) if (!map.has(u.id)) map.set(u.id, u.name);
+    const me = st.session?.user;
+    if (me && !map.has(me.id)) map.set(me.id, me.name);
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: 'base' }));
+  }, [st.people, st.meta, st.session]);
+
+  const pickCases = useMemo(() => {
+    const q = pickFilter.trim().toLowerCase();
+    const list = suiteCases ?? [];
+    return q ? list.filter((c) => c.title.toLowerCase().includes(q) || `c${c.id}` === q) : list;
+  }, [suiteCases, pickFilter]);
+
+  const dynMatches = useMemo(
+    () =>
+      resolveRunCaseFilter(suiteCases ?? [], sections, {
+        sectionIds: dynSections,
+        priorityId: dynPriority === '' ? null : dynPriority,
+        ownerId: null,
+        titleContains: dynTitle,
+      }),
+    [suiteCases, sections, dynSections, dynPriority, dynTitle],
+  );
+
+  const included = mode === 'all' ? (suiteCases?.length ?? 0) : mode === 'specific' ? sel.size : dynMatches.length;
 
   const create = async () => {
     if (!name.trim()) {
@@ -228,6 +303,11 @@ function CreateRunSheet({ onClose, onCreated }: { onClose: () => void; onCreated
       return;
     }
     if (st.projectId === null) return;
+    const caseIds = mode === 'all' ? [] : mode === 'specific' ? [...sel] : dynMatches.map((c) => c.id);
+    if (mode !== 'all' && caseIds.length === 0) {
+      pushToast({ title: 'Run', body: 'No cases selected.', severity: 'error' });
+      return;
+    }
     setBusy(true);
     try {
       await trApi.addRun(st.projectId, {
@@ -235,10 +315,10 @@ function CreateRunSheet({ onClose, onCreated }: { onClose: () => void; onCreated
         name: name.trim(),
         description: description.trim() || null,
         // TestRail's refs field is what links a run to its Jira epic.
-        refs: epic.trim() || null,
-        assignedToId: null,
-        includeAll: true,
-        caseIds: [],
+        refs: refs.trim() || null,
+        assignedToId: assignedTo === '' ? null : assignedTo,
+        includeAll: mode === 'all',
+        caseIds,
       });
       pushToast({ title: 'Run', body: 'Created.' });
       onCreated();
@@ -261,39 +341,197 @@ function CreateRunSheet({ onClose, onCreated }: { onClose: () => void; onCreated
           onClick={() => void create()}
           style={{ ...tapReset, width: '100%', minHeight: 46, justifyContent: 'center' }}
         >
-          {busy ? 'Creating…' : 'Create run'}
+          {busy ? 'Creating…' : `Create run · ${included} case${included === 1 ? '' : 's'}`}
         </button>
       }
     >
       <Field label="Name" value={name} onChange={setName} placeholder="S6 regression — week 34" />
-      <Field label="Epic / Jira key" value={epic} onChange={setEpic} placeholder="ISW-1234" />
-      <Field label="Description" value={description} onChange={setDescription} placeholder="Optional" />
 
-      <div style={{ fontSize: 11, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--muted)', margin: '10px 0 4px' }}>
-        Suite
-      </div>
-      <select
-        value={suiteId ?? ''}
-        onChange={(e) => setSuiteId(Number(e.target.value))}
-        style={{
-          width: '100%',
-          minHeight: 44,
-          borderRadius: 10,
-          border: '1px solid var(--border-soft)',
-          background: 'var(--input-bg)',
-          color: 'var(--text-primary)',
-          fontSize: 15,
-          padding: '0 10px',
-        }}
-      >
-        {st.suites.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.name}
+      <FieldLabel>Assign to</FieldLabel>
+      <Select value={assignedTo === '' ? '' : String(assignedTo)} onChange={(v) => setAssignedTo(v === '' ? '' : Number(v))}>
+        <option value="">Unassigned</option>
+        {assignOptions.map(([id, label]) => (
+          <option key={id} value={id}>
+            {label}
           </option>
         ))}
-      </select>
-      <Muted>Every case in the suite is included. Narrow it afterwards from the run.</Muted>
+      </Select>
+
+      <Field label="References / epic" value={refs} onChange={setRefs} placeholder="ISW-1234" />
+      <Field label="Description" value={description} onChange={setDescription} placeholder="Optional" />
+
+      <FieldLabel>Suite</FieldLabel>
+      <Select value={suiteId === null ? '' : String(suiteId)} onChange={(v) => setSuiteId(v === '' ? null : Number(v))}>
+        {st.suites.map((x) => (
+          <option key={x.id} value={x.id}>
+            {x.name}
+          </option>
+        ))}
+      </Select>
+
+      <FieldLabel>Cases</FieldLabel>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+        {(['all', 'specific', 'dynamic'] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => setMode(m)}
+            style={{
+              ...tapReset,
+              flex: 1,
+              minHeight: 40,
+              borderRadius: 9,
+              border: `1px solid ${mode === m ? 'var(--accent-cyan)' : 'var(--border-soft)'}`,
+              background: mode === m ? 'var(--bg-panel-high)' : 'transparent',
+              color: mode === m ? 'var(--accent-cyan)' : 'var(--muted)',
+              fontSize: 12.5,
+              textTransform: 'capitalize',
+            }}
+          >
+            {m}
+          </button>
+        ))}
+      </div>
+
+      {suiteCases === null ? <Muted>Loading cases…</Muted> : null}
+
+      {mode === 'specific' && suiteCases !== null ? (
+        <>
+          <input
+            type="search"
+            value={pickFilter}
+            onChange={(e) => setPickFilter(e.target.value)}
+            placeholder="Filter cases…"
+            style={inputStyle}
+          />
+          <div style={{ maxHeight: '34vh', overflowY: 'auto', marginTop: 8 }}>
+            {pickCases.map((c) => (
+              <label
+                key={c.id}
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  alignItems: 'flex-start',
+                  minHeight: 44,
+                  padding: '6px 2px',
+                  borderBottom: '1px solid var(--border-soft)',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={sel.has(c.id)}
+                  onChange={(e) =>
+                    setSel((prev) => {
+                      const next = new Set(prev);
+                      if (e.target.checked) next.add(c.id);
+                      else next.delete(c.id);
+                      return next;
+                    })
+                  }
+                  style={{ marginTop: 3, flexShrink: 0 }}
+                />
+                <span style={{ fontSize: 13, overflowWrap: 'anywhere' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', opacity: 0.65 }}>C{c.id}</span> {c.title}
+                </span>
+              </label>
+            ))}
+          </div>
+        </>
+      ) : null}
+
+      {mode === 'dynamic' && suiteCases !== null ? (
+        <>
+          <FieldLabel>Sections</FieldLabel>
+          <div style={{ maxHeight: '22vh', overflowY: 'auto', marginBottom: 8 }}>
+            {sections.map((sec) => (
+              <label
+                key={sec.id}
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  alignItems: 'center',
+                  minHeight: 42,
+                  borderBottom: '1px solid var(--border-soft)',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={dynSections.includes(sec.id)}
+                  onChange={(e) =>
+                    setDynSections((prev) =>
+                      e.target.checked ? [...prev, sec.id] : prev.filter((id) => id !== sec.id),
+                    )
+                  }
+                />
+                <span style={{ fontSize: 13, overflowWrap: 'anywhere' }}>
+                  {'\u00a0'.repeat(Math.max(0, sec.depth * 2))}
+                  {sec.name}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          <FieldLabel>Priority</FieldLabel>
+          <Select
+            value={dynPriority === '' ? '' : String(dynPriority)}
+            onChange={(v) => setDynPriority(v === '' ? '' : Number(v))}
+          >
+            <option value="">Any</option>
+            {(st.meta?.priorities ?? []).map((pr) => (
+              <option key={pr.id} value={pr.id}>
+                {pr.name}
+              </option>
+            ))}
+          </Select>
+
+          <FieldLabel>Title contains</FieldLabel>
+          <input value={dynTitle} onChange={(e) => setDynTitle(e.target.value)} style={inputStyle} />
+          <Muted>{dynMatches.length} case(s) match right now.</Muted>
+        </>
+      ) : null}
     </Sheet>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  minHeight: 44,
+  padding: '0 12px',
+  borderRadius: 10,
+  border: '1px solid var(--border-soft)',
+  background: 'var(--input-bg)',
+  color: 'var(--text-primary)',
+  fontSize: 15,
+};
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        fontSize: 11,
+        letterSpacing: '0.07em',
+        textTransform: 'uppercase',
+        color: 'var(--muted)',
+        margin: '10px 0 4px',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Select({
+  value,
+  onChange,
+  children,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} style={{ ...inputStyle, padding: '0 10px' }}>
+      {children}
+    </select>
   );
 }
 

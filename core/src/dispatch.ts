@@ -1093,6 +1093,56 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
     return NOT_FOUND;
   }
 
+  /**
+   * Create-issue support for the desktop dialog, which the phone reuses so the
+   * field set and validation are identical rather than a second, drifting
+   * form. Defaults are the remembered per project+type values.
+   */
+  async function createRoute(
+    method: string,
+    rest: string[],
+    query: URLSearchParams,
+    b: Record<string, unknown>,
+  ): Promise<DispatchResponse> {
+    if (method === 'GET' && rest[0] === 'meta') {
+      return ok(
+        await core.createIssues.getCreateMeta(
+          requireString(query.get('project'), 'project'),
+          requireString(query.get('type'), 'type'),
+        ),
+      );
+    }
+
+    if (rest[0] === 'defaults') {
+      const key = requireString(query.get('key'), 'key');
+      if (method === 'GET') return ok(core.createDefaults.get(key));
+      if (method === 'PUT') {
+        core.createDefaults.put(key, b);
+        return NO_CONTENT;
+      }
+      if (method === 'DELETE') {
+        core.createDefaults.delete(key);
+        return NO_CONTENT;
+      }
+      return NOT_FOUND;
+    }
+
+    if (method === 'POST' && rest[0] === 'issue') {
+      const fields =
+        b.fields !== null && typeof b.fields === 'object' && !Array.isArray(b.fields)
+          ? (b.fields as Record<string, unknown>)
+          : {};
+      const key = await core.createIssues.createIssue(
+        requireString(b.project, 'project'),
+        requireString(b.type, 'type'),
+        fields,
+      );
+      return ok({ key });
+    }
+
+    return NOT_FOUND;
+  }
+
   async function route(
     method: string,
     segments: string[],
@@ -1137,6 +1187,8 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
         return rest.length === 0
           ? ok(await dashboardList(isFresh(query)))
           : ok(await core.dashboards.getDashboardDetails(rest[0]));
+      case 'create':
+        return createRoute(method, rest, query, b);
       case 'filters':
         return filtersRoute(method, rest, b);
       default:
