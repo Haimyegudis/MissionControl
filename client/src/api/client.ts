@@ -62,6 +62,32 @@ function emitSessionLost(): void {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Native dispatch
+// ---------------------------------------------------------------------------
+// In the Android shell there is no server: the same (method, path, body)
+// contract is answered in-process by @mc/core's dispatcher. The slot is typed
+// structurally so the desktop bundle never pulls core in.
+
+export interface DispatchResponse {
+  status: number;
+  body: unknown;
+}
+
+export type Dispatch = (method: string, path: string, body?: unknown) => Promise<DispatchResponse>;
+
+let nativeDispatch: Dispatch | null = null;
+
+/** Install the in-process dispatcher; null restores HTTP mode. */
+export function setNativeDispatch(dispatch: Dispatch | null): void {
+  nativeDispatch = dispatch;
+}
+
+/** api/testrail reads the same slot rather than owning a second one. */
+export function getNativeDispatch(): Dispatch | null {
+  return nativeDispatch;
+}
+
 type Query = Record<string, string | number | boolean | null | undefined>;
 
 function withQuery(path: string, query?: Query): string {
@@ -76,6 +102,20 @@ function withQuery(path: string, query?: Query): string {
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  if (nativeDispatch) {
+    const res = await nativeDispatch(method, path, body);
+    if (res.status === 401) emitSessionLost();
+    if (res.status >= 400) {
+      const data = res.body as { message?: string } | null;
+      const message =
+        data && typeof data.message === 'string' && data.message
+          ? data.message
+          : `Request failed (${res.status})`;
+      throw new ApiError(res.status, message);
+    }
+    return res.body as T;
+  }
+
   const res = await fetch(path, {
     method,
     headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },

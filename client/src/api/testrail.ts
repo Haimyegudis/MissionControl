@@ -18,6 +18,7 @@ import type {
   TrTest,
   TrUser,
 } from '../testrailTypes';
+import { getNativeDispatch } from './client';
 
 export class TrApiError extends Error {
   readonly status: number;
@@ -35,6 +36,21 @@ export class TrApiError extends Error {
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const dispatch = getNativeDispatch();
+  if (dispatch) {
+    const res = await dispatch(method, path, body);
+    if (res.status >= 400) {
+      const err = (res.body ?? {}) as { error?: string; statusCode?: number | null; body?: string | null };
+      throw new TrApiError(
+        res.status,
+        typeof err.error === 'string' && err.error ? err.error : `Request failed (${res.status})`,
+        err.statusCode ?? null,
+        err.body ?? null,
+      );
+    }
+    return res.body as T;
+  }
+
   const res = await fetch(path, {
     method,
     headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
