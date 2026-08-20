@@ -28,6 +28,7 @@ import { LoginPage } from '../views/LoginPage';
 import { Loading, tapReset } from './ui';
 import { pushBackHandler } from './backHandler';
 import { pushToast } from '../stores/toasts';
+import { ensureCases, ensureSections, initTestRail, trStore } from '../stores/testrail';
 
 const MobileDashboard = lazy(() => import('./screens/MobileDashboard').then((m) => ({ default: m.MobileDashboard })));
 const MobileTimeSpent = lazy(() => import('./screens/MobileTimeSpent').then((m) => ({ default: m.MobileTimeSpent })));
@@ -110,6 +111,25 @@ export function MobileApp() {
   useEffect(() => {
     void loadSettings();
   }, []);
+
+  // Warm TestRail while the user is still in Jira, so switching areas does not
+  // start from nothing. Requested explicitly: "load on app loading". Failures
+  // are ignored — this is a head start, not a dependency, and every screen
+  // still fetches what it needs.
+  useEffect(() => {
+    if (session.phase !== 'connected') return;
+    let cancelled = false;
+    void initTestRail()
+      .then(async () => {
+        const st = trStore.get();
+        if (cancelled || st.phase !== 'connected' || st.selSuiteId === null) return;
+        await Promise.all([ensureSections(st.selSuiteId), ensureCases(st.selSuiteId)]);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [session.phase]);
 
   // Back gesture, in order: the previously visited screen, then the main
   // screen, then a confirmed exit. Dialogs, sheets and sub-screens claim the

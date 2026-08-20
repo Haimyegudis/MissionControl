@@ -56,14 +56,28 @@ function buildTree(sections: TrSection[], cases: TrCase[]): { roots: SectionNode
   return { roots, orphans };
 }
 
-/** Every case at or below a node — what ticking a section selects. */
-function casesUnder(node: SectionNode): TrCase[] {
-  return [...node.cases, ...node.children.flatMap(casesUnder)];
+/**
+ * Every case at or below each section, computed once for the whole tree.
+ *
+ * This used to be a recursive walk called from each branch's render. With 1472
+ * sections and 3378 cases that is a subtree traversal per section per render,
+ * which is what made Cases crawl. One post-order pass builds the lot.
+ */
+function buildSubtreeIndex(roots: SectionNode[]): Map<number, TrCase[]> {
+  const index = new Map<number, TrCase[]>();
+  const visit = (node: SectionNode): TrCase[] => {
+    const all = [...node.cases];
+    for (const child of node.children) all.push(...visit(child));
+    index.set(node.section.id, all);
+    return all;
+  };
+  for (const root of roots) visit(root);
+  return index;
 }
 
 /** Does any case in this subtree match the search? Keeps parents visible. */
 function matchesDeep(node: SectionNode, needle: string): boolean {
-  if (!needle) return true;
+  if (!needle) return true; // no search: every branch is shown, no walk needed
   if (node.section.name.toLowerCase().includes(needle)) return true;
   if (node.cases.some((c) => c.title.toLowerCase().includes(needle) || String(c.id).includes(needle))) return true;
   return node.children.some((child) => matchesDeep(child, needle));
@@ -129,10 +143,8 @@ export function MobileCases() {
   const needle = query.trim().toLowerCase();
 
   const { roots, orphans } = useMemo(() => buildTree(sections, cases), [sections, cases]);
-  const visibleCaseIds = useMemo(
-    () => [...roots.flatMap(casesUnder), ...orphans].map((c) => c.id),
-    [roots, orphans],
-  );
+  const subtreeIndex = useMemo(() => buildSubtreeIndex(roots), [roots]);
+  const visibleCaseIds = useMemo(() => cases.map((c) => c.id), [cases]);
 
   if (st.phase === 'idle' || st.phase === 'loading') {
     return (
@@ -244,6 +256,7 @@ export function MobileCases() {
           <SectionBranch
             key={node.section.id}
             node={node}
+            subtreeIndex={subtreeIndex}
             needle={needle}
             depth={0}
             selected={selected}
@@ -363,8 +376,12 @@ function toggleOne(
  * the whole subtree — ticking a section selects its subsections' cases too,
  * which is what "move the section" means in practice.
  */
+/** Cases drawn per section before "show all" — keeps a 3000-case suite cheap. */
+const CASE_PAGE = 40;
+
 function SectionBranch({
   node,
+  subtreeIndex,
   needle,
   depth,
   selected,
@@ -373,6 +390,7 @@ function SectionBranch({
   onTransfer,
 }: {
   node: SectionNode;
+  subtreeIndex: Map<number, TrCase[]>;
   needle: string;
   depth: number;
   selected: ReadonlySet<number>;
@@ -380,8 +398,12 @@ function SectionBranch({
   onEdit: (c: TrCase) => void;
   onTransfer: (mode: 'copy' | 'move', ids: number[]) => void;
 }) {
-  const [open, setOpen] = useState(depth < 1);
-  const subtree = casesUnder(node);
+  // Collapsed by default. Expanding everything meant mounting thousands of
+  // cards before the screen could paint; a search expands what it matches.
+  const [open, setOpen] = useState(false);
+  const [limit, setLimit] = useState(CASE_PAGE);
+  const expanded = open || needle.length > 0;
+  const subtree = subtreeIndex.get(node.section.id) ?? [];
   const allSelected = subtree.length > 0 && subtree.every((c) => selected.has(c.id));
   const shownCases = needle
     ? node.cases.filter((c) => c.title.toLowerCase().includes(needle) || String(c.id).includes(needle))
@@ -455,7 +477,7 @@ function SectionBranch({
         </button>
       </div>
 
-      {open ? (
+      {expanded ? (
         <div style={{ marginTop: 6, marginLeft: 8 }}>
           {node.children
             .filter((child) => matchesDeep(child, needle))
@@ -463,6 +485,7 @@ function SectionBranch({
               <SectionBranch
                 key={child.section.id}
                 node={child}
+                subtreeIndex={subtreeIndex}
                 needle={needle}
                 depth={depth + 1}
                 selected={selected}
@@ -471,7 +494,7 @@ function SectionBranch({
                 onTransfer={onTransfer}
               />
             ))}
-          {shownCases.map((c) => (
+          {shownCases.slice(0, limit).map((c) => (
             <CaseCard
               key={c.id}
               tcase={c}
@@ -481,6 +504,15 @@ function SectionBranch({
               onTransfer={(mode) => onTransfer(mode, [c.id])}
             />
           ))}
+          {shownCases.length > limit ? (
+            <button
+              className="btn"
+              onClick={() => setLimit((n) => n + CASE_PAGE * 4)}
+              style={{ ...tapReset, width: '100%', minHeight: 40, justifyContent: 'center', fontSize: 12 }}
+            >
+              Show more · {shownCases.length - limit} left
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>
