@@ -427,6 +427,8 @@ export interface AuthProfile {
   jiraBaseUrl: string;
   instanceType: InstanceType;
   defaultProjectKey: string;
+  /** Android only; absent on the desktop, which is always token-authenticated. */
+  authMode?: 'pat' | 'sso';
 }
 
 export interface AuthStatus {

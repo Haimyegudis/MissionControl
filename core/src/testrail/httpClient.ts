@@ -65,6 +65,8 @@ export class TestRailHttp {
   private readonly apiBaseUrl: string;
   private readonly authorization: string;
   private readonly cookieAuth: boolean;
+  /** Whether an API key is stored to fall back on. */
+  private readonly hasKey: boolean;
   /** Set once the cookie is seen to be dead, so we stop paying for the retry. */
   private cookieExpired = false;
 
@@ -78,11 +80,7 @@ export class TestRailHttp {
     // Only worth trying the cookie when a key exists to fall back to, or when
     // there is no key at all and the cookie is the sole credential.
     this.cookieAuth = connection.cookieAuth === true;
-  }
-
-  /** True when the API key is the only thing that can authenticate a request. */
-  private get hasKey(): boolean {
-    return !this.authorization.endsWith(base64Utf8(':'));
+    this.hasKey = connection.apiKey.trim().length > 0;
   }
 
   /** GET `…/index.php?/api/v2/{cmd}` → parsed JSON (null for an empty body). */
@@ -103,7 +101,13 @@ export class TestRailHttp {
       // The session died. Remember it, and let the stored key carry the call
       // so a background refresh does not surface an error the user must fix.
       this.cookieExpired = true;
-      if (!this.hasKey) return this.parse(viaCookie, payload);
+      if (!this.hasKey) {
+        // Nothing left to authenticate with. Report it as a 401 so the app
+        // drops to the sign-in screen; TestRail's own answer is an HTML login
+        // page with a 200, which would otherwise surface as a JSON parse
+        // error the user cannot act on.
+        throw new TestRailApiError('Your HP OneUID session has expired. Sign in again.', 401, viaCookie.text);
+      }
     }
     return this.parse(await this.attempt(cmd, payload, true), payload);
   }

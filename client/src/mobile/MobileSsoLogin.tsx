@@ -22,8 +22,8 @@ export function MobileSsoLogin() {
         pushToast({ title: 'Sign in', body: 'Cancelled.', severity: 'error' });
         return;
       }
-      // No token: the SAML cookie now in the shared jar is the credential.
-      // The probe behind /api/auth/login proves it works before we commit.
+      // No token at all: the SAML cookie in the shared jar is the credential,
+      // and the probe behind /api/auth/login proves it works before we commit.
       await auth.login({
         baseUrl: JIRA_URL,
         email: '',

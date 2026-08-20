@@ -343,6 +343,7 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
             jiraBaseUrl: profile.jiraBaseUrl,
             instanceType: profile.instanceType,
             defaultProjectKey: profile.defaultProjectKey,
+            authMode: profile.authMode,
           }
         : null,
     };
@@ -355,9 +356,10 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
       email: typeof body.email === 'string' ? body.email : '',
       jiraBaseUrl:
         typeof body.baseUrl === 'string' && body.baseUrl.trim() ? body.baseUrl : DEFAULT_JIRA_BASE_URL,
-      // Under SSO the session cookie authenticates, so an empty token is
-      // valid; every other caller must still supply one.
-      jiraPat: body.authMode === 'sso' ? String(body.pat ?? '') : requireString(body.pat, 'pat'),
+      // Signing in with HP OneUID stores no token at all: the SAML cookie is
+      // the only credential, and any previously stored token is dropped so
+      // nothing long-lived is left behind on the device.
+      jiraPat: body.authMode === 'sso' ? '' : requireString(body.pat, 'pat'),
       instanceType: body.instanceType === 'cloud' ? 'cloud' : 'datacenter',
       defaultProjectKey: defaultProjectKey(),
       testRailBaseUrl: saved?.testRailBaseUrl ?? '',
@@ -617,8 +619,9 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
         const email = requireString(body.email, 'email');
         // Under SSO the cookie authenticates, so the key may legitimately be
         // blank; every other caller still has to supply one.
+        // Same rule as Jira: an SSO sign-in stores no API key.
         const cookieAuth = body.cookieAuth === true;
-        const apiKey = cookieAuth ? String(body.apiKey ?? '') : requireString(body.apiKey, 'apiKey');
+        const apiKey = cookieAuth ? '' : requireString(body.apiKey, 'apiKey');
         const user = await service.connect({ baseUrl, email, apiKey, cookieAuth });
         const saved = core.credentials.load() ?? emptyCredentials();
         core.credentials.save({

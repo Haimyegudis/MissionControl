@@ -84,3 +84,17 @@ describe('TestRail cookie authentication', () => {
     expect(authOf(fetchMock.mock.calls[0])).toMatch(/^Basic /);
   });
 });
+
+describe('TestRail cookie expiry without a stored key', () => {
+  it('reports a 401 rather than failing to parse the login page', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => loginPageResponse()));
+
+    // SSO-only: no key to fall back on, so the user must sign in again.
+    const http = new TestRailHttp({ baseUrl: BASE, email: 'a@hp.com', apiKey: '', cookieAuth: true });
+
+    await expect(http.getJson('get_projects')).rejects.toMatchObject({
+      status: 401,
+      message: expect.stringContaining('expired'),
+    });
+  });
+});

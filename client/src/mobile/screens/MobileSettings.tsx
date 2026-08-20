@@ -27,6 +27,31 @@ export function MobileSettings() {
   }, []);
 
   const email = session.user?.emailAddress ?? session.profile?.email ?? '';
+  const jiraSso = session.profile?.authMode === 'sso';
+
+  /** Swap a live token session for a cookie one without signing out first. */
+  const switchJiraToSso = async () => {
+    setBusy('jira-sso');
+    try {
+      const signedIn = await signInWithSso('jira', JIRA_URL);
+      if (!signedIn) {
+        pushToast({ title: 'Sign in', body: 'Cancelled.', severity: 'error' });
+        return;
+      }
+      await auth.login({
+        baseUrl: JIRA_URL,
+        email,
+        pat: '', // SSO stores no token; any previously stored one is dropped
+        instanceType: 'datacenter',
+        authMode: 'sso',
+      });
+      window.location.reload();
+    } catch (e) {
+      pushToast({ title: 'Sign in', body: e instanceof Error ? e.message : String(e), severity: 'error' });
+    } finally {
+      setBusy(null);
+    }
+  };
 
   return (
     <Screen kicker="Account" title="Settings">
@@ -34,7 +59,11 @@ export function MobileSettings() {
         name="Jira"
         url={JIRA_URL}
         connected={session.phase === 'connected'}
-        detail={session.phase === 'connected' ? (session.user?.displayName ?? email) : 'Not signed in'}
+        detail={
+          session.phase === 'connected'
+            ? `${session.user?.displayName ?? email} · ${jiraSso ? 'HP OneUID' : 'API token'}`
+            : 'Not signed in'
+        }
         action={
           session.phase === 'connected' ? (
             <Action
@@ -52,7 +81,16 @@ export function MobileSettings() {
             />
           ) : null
         }
-      />
+      >
+        {session.phase === 'connected' && !jiraSso ? (
+          <Action
+            primary
+            label="Switch to HP OneUID"
+            busy={busy === 'jira-sso'}
+            onClick={switchJiraToSso}
+          />
+        ) : null}
+      </Block>
 
       <Block
         name="TestRail"
@@ -91,9 +129,9 @@ export function MobileSettings() {
                     pushToast({ title: 'TestRail', body: 'Sign-in cancelled.', severity: 'error' });
                     return;
                   }
-                  // The SAML cookie now lives in the shared jar; the stored key
-                  // (if any) stays as the fallback for when it expires.
-                  await connectTestRail(TESTRAIL_URL, email, trKey.trim(), true);
+                  // The SAML cookie now lives in the shared jar and is the
+                  // only credential; no key is stored.
+                  await connectTestRail(TESTRAIL_URL, email, '', true);
                   setTrKey('');
                   pushToast({ title: 'TestRail', body: 'Signed in.' });
                 } catch (e) {
