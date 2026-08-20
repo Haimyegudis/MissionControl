@@ -59,8 +59,8 @@ export function LoginPage() {
   };
 
   return (
-    <div style={{ height: '100%', display: 'grid', placeItems: 'center', padding: 24 }}>
-      <form className="card" onSubmit={signIn} style={{ width: 420, padding: 28, display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ height: '100%', display: 'grid', placeItems: 'center', padding: 16 }}>
+      <form className="card" onSubmit={signIn} style={{ width: '100%', maxWidth: 420, padding: 28, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '0.06em' }}>
             <span style={{ color: 'var(--accent-cyan)' }}>JIRA</span>
