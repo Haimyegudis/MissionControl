@@ -194,6 +194,35 @@ async function afterConnect(session: TrSessionStatus): Promise<void> {
   }
 }
 
+/**
+ * Fill in display names for user ids we have never seen.
+ *
+ * get_users is admin-only on this TestRail and returns an empty list, so the
+ * people map only ever contained the signed-in user. The ids are on the cases,
+ * so unknown ones are fetched individually, merged into the store for every
+ * screen at once, and persisted so the cost is paid once per device.
+ */
+export async function resolvePeople(ids: Iterable<number>): Promise<void> {
+  const known = trStore.get().people;
+  const missing = [...new Set(ids)].filter((id) => Number.isFinite(id) && !known[String(id)]);
+  if (missing.length === 0) return;
+
+  const pairs = await Promise.all(
+    missing.slice(0, 80).map((id) =>
+      trApi
+        .user(id)
+        .then((u) => [String(id), u.name] as const)
+        // A deactivated or invisible user still deserves a label, otherwise the
+        // filter list silently omits whoever owns those cases.
+        .catch(() => [String(id), `User ${id}`] as const),
+    ),
+  );
+
+  const merged = { ...trStore.get().people, ...Object.fromEntries(pairs) };
+  patch({ people: merged });
+  void trApi.setPeople(merged).catch(() => undefined);
+}
+
 export async function connectTestRail(baseUrl: string, email: string, apiKey: string): Promise<void> {
   await trApi.connect({ baseUrl, email, apiKey });
   const session = await trApi.session();

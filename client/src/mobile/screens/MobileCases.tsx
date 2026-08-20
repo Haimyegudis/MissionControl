@@ -14,6 +14,7 @@ import {
   initTestRail,
   selectProject,
   selectSuite,
+  resolvePeople,
   setFilters,
   trStore,
 } from '../../stores/testrail';
@@ -147,60 +148,26 @@ export function MobileCases() {
     res.refresh();
   }, [res]);
 
+  // The warm-up covers the suite opened at boot; switching suites brings new
+  // people, so resolve whatever is still unknown here too.
+  useEffect(() => {
+    const cs = res.data?.cases ?? [];
+    if (cs.length === 0) return;
+    void resolvePeople(cs.flatMap((c) => [c.ownerId, c.assignedToId]).filter((id): id is number => id !== null));
+  }, [res.data]);
+
   const allCases = res.data?.cases ?? [];
   const sections = res.data?.sections ?? [];
   const needle = query.trim().toLowerCase();
 
-  /**
-   * Names resolved one id at a time.
-   *
-   * get_users is admin-only on this TestRail and returns an empty list, so the
-   * people map and meta.users are both empty on the phone and every owner and
-   * assignee filter had nothing to match. The ids are on the cases, so the
-   * distinct ones are looked up individually and written back to the shared
-   * people store, which persists — the cost is paid once.
-   */
-  const [resolved, setResolved] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    const known = { ...st.people, ...resolved };
-    const ids = new Set<number>();
-    for (const c of allCases) {
-      if (c.ownerId !== null && !known[String(c.ownerId)]) ids.add(c.ownerId);
-      if (c.assignedToId !== null && !known[String(c.assignedToId)]) ids.add(c.assignedToId);
-    }
-    if (ids.size === 0) return;
-    let cancelled = false;
-    // Bounded: a suite rarely has many distinct people, and this runs once.
-    void Promise.all(
-      [...ids].slice(0, 60).map((id) =>
-        trApi
-          .user(id)
-          .then((u) => [String(id), u.name] as const)
-          .catch(() => null),
-      ),
-    ).then((pairs) => {
-      if (cancelled) return;
-      const found = Object.fromEntries(pairs.filter((x): x is readonly [string, string] => x !== null));
-      if (Object.keys(found).length === 0) return;
-      setResolved((prev) => ({ ...prev, ...found }));
-      // Persist so other screens and later launches start with the names.
-      void trApi.setPeople({ ...st.people, ...found }).catch(() => undefined);
-    });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allCases, st.people]);
-
+  // One source of truth: the store's people map, filled during warm-up by
+  // resolvePeople and persisted, so every screen agrees on who is who.
   const nameOf = useCallback(
     (id: number | null) => {
       if (id === null) return '';
-      return (
-        st.people[String(id)] ?? resolved[String(id)] ?? st.meta?.users.find((u) => u.id === id)?.name ?? ''
-      );
+      return st.people[String(id)] ?? st.meta?.users.find((u) => u.id === id)?.name ?? '';
     },
-    [st.people, st.meta, resolved],
+    [st.people, st.meta],
   );
 
   // filterCases is the desktop's own function, so owner/assignee/title behave
@@ -231,10 +198,9 @@ export function MobileCases() {
   const userOptions = useMemo(() => {
     const names = new Set<string>();
     for (const name of Object.values(st.people)) if (name) names.add(name);
-    for (const name of Object.values(resolved)) if (name) names.add(name);
     for (const u of st.meta?.users ?? []) if (u.name) names.add(u.name);
     return [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  }, [st.people, st.meta, resolved]);
+  }, [st.people, st.meta]);
 
   const activeFilters =
     (st.filters.titleContains.trim() ? 1 : 0) +

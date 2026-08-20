@@ -28,7 +28,7 @@ import { LoginPage } from '../views/LoginPage';
 import { Loading, tapReset } from './ui';
 import { pushBackHandler } from './backHandler';
 import { pushToast } from '../stores/toasts';
-import { ensureCases, ensureSections, initTestRail, trStore } from '../stores/testrail';
+import { ensureCases, ensureSections, initTestRail, resolvePeople, trStore } from '../stores/testrail';
 
 const MobileDashboard = lazy(() => import('./screens/MobileDashboard').then((m) => ({ default: m.MobileDashboard })));
 const MobileTimeSpent = lazy(() => import('./screens/MobileTimeSpent').then((m) => ({ default: m.MobileTimeSpent })));
@@ -123,7 +123,18 @@ export function MobileApp() {
       .then(async () => {
         const st = trStore.get();
         if (cancelled || st.phase !== 'connected' || st.selSuiteId === null) return;
-        await Promise.all([ensureSections(st.selSuiteId), ensureCases(st.selSuiteId)]);
+        const [, caseLists] = await Promise.all([
+          ensureSections(st.selSuiteId),
+          ensureCases(st.selSuiteId),
+        ]);
+        if (cancelled) return;
+        // Names for whoever owns this suite's cases, so the Cases filter has a
+        // real list the moment it is opened rather than just the signed-in user.
+        const ids = caseLists
+          .flat()
+          .flatMap((c) => [c.ownerId, c.assignedToId])
+          .filter((id): id is number => id !== null);
+        await resolvePeople(ids);
       })
       .catch(() => undefined);
     return () => {
