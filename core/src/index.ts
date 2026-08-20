@@ -79,6 +79,16 @@ export { jqlQuote } from './jira/jqlEscape.js';
 export { DashboardAggregator } from './jira/aggregator.js';
 export { metadataWarmup } from './jira/warmup.js';
 
+// --- Confluence --------------------------------------------------------------
+export { ConfluenceApiError, ConfluenceClient } from './confluence/client.js';
+export {
+  ConfluenceService,
+  isIndigoSpace,
+  setIndigoSpaceOverride,
+  type CredentialReader,
+} from './confluence/service.js';
+export * from './confluence/types.js';
+
 // --- TestRail ----------------------------------------------------------------
 export {
   TestRailNotConnectedError,

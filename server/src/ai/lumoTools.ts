@@ -9,7 +9,7 @@
  */
 import type { JiraSession } from '@mc/core';
 import sanitizeHtml from 'sanitize-html';
-import type { ConfluenceService } from '../confluence/service.js';
+import type { ConfluenceService } from '@mc/core';
 import { parseConfluenceUrl } from './lumo/confluence.js';
 import {
   findHelpersForComponent,

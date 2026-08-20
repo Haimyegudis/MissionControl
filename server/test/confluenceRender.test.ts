@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { originalPageDocument } from '../src/routes/confluence.js';
-import type { ConfluencePageContent } from '../src/confluence/types.js';
+import type { ConfluencePageContent } from '@mc/core';
 
 describe('Confluence render document', () => {
   it('sanitizes active content and applies a nonce to its own script', () => {

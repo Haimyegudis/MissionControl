@@ -34,8 +34,8 @@ function harness() {
 describe('routing', () => {
   it('404s a route group the mobile build does not serve', async () => {
     const { dispatch } = harness();
-    // Confluence is the one excluded group: its host is internal-only.
-    expect(await dispatch('GET', '/api/confluence/status')).toEqual({
+    // Lumo is desktop-only: it needs a local model runner.
+    expect(await dispatch('POST', '/api/lumo/ask', {})).toEqual({
       status: 404,
       body: { message: 'Not available in the mobile build.' },
     });
@@ -456,5 +456,50 @@ describe('the wider Jira surface', () => {
     expect((await dispatch('GET', '/api/dashboards')).status).toBe(200);
     await dispatch('GET', '/api/dashboards/7');
     expect(details).toHaveBeenCalledWith('7');
+  });
+});
+
+
+describe('confluence', () => {
+  it('reports a disconnected status', async () => {
+    const { dispatch } = harness();
+    const res = await dispatch('GET', '/api/confluence/status');
+    expect(res.status).toBe(200);
+    expect((res.body as { connected: boolean }).connected).toBe(false);
+  });
+
+  it('requires a PAT to connect', async () => {
+    const { dispatch } = harness();
+    expect(await dispatch('PUT', '/api/confluence/connection', { baseUrl: 'https://c/' })).toEqual({
+      status: 400,
+      body: { message: 'Missing required parameter: pat' },
+    });
+  });
+
+  it('disconnect blanks only the Confluence fields', async () => {
+    const { core, dispatch, saved } = harness();
+    core.credentials.save({
+      email: 'a@hp.com',
+      jiraBaseUrl: 'https://j/',
+      jiraPat: 'jira',
+      instanceType: 'datacenter',
+      defaultProjectKey: 'ISW',
+      testRailBaseUrl: '',
+      testRailEmail: '',
+      testRailApiKey: 'tr',
+      confluenceBaseUrl: 'https://c/',
+      confluencePat: 'cf',
+    });
+    expect(await dispatch('DELETE', '/api/confluence/connection')).toEqual({ status: 204, body: undefined });
+    expect(saved()?.confluencePat).toBe('');
+    expect(saved()?.jiraPat).toBe('jira');
+    expect(saved()?.testRailApiKey).toBe('tr');
+  });
+
+  it('routes a space page listing by key', async () => {
+    const { core, dispatch } = harness();
+    const pages = vi.spyOn(core.confluence, 'pages').mockResolvedValue({ items: [], startAt: 0, nextStart: 0, hasMore: false } as never);
+    await dispatch('GET', '/api/confluence/spaces/ISW/pages?start=20&limit=50');
+    expect(pages).toHaveBeenCalledWith('ISW', 20, 50);
   });
 });

@@ -988,10 +988,17 @@ pre.blocktext {
     overflow-x: hidden !important;
   }
 
-  /* Desktop rows are laid out on the assumption that they always fit. They
-     wrap here instead of widening the page. Deliberate horizontal rails opt
-     out — they are supposed to scroll. */
-  .mc-main div[style*='display: flex']:not(.mc-rail):not(.mc-chip-row):not(.tr-toolbar) {
+  /* Desktop ROWS are laid out on the assumption that they always fit; they wrap
+     here instead of widening the page.
+
+     The :not([style*='column']) guard is essential. flex-wrap on a
+     flex-direction:column container wraps items into ADDITIONAL COLUMNS once
+     they exceed its height — so forcing it blindly turned every tall page into
+     a two-column layout twice the width of the screen. That was the real cause
+     of content sitting outside its card, not the rows themselves.
+
+     Deliberate horizontal rails opt out; they are supposed to scroll. */
+  .mc-main div[style*='display: flex']:not([style*='column']):not(.mc-rail):not(.mc-chip-row):not(.tr-toolbar) {
     flex-wrap: wrap;
   }
   /* Nothing may paint outside a card. Anything genuinely wider than the phone
@@ -1037,8 +1044,15 @@ pre.blocktext {
   }
   input[type='checkbox'],
   input[type='radio'] {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
+  }
+  /* Inline links inside content are the last sub-44px targets left — Reports
+     renders 30 of them at 15px tall. Padding rather than min-height, so they
+     stay inline and do not break the sentences they sit in. */
+  .mc-main a[href] {
+    padding-block: 6px;
+    display: inline-block;
   }
   textarea {
     font-size: 15px;

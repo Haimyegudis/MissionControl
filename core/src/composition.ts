@@ -19,6 +19,7 @@ import {
   KvTeamRepo,
 } from './storage/lists.js';
 import type { KvStore, PeopleStore } from './storage/kv.js';
+import { ConfluenceService } from './confluence/service.js';
 import { TestRailService } from './testrail/service.js';
 import type { Credentials, JiraUser } from './types.js';
 
@@ -53,6 +54,7 @@ export interface Core {
   metadata: CachedMetadataService;
   timeLogged: TimeLoggedService;
   testrail: TestRailService;
+  confluence: ConfluenceService;
   dashboards: JiraDashboardService;
   createIssues: JiraCreateIssueService;
   aggregator: DashboardAggregator;
@@ -81,6 +83,7 @@ export function createCore(ports: CorePorts): Core {
   const metadata = new CachedMetadataService(new JiraMetadataService(session), metadataCache);
   const timeLogged = new TimeLoggedService(session, issues, worklogs);
   const testrail = new TestRailService(ports.kv, ports.people);
+  const confluence = new ConfluenceService(ports.credentials);
   const dashboards = new JiraDashboardService(session);
   const createIssues = new JiraCreateIssueService(session);
   const aggregator = new DashboardAggregator(session, issues, timeLogged);
@@ -93,6 +96,7 @@ export function createCore(ports: CorePorts): Core {
     metadata,
     timeLogged,
     testrail,
+    confluence,
     dashboards,
     createIssues,
     aggregator,

@@ -1,8 +1,8 @@
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import { randomBytes } from 'node:crypto';
 import sanitizeHtml from 'sanitize-html';
-import { ConfluenceApiError } from '../confluence/client.js';
-import type { ConfluenceConnection, ConfluenceSearchOptions } from '../confluence/types.js';
+import { ConfluenceApiError } from '@mc/core';
+import type { ConfluenceConnection, ConfluenceSearchOptions } from '@mc/core';
 import type { Credentials } from '../config/credentialsStore.js';
 import { h, HttpError, qstr, requireString, type AppDeps } from './deps.js';
 

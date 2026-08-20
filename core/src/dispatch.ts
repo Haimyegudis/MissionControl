@@ -999,6 +999,70 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
     return NOT_FOUND;
   }
 
+  /**
+   * Confluence. Read paths plus connect/disconnect — enough for the mobile
+   * screen. Note this only works on the corporate network: the host is
+   * internal-only with no external counterpart.
+   */
+  async function confluenceRoute(
+    method: string,
+    rest: string[],
+    query: URLSearchParams,
+    b: Record<string, unknown>,
+  ): Promise<DispatchResponse> {
+    const service = core.confluence;
+    const [head, second, third] = rest;
+
+    if (method === 'GET' && head === 'status') return ok(service.status());
+
+    if (method === 'POST' && head === 'test') {
+      return ok(await service.test({ baseUrl: requireString(b.baseUrl, 'baseUrl'), pat: requireString(b.pat, 'pat') }));
+    }
+
+    if (method === 'PUT' && head === 'connection') {
+      const next = { baseUrl: requireString(b.baseUrl, 'baseUrl'), pat: requireString(b.pat, 'pat') };
+      const user = await service.test(next);
+      const saved = core.credentials.load() ?? emptyCredentials();
+      core.credentials.save({
+        ...saved,
+        confluenceBaseUrl: next.baseUrl.trim().replace(/\/+$/, ''),
+        confluencePat: next.pat.trim(),
+      });
+      service.disconnect();
+      await service.connect();
+      return ok({ ...service.status(), user });
+    }
+
+    if (method === 'DELETE' && head === 'connection') {
+      const saved = core.credentials.load();
+      if (saved) core.credentials.save({ ...saved, confluenceBaseUrl: '', confluencePat: '' });
+      service.disconnect();
+      return NO_CONTENT;
+    }
+
+    if (method === 'GET' && head === 'spaces' && second === undefined) {
+      return ok(await service.spaces(isFresh(query)));
+    }
+
+    if (method === 'GET' && head === 'spaces' && second !== undefined) {
+      if (third === 'pages') {
+        const startAt = Math.max(0, Number.parseInt(query.get('start') ?? '0', 10) || 0);
+        const limit = Math.min(200, Math.max(1, Number.parseInt(query.get('limit') ?? '200', 10) || 200));
+        return ok(await service.pages(second, startAt, limit));
+      }
+      if (third === 'tree') return ok(await service.treeRoots(second));
+      return NOT_FOUND;
+    }
+
+    if (method === 'GET' && head === 'pages' && second !== undefined) {
+      if (third === 'children') return ok(await service.children(second));
+      if (third === undefined) return ok(await service.requirePage(second));
+      return NOT_FOUND;
+    }
+
+    return NOT_FOUND;
+  }
+
   async function route(
     method: string,
     segments: string[],
@@ -1020,6 +1084,8 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
         return metadataRoute(method, rest, query);
       case 'testrail':
         return testrailRoute(method, rest, query, body);
+      case 'confluence':
+        return confluenceRoute(method, rest, query, b);
       case 'boards':
         return boardsRoute(method, rest, query);
       case 'incidents':

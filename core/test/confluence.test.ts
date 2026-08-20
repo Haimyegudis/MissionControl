@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Credentials } from '../src/config/credentialsStore.js';
+import type { Credentials } from '../src/types.js';
 import { ConfluenceService, isIndigoSpace } from '../src/confluence/service.js';
 
 const credentials: Credentials = {

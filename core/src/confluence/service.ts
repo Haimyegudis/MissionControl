@@ -1,4 +1,4 @@
-import type { Credentials } from '../config/credentialsStore.js';
+import type { Credentials } from '../types.js';
 import { ConfluenceApiError, ConfluenceClient } from './client.js';
 import type { ConfluenceConnection, ConfluencePage, ConfluencePageContent, ConfluenceSearchOptions, ConfluenceSpace, ConfluenceStatus, ConfluenceUser } from './types.js';
 
@@ -40,13 +40,20 @@ function day(value: string | undefined): string | null {
   return value;
 }
 
+/**
+ * Space-list override. The server sets this from CONFLUENCE_INDIGO_SPACES;
+ * core cannot read process.env because it also runs inside a WebView, where
+ * that global does not exist.
+ */
+let spaceOverride: string[] = [];
+
+export function setIndigoSpaceOverride(csv: string | undefined): void {
+  spaceOverride = (csv ?? '').split(',').map(normalized).filter(Boolean);
+}
+
 export function isIndigoSpace(space: ConfluenceSpace): boolean {
-  const configured = (process.env.CONFLUENCE_INDIGO_SPACES ?? '')
-    .split(',')
-    .map(normalized)
-    .filter(Boolean);
-  const identifiers = configured.length > 0
-    ? configured
+  const identifiers = spaceOverride.length > 0
+    ? spaceOverride
     : DEFAULT_INDIGO_SPACE_IDENTIFIERS.map(normalized);
   if (identifiers.includes(normalized(space.key)) || identifiers.includes(normalized(space.name))) return true;
   const text = [space.key, space.name, space.description, ...space.labels].join(' ').toLowerCase();

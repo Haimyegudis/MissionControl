@@ -18,7 +18,7 @@ import type { CreateDefaultsEntry, CreateMetaEntry } from '../storage/fileStores
 import type { TestRailClientLike } from '@mc/core';
 import type { TrMeta, TrPrefetchProgress, TrSessionStatus } from '@mc/core';
 import type { TrConnection, TrUser } from '@mc/core';
-import type { ConfluenceService } from '../confluence/service.js';
+import type { ConfluenceService } from '@mc/core';
 import type {
   AppSettings,
   DashboardSnapshot,

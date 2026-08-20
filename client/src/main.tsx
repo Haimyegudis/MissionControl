@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { MobileApp } from './mobile/MobileApp';
 import { initRouter } from './router';
 import { initSession } from './stores/session';
 import { isNativeApp } from './native/platform';
@@ -70,9 +71,12 @@ async function start(): Promise<void> {
   }
   initRouter();
   void initSession();
+  // The phone gets a purpose-built shell, not the desktop workspace in a
+  // narrow window. Both share the stores, the typed API and the dispatcher.
+  const Root = isNativeApp() ? MobileApp : App;
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <App />
+      <Root />
     </StrictMode>,
   );
 }

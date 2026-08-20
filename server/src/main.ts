@@ -37,7 +37,7 @@ import { openDb } from './storage/db.js';
 import { CreateDefaultsStore, CreateMetaCache } from './storage/fileStores.js';
 import { PinnedBoardRepo, SavedFilterRepo, TeamRepo } from './storage/repositories.js';
 import { SqliteKvStore, SqlitePeopleStore } from './storage/sqliteKv.js';
-import { ConfluenceService } from './confluence/service.js';
+import { ConfluenceService, setIndigoSpaceOverride } from '@mc/core';
 
 /** %APPDATA%\TestRailWeb\people.json — the standalone app's people store. */
 function legacyPeople(): TestRailPerson[] | null {
@@ -82,6 +82,7 @@ const aggregator = new DashboardAggregator(session, issueService, timeLogged);
 const createDefaults = new CreateDefaultsStore();
 const createMetaCache = new CreateMetaCache();
 const testRail = new TestRailService(kv, people, undefined, legacyPeople);
+setIndigoSpaceOverride(process.env.CONFLUENCE_INDIGO_SPACES);
 const confluence = new ConfluenceService(credentials);
 testRail.importLegacyPeopleIfEmpty();
 
