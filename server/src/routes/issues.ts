@@ -4,36 +4,13 @@
 import { Router } from 'express';
 import type { AdjustEstimate } from '@mc/core';
 import type { JiraIssue } from '@mc/core';
+import { CACHE_FRESH_MS, DELTA_SLACK_MS, injectUpdatedClause } from '@mc/core';
 import { h, HttpError, requireString, type AppDeps } from './deps.js';
 
-/** Issue-cache freshness window (ui-parity §2): 1 hour. */
-export const CACHE_FRESH_MS = 60 * 60 * 1000;
-/** Delta lower bound = last refresh − 2 minutes. */
-export const DELTA_SLACK_MS = 2 * 60 * 1000;
-
-/** `yyyy-MM-dd HH:mm` in local time (JQL `updated >=` literal). */
-export function formatJqlMinute(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return (
-    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
-    ` ${pad(d.getHours())}:${pad(d.getMinutes())}`
-  );
-}
-
-/**
- * Inject `AND updated >= "yyyy-MM-dd HH:mm"` before a trailing ORDER BY
- * (appended when the JQL has none).
- */
-export function injectUpdatedClause(jql: string, since: Date): string {
-  const clause = `updated >= "${formatJqlMinute(since)}"`;
-  const match = /\border\s+by\b/i.exec(jql);
-  if (match) {
-    const head = jql.slice(0, match.index).trim();
-    const tail = jql.slice(match.index).trim();
-    return `${head} AND ${clause} ${tail}`;
-  }
-  return `${jql.trim()} AND ${clause}`;
-}
+// The MyWork delta helpers live in core so the Express routes and the mobile
+// dispatcher cannot drift; re-exported here because tests import them from
+// this module.
+export { CACHE_FRESH_MS, DELTA_SLACK_MS, formatJqlMinute, injectUpdatedClause } from '@mc/core';
 
 export function issueRoutes(deps: AppDeps): Router {
   const router = Router();

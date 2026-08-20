@@ -23,6 +23,12 @@ export interface CorePorts {
   kv: KvStore;
   people: PeopleStore;
   credentials: CredentialsPort;
+  /**
+   * Single clock for everything time-dependent in the graph (cache stamps and
+   * freshness windows). Injectable so a test can move time without the cache
+   * and its reader disagreeing about what "now" is.
+   */
+  now?: () => number;
 }
 
 /** Probes a candidate profile; injectable so tests need no network. */
@@ -40,15 +46,19 @@ export interface Core {
   testrail: TestRailService;
   settings: AppSettingsRepo;
   issueCache: IssueCacheRepo;
+  metadataCache: MetadataCacheRepo;
   credentials: CredentialsPort;
+  /** The graph's clock, so callers such as the dispatcher share it. */
+  now(): number;
   getDistinct(projectKey: string, fieldName: string, maxIssues: number): Promise<string[]>;
   /** Verify a profile without touching the live session. */
   testConnection(credentials: Credentials, probe?: ConnectionProbe): Promise<JiraUser>;
 }
 
 export function createCore(ports: CorePorts): Core {
+  const now = ports.now ?? (() => Date.now());
   const session = new JiraSession();
-  const metadataCache = new MetadataCacheRepo(ports.kv);
+  const metadataCache = new MetadataCacheRepo(ports.kv, now);
   const issues = new JiraIssueService(session);
   const worklogs = new JiraWorklogService(session);
   const boards = new CachedBoardService(new JiraBoardService(session), metadataCache);
@@ -65,8 +75,10 @@ export function createCore(ports: CorePorts): Core {
     timeLogged,
     testrail,
     settings: new AppSettingsRepo(ports.kv),
-    issueCache: new IssueCacheRepo(ports.kv),
+    issueCache: new IssueCacheRepo(ports.kv, now),
+    metadataCache,
     credentials: ports.credentials,
+    now,
     getDistinct: (projectKey, fieldName, maxIssues) =>
       metadata.getDistinct(projectKey, fieldName, () =>
         issues.getDistinctIssueField(projectKey, fieldName, maxIssues, metadata),

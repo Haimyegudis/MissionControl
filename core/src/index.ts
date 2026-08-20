@@ -31,6 +31,16 @@ export {
   type CorePorts,
   type CredentialsPort,
 } from './composition.js';
+export {
+  CACHE_FRESH_MS,
+  DELTA_SLACK_MS,
+  createDispatcher,
+  formatJqlMinute,
+  injectUpdatedClause,
+  type Dispatch,
+  type DispatchResponse,
+  type DispatcherOptions,
+} from './dispatch.js';
 
 // --- Jira --------------------------------------------------------------------
 export { JiraSession, type SessionChangedListener } from './jira/session.js';
