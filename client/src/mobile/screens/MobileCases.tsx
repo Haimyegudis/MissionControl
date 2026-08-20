@@ -172,23 +172,33 @@ export function MobileCases() {
 
   // filterCases is the desktop's own function, so owner/assignee/title behave
   // identically on both clients rather than being reimplemented here.
-  const cases = useMemo(
-    () =>
-      filterCases(
-        allCases,
-        {
-          title: st.filters.titleContains,
-          ownerText: st.filters.ownerText,
-          assigneeText: st.filters.assigneeText,
-          neverRan: false,
-          coverage: null,
-          sectionIds: null,
-          sectionPathById: null,
-        },
-        nameOf,
-      ),
-    [allCases, st.filters, nameOf],
-  );
+  const cases = useMemo(() => {
+    // Title, refs, steps and id matching come from the desktop's own function.
+    // Owner and assignee are matched here instead, token-wise: the stored
+    // names are surname-first, so "eran twito" must still match "Twito Eran"
+    // — and filterCases is shared with the desktop, which is not ours to
+    // change.
+    const base = filterCases(
+      allCases,
+      {
+        title: st.filters.titleContains,
+        neverRan: false,
+        coverage: null,
+        sectionIds: null,
+        sectionPathById: null,
+      },
+      nameOf,
+    );
+    const matchName = (id: number | null, query: string) => {
+      const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      if (tokens.length === 0) return true;
+      const name = nameOf(id).toLowerCase();
+      return tokens.every((t) => name.includes(t));
+    };
+    return base
+      .filter((c) => matchName(c.ownerId, st.filters.ownerText))
+      .filter((c) => matchName(c.assignedToId, st.filters.assigneeText));
+  }, [allCases, st.filters, nameOf]);
 
   /**
    * Selectable users: the TestRail people map merged with the project's meta
@@ -657,8 +667,18 @@ function UserField({
   onChange: (v: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const q = value.trim().toLowerCase();
-  const matches = q ? users.filter((u) => u.toLowerCase().includes(q)) : users;
+  // TestRail stores 96 of the 97 names surname-first ("Twito Eran"), so a
+  // substring match finds nothing when the name is typed the way people say
+  // it. Every whitespace-separated token must appear somewhere in the name,
+  // in any order, which matches both spellings.
+  const tokens = value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const matches =
+    tokens.length === 0
+      ? users
+      : users.filter((u) => {
+          const name = u.toLowerCase();
+          return tokens.every((t) => name.includes(t));
+        });
 
   return (
     <div>

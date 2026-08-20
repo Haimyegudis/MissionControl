@@ -52,7 +52,20 @@ function showLocked(): void {
   document.getElementById('mc-unlock')?.addEventListener('click', () => window.location.reload());
 }
 
+/** Take the boot splash down now, whatever happens next. */
+function clearSplash(): void {
+  const el = document.getElementById('splash');
+  if (!el) return;
+  el.dataset.closing = '1';
+  el.classList.add('done');
+  window.setTimeout(() => el.remove(), 450);
+}
+
 async function startNative(): Promise<boolean> {
+  // Drop the splash before the unlock prompt rather than after the app mounts.
+  // Anything that stalls in between — a prompt that never settles, a slow
+  // hydrate — otherwise leaves the splash on screen looking like a hang.
+  clearSplash();
   // Touch styling and the flight-deck theme live here, loaded only in the
   // native shell so the desktop bundle never sees them.
   // Stamped before the first paint, because useIsNarrow reads it during

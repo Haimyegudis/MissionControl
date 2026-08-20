@@ -4,6 +4,16 @@
 /** Background time after which returning to the app re-triggers the prompt. */
 export const LOCK_TIMEOUT_MS = 5 * 60 * 1000;
 
+/**
+ * How long to wait for the prompt before giving up on it.
+ *
+ * BiometricPrompt does not always settle: relaunching the activity while it is
+ * showing leaves the promise pending forever, and boot then hangs on the
+ * splash with nothing rendered — indistinguishable from a crash. Timing out
+ * into the locked screen keeps that recoverable.
+ */
+const PROMPT_TIMEOUT_MS = 45_000;
+
 export async function requireUnlock(reason: string): Promise<boolean> {
   let api: typeof import('@aparajita/capacitor-biometric-auth');
   try {
@@ -19,12 +29,15 @@ export async function requireUnlock(reason: string): Promise<boolean> {
       // refusing here would make the app unusable on such a device.
       return true;
     }
-    await api.BiometricAuth.authenticate({
+    const prompt = api.BiometricAuth.authenticate({
       reason,
       androidTitle: 'MissionControl',
       allowDeviceCredential: true,
+    }).then(() => true);
+    const timeout = new Promise<boolean>((resolve) => {
+      setTimeout(() => resolve(false), PROMPT_TIMEOUT_MS);
     });
-    return true;
+    return await Promise.race([prompt, timeout]);
   } catch {
     return false;
   }

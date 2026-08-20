@@ -175,9 +175,16 @@ async function afterConnect(session: TrSessionStatus): Promise<void> {
     // carries the same map, embedded at build time, because TestRail will not
     // list users for a non-admin account. Server-side names still win.
     const seed = typeof __MC_PEOPLE__ === 'object' ? __MC_PEOPLE__ : {};
+    let seeded = 0;
     for (const [id, personName] of Object.entries(seed)) {
-      if (!people[id]) people[id] = personName;
+      if (!people[id]) {
+        people[id] = personName;
+        seeded += 1;
+      }
     }
+    // Persist the merged map so it survives a restart and is the same list
+    // every screen reads, rather than living only in this session's memory.
+    if (seeded > 0) void trApi.setPeople(people).catch(() => undefined);
 
     const projects = filterIndigoProjects(allProjects);
     const remembered = Number(localStorage.getItem(LS_PROJECT));
