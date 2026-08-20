@@ -26,8 +26,8 @@ export interface KvPersistence {
 
 export class HydratedKvStore extends MemoryKvStore {
   private readonly dirty = new Set<KvTable>();
-  /** Tables skipped by the size cap, exposed for diagnostics. */
-  readonly oversized = new Set<KvTable>();
+  /** Tables whose oldest entries were dropped to stay under the cap. */
+  readonly evicted = new Set<KvTable>();
   private timer: ReturnType<typeof setTimeout> | null = null;
   private pending: Promise<void> = Promise.resolve();
 
@@ -61,14 +61,23 @@ export class HydratedKvStore extends MemoryKvStore {
     this.pending = this.pending.then(async () => {
       for (const table of tables) {
         try {
-          const entries = this.snapshot(table);
-          const bytes = entries.reduce((sum, [key, rec]) => sum + key.length + rec.json.length, 0);
-          if (bytes > MAX_PERSISTED_BYTES) {
-            this.oversized.add(table);
-            continue;
+          // Evict rather than skip. Skipping the whole table meant one large
+          // cache (TestRail's reached 21.8MB) disabled persistence entirely —
+          // every launch refetched from the network, which is exactly what the
+          // cache exists to avoid. Oldest entries go first; the working set is
+          // whatever was touched most recently.
+          const entries = this.snapshot(table).sort((a, b) => b[1].updatedAt - a[1].updatedAt);
+          let bytes = 0;
+          const keep: Array<[string, KvRecord]> = [];
+          for (const entry of entries) {
+            const size = entry[0].length + entry[1].json.length;
+            if (bytes + size > MAX_PERSISTED_BYTES) break;
+            bytes += size;
+            keep.push(entry);
           }
-          this.oversized.delete(table);
-          await this.persistence(table).write(table, entries);
+          if (keep.length < entries.length) this.evicted.add(table);
+          else this.evicted.delete(table);
+          await this.persistence(table).write(table, keep);
         } catch {
           // Losing a cache write is survivable; crashing the app is not.
         }

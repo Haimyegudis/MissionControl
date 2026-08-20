@@ -3,6 +3,7 @@
 // module-level async actions, localStorage persistence for UI preferences.
 
 import { trApi } from '../api/testrail';
+import { isNativeApp } from '../native/platform';
 import type {
   TrCase,
   TrMeta,
@@ -179,8 +180,14 @@ async function afterConnect(session: TrSessionStatus): Promise<void> {
       return;
     }
     await selectProject(start.id);
-    // Warm the server cache in the background (best-effort, like Railbook).
-    void trApi.prefetch(projects.map((p) => p.id)).catch(() => {});
+    // Warm the cache in the background (best-effort, like Railbook).
+    //
+    // On a phone this is scoped to the project actually being opened. Warming
+    // every Indigo project pulled suites, sections, runs and cases for all of
+    // them, which grew the on-device cache past 20MB — so it stopped being
+    // written at all and every launch refetched from the network.
+    const warm = isNativeApp() ? [start.id] : projects.map((p) => p.id);
+    void trApi.prefetch(warm).catch(() => {});
   } catch (err) {
     patch({ phase: 'disconnected' });
     pushToast({ title: 'TestRail load failed', body: err instanceof Error ? err.message : String(err) });
