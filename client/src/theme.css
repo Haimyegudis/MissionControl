@@ -1045,6 +1045,24 @@ pre.blocktext {
     min-height: 96px;
   }
 
+  /* -- form controls ------------------------------------------------------ */
+  /* Filter inputs and selects carry desktop min-widths (150–280px). Two of
+     them in one row already exceed a 384px screen, which is what made the
+     Runs, Cases and Reports filter bars spill. Let them shrink and wrap
+     instead: flex-basis keeps them readable, min-width:0 lets them give. */
+  .mc-main input:not([type='checkbox']):not([type='radio']),
+  .mc-main select,
+  .mc-main textarea {
+    min-width: 0 !important;
+    max-width: 100%;
+    flex: 1 1 160px;
+  }
+  /* Flex children cannot shrink below their content unless told to. */
+  .mc-main .card > *,
+  .mc-main .card > * > * {
+    min-width: 0;
+  }
+
   /* -- toolbars and filter rows ------------------------------------------ */
   /* Rows of chips/filters become a swipeable rail with snap points rather than
      wrapping into a wall that pushes content off screen. */
