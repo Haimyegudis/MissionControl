@@ -812,9 +812,9 @@ function CaseEditorSheet({
  * The first version only listed sections of the suite already on screen, so
  * there was no way to send a case to another suite — let alone another
  * project. This walks the real hierarchy: project, then suite, then section,
- * each loaded on demand. Projects come from allProjects rather than the
- * Indigo-scoped set, because a transfer target may legitimately live outside
- * the working set.
+ * each loaded on demand. Projects are the Indigo-scoped set, the same list the
+ * screen's own picker shows — the account can see far more, and offering them
+ * as destinations only makes the list hard to search.
  */
 function TransferSheet({
   mode,
@@ -977,7 +977,7 @@ function TransferSheet({
       <Label>Project</Label>
       <Picker
         value={projectId}
-        options={st.allProjects.map((p) => ({ id: p.id, label: p.name }))}
+        options={st.projects.map((p) => ({ id: p.id, label: p.name }))}
         onChange={setProjectId}
       />
 
