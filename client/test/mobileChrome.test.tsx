@@ -4,14 +4,27 @@ import { BottomTabs, MOBILE_TABS } from '../src/components/BottomTabs';
 import { MOBILE_ROUTE_IDS } from '../src/router';
 
 describe('BottomTabs', () => {
-  it('renders exactly the Phase 1 tabs, in order', () => {
-    expect(MOBILE_TABS.map((t) => t.id)).toEqual(['mywork', 'testrail-runs', 'settings']);
+  it('renders the primary tabs, in order', () => {
+    expect(MOBILE_TABS.map((t) => t.id)).toEqual([
+      'mywork',
+      'testrail-runs',
+      'testrail-cases',
+      'settings',
+    ]);
+  });
+
+  it('gives every tab an icon and a label', () => {
+    for (const tab of MOBILE_TABS) {
+      expect(tab.icon.length).toBeGreaterThan(0);
+      expect(tab.label.length).toBeGreaterThan(0);
+    }
   });
 
   it('renders a labelled button per tab', () => {
     const html = renderToString(<BottomTabs active="mywork" />);
     expect(html).toContain('Backlog');
     expect(html).toContain('Runs');
+    expect(html).toContain('Cases');
     expect(html).toContain('Settings');
   });
 

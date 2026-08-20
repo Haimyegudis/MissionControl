@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { issues as issuesApi, metadata as metadataApi } from '../api/client';
-import { DataGrid } from '../components/DataGrid';
+import { ResponsiveGrid } from '../components/ResponsiveGrid';
 import type { GridColumn } from '../components/DataGrid';
 import { UserSearchPicker } from '../components/UserSearchPicker';
 import { dialogs } from '../dialogs/DialogHost';
@@ -121,7 +121,7 @@ export function RecentUpdatesView() {
         {busy ? <span className="accent-cyan">…</span> : null}
       </div>
       {error ? <div style={{ color: 'var(--accent-red)', fontSize: 12.5 }}>{error}</div> : null}
-      <DataGrid<JiraIssue>
+      <ResponsiveGrid<JiraIssue>
         stateKey="RecentUpdates.Updates"
         columns={columns}
         rows={rows}

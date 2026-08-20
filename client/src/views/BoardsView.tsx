@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { boards as boardsApi } from '../api/client';
-import { DataGrid } from '../components/DataGrid';
+import { ResponsiveGrid } from '../components/ResponsiveGrid';
 import type { GridColumn } from '../components/DataGrid';
 import { PageHeader } from '../components/PageHeader';
 import {
@@ -144,7 +144,7 @@ export function BoardsView() {
         </div>
       ) : null}
 
-      <DataGrid<JiraBoard>
+      <ResponsiveGrid<JiraBoard>
         stateKey="BoardSearch.Boards"
         columns={columns}
         rows={filtered}

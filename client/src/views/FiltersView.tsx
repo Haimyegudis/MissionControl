@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { filters as filtersApi, issues as issuesApi } from '../api/client';
-import { DataGrid } from '../components/DataGrid';
+import { ResponsiveGrid } from '../components/ResponsiveGrid';
 import type { GridColumn } from '../components/DataGrid';
 import { JqlEditor } from '../components/JqlEditor';
 import { dialogs } from '../dialogs/DialogHost';
@@ -217,7 +217,7 @@ export function FiltersView() {
           {busy ? <span className="accent-cyan">…</span> : null}
         </div>
         {error ? <div style={{ color: 'var(--accent-red)', fontSize: 12.5 }}>{error}</div> : null}
-        <DataGrid<JiraIssue>
+        <ResponsiveGrid<JiraIssue>
           stateKey="Filters.Results"
           columns={resultColumns}
           rows={results}

@@ -8,7 +8,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, dashboard as dashboardApi, issues as issuesApi, metadata } from '../api/client';
-import { DataGrid, type GridColumn } from '../components/DataGrid';
+import type { GridColumn } from '../components/DataGrid';
+import { ResponsiveGrid } from '../components/ResponsiveGrid';
 import { Kanban } from '../components/Kanban';
 import { TextPrompt } from '../components/TextPrompt';
 import { UserSearchPicker } from '../components/UserSearchPicker';
@@ -370,7 +371,7 @@ export function DashboardView() {
             onColumnContextMenu={(columnTitle) => setWipColumn(columnTitle)}
           />
         ) : (
-          <DataGrid
+          <ResponsiveGrid
             stateKey="Dashboard.SprintTable"
             columns={columns}
             rows={sprintIssues}

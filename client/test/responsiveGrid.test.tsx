@@ -94,3 +94,37 @@ describe('ResponsiveGrid', () => {
     expect(html).toContain('<table');
   });
 });
+
+
+describe('CardList hierarchy', () => {
+  it('renders the second column as an unlabelled subtitle, not a field row', () => {
+    const html = renderToString(<CardList columns={columns} rows={rows} rowKey={(r) => r.key} />);
+    expect(html).toContain('First');
+    // "Summary" is the header of the subtitle column; it must not be printed.
+    expect(html).not.toContain('Summary');
+  });
+
+  it('still labels the remaining fields', () => {
+    const html = renderToString(<CardList columns={columns} rows={rows} rowKey={(r) => r.key} />);
+    expect(html).toContain('Status');
+  });
+
+  it('drops a field whose value is blank rather than printing an empty row', () => {
+    const cols: GridColumn<Row>[] = [
+      { key: 'key', header: 'Key', width: 100 },
+      { key: 'summary', header: 'Summary', width: 300 },
+      { key: 'status', header: 'Status', width: 100 },
+      { key: 'nothing', header: 'Nothing', width: 80, format: () => '' },
+    ];
+    const html = renderToString(<CardList columns={cols} rows={rows} rowKey={(r) => r.key} />);
+    expect(html).toContain('Status');
+    expect(html).not.toContain('Nothing');
+  });
+
+  it('survives a single-column grid', () => {
+    const cols: GridColumn<Row>[] = [{ key: 'key', header: 'Key', width: 100 }];
+    const html = renderToString(<CardList columns={cols} rows={rows} rowKey={(r) => r.key} />);
+    expect(html).toContain('A-1');
+    expect(html).not.toContain('more');
+  });
+});

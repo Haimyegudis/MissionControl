@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { metadata as metadataApi, timelogged as timeloggedApi } from '../api/client';
 import { Heatmap } from '../charts/Heatmap';
-import { DataGrid } from '../components/DataGrid';
+import { ResponsiveGrid } from '../components/ResponsiveGrid';
 import type { GridColumn } from '../components/DataGrid';
 import { UserSearchPicker } from '../components/UserSearchPicker';
 import { dialogs } from '../dialogs/DialogHost';
@@ -439,7 +439,7 @@ export function TimeLoggedView() {
       </div>
 
       {/* ------------------------------------------- issues panel ---------- */}
-      <DataGrid<JiraIssue>
+      <ResponsiveGrid<JiraIssue>
         stateKey="TimeLogged.Issues"
         columns={columns}
         rows={report?.issues ?? []}

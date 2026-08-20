@@ -3,7 +3,7 @@
 
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { DataGrid } from './DataGrid';
+import { ResponsiveGrid } from './ResponsiveGrid';
 import type { DataGridProps } from './DataGrid';
 
 export interface PagedGridProps<T> extends Omit<DataGridProps<T>, 'rows'> {
@@ -54,7 +54,7 @@ export function PagedGrid<T>({ rows, pageSize = 10, headerLeft, ...gridProps }: 
           {`${first}-${last} of ${total}`}
         </div>
       </div>
-      <DataGrid {...gridProps} rows={pageRows} />
+      <ResponsiveGrid {...gridProps} rows={pageRows} />
       {totalPages > 1 ? (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center' }}>
           {pageBtn('◀', current - 1, current <= 1, false, 'prev')}

@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { issues as issuesApi, teams as teamsApi } from '../api/client';
 import { StackedBarsH } from '../charts/StackedBarsH';
-import { DataGrid } from '../components/DataGrid';
+import { ResponsiveGrid } from '../components/ResponsiveGrid';
 import type { GridColumn } from '../components/DataGrid';
 import { errText } from '../lib/errors';
 import { fmtHours, fmtHours1 } from '../lib/viewFormat';
@@ -255,7 +255,7 @@ export function TeamView() {
           </div>
 
           <div title="Double-click a member to open details">
-            <DataGrid<TeamMemberRow>
+            <ResponsiveGrid<TeamMemberRow>
               stateKey="TeamDashboard.Rows"
               columns={columns}
               rows={rows}

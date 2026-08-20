@@ -10,7 +10,7 @@ import { issues as issuesApi } from '../../api/client';
 import { Bars } from '../../charts/Bars';
 import { StackedBarsH } from '../../charts/StackedBarsH';
 import { CHART_PALETTE } from '../../lib/colors';
-import { DataGrid } from '../../components/DataGrid';
+import { ResponsiveGrid } from '../../components/ResponsiveGrid';
 import type { GridColumn } from '../../components/DataGrid';
 import { Modal } from '../../components/Modal';
 import { priorityColor, statusColor } from '../../lib/colors';
@@ -227,7 +227,7 @@ export function MemberDetail({ member, issues, onClose }: MemberDetailProps) {
             />
           </div>
         </div>
-        <DataGrid<FeatureRow>
+        <ResponsiveGrid<FeatureRow>
           stateKey="TeamMemberDetail.Features"
           columns={columns}
           rows={rows}
