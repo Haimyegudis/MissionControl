@@ -36,8 +36,8 @@ Express appears only in `server/src/routes/*`, a thin adapter, and
 
 **`client/src/api/client.ts` mirrors those interfaces one-to-one.** It is a
 typed `fetch` wrapper whose function surface matches the route contract. This
-is the seam: replacing it with an adapter that calls the services in-process
-leaves every view untouched.
+is the seam: teaching its `request()` helper to call an in-process dispatcher
+instead of `fetch` leaves every view and every API signature untouched.
 
 ## Architecture
 
@@ -52,10 +52,11 @@ Android APK (Capacitor)
 │   └─ OkHttp bridge — CapacitorHttp patches window.fetch
 └─ WebView: bundled Vite build
     ├─ client/src/views/*        unchanged
-    ├─ client/src/api/local.ts   NEW — replaces api/client.ts, same signatures
+    ├─ client/src/api/client.ts  gains an in-process dispatch branch
     ├─ core/jira/*               moved from server/src/jira, unchanged
     ├─ core/testrail/*           moved from server/src/testrail, unchanged
-    └─ core/store/*              NEW — repository interfaces over Capacitor
+    ├─ core/dispatch.ts          NEW — answers the route contract without Express
+    └─ core/storage/*            NEW — repository interfaces over Capacitor
 ```
 
 `CapacitorHttp` routes `window.fetch` through native OkHttp. This is load
@@ -119,7 +120,8 @@ differs.
 
 | Repository | Desktop backend | Android backend |
 | --- | --- | --- |
-| `AppSettingsRepo`, `TeamRepo`, `SavedFilterRepo`, `PinnedBoardRepo`, `BoardWorkspaceRepo` | SQLite | `@capacitor/preferences` JSON |
+| `AppSettingsRepo` | SQLite | `@capacitor/preferences` JSON |
+| `TeamRepo`, `SavedFilterRepo`, `PinnedBoardRepo`, `BoardWorkspaceRepo` | SQLite | Not ported in Phase 1 — desktop only (see Scope) |
 | `IssueCacheRepo`, `trCache*`, `trPeople*` | SQLite | `@capacitor/filesystem` JSON file, app-private storage |
 | `CreateDefaultsStore`, `CreateMetaCache` | JSON file | `@capacitor/preferences` JSON |
 | Credentials | Windows DPAPI | Android Keystore |
@@ -180,6 +182,12 @@ then needs only a `ResponsiveGrid` swap.
 Explicitly out of scope for this project: Lumo and all AI features, Confluence,
 Windows Task Scheduler reminders, the Inno Setup installer, and offline write
 queueing.
+
+Also deferred to Phase 2, because their repositories are row-shaped rather than
+key/JSON-shaped and porting them would require a desktop schema migration:
+saved JQL filters, teams, pinned boards, and board workspaces. On Android
+`/api/filters` returns an empty list, so the Backlog JQL dialog stays usable
+without saved queries.
 
 ## Build and distribution
 
