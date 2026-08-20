@@ -43,9 +43,19 @@ export async function buildNativeRuntime(deps: RuntimeDeps): Promise<NativeRunti
 
   const saved = deps.credentials.load();
   if (saved && saved.jiraPat.trim().length > 0) {
-    // Activate optimistically with a null user: the first API call verifies it,
-    // and a 401 drops the app back to the login screen through session-lost.
+    // Activate immediately so the UI is usable, then resolve who we are.
+    //
+    // The user is not cosmetic: TimeLoggedService attributes a worklog by
+    // comparing its author against session.currentUser, so booting with null
+    // silently zeroed every time total — Time Spent showed no logged work and
+    // the dashboard read 0m today. A failure here still leaves the app usable;
+    // the first 401 drops back to login through session-lost.
     core.session.activate(saved, null);
+    try {
+      core.session.activate(saved, await core.issues.getCurrentUser());
+    } catch {
+      // Offline or unauthorised: keep the optimistic session.
+    }
   }
 
   return {
