@@ -994,29 +994,27 @@ pre.blocktext {
   .mc-main div[style*='display: flex']:not(.mc-rail):not(.mc-chip-row):not(.tr-toolbar) {
     flex-wrap: wrap;
   }
+  /* Nothing may paint outside a card. Anything genuinely wider than the phone
+     scrolls within the card's own rounded box, which is what "scroll to see
+     the rest" should look like — not content spilling over the edge. */
   .mc-main .card {
     max-width: 100%;
+    overflow-x: auto;
   }
 
   /* -- wide tables -------------------------------------------------------- */
-  /* Every real table already sits in an overflow-x wrapper, so it scrolls
-     inside its own box once .mc-main stops scrolling. Do NOT make the table
-     itself display:block here: that destroys column alignment, and a table
-     carrying its own min-width (the weekly timesheet is 756px) then overflows
-     the card instead of scrolling within it.
+  /* Deliberately almost nothing. Every table in the app already sits in an
+     overflow-x wrapper, so once .mc-main stops scrolling they scroll inside
+     their own box correctly on their own.
 
-     Pinning the first column keeps the identifying cell — issue key, case id —
-     on screen while the rest slides under the thumb. */
-  main table th:first-child,
-  main table td:first-child {
-    position: sticky;
-    left: 0;
-    z-index: 2;
-    background: var(--bg-panel-high);
-  }
-  main table th,
-  main table td {
-    padding: 10px 12px;
+     Two earlier attempts to "help" here both regressed: display:block destroyed
+     column alignment and let a table's own min-width overflow its card, and a
+     sticky first column painted an opaque cell over narrow fixed-layout
+     columns — Case Library's 26px checkbox column looked like a second
+     component sitting on top of the table. Blanket cell padding broke the same
+     fixed layouts. Leave tables alone. */
+  main table {
+    max-width: none; /* the wrapper clips; the table keeps its intrinsic width */
   }
 
   /* -- touch targets ------------------------------------------------------ */

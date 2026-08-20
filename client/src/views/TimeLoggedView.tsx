@@ -451,7 +451,7 @@ export function TimeLoggedView() {
 
       {/* -------------------------------------------- timesheet ------------ */}
       <div className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 700, fontSize: 13.5 }}>Weekly timesheet</span>
           <button className="btn btn-icon" onClick={() => changeWeek(addDays(weekStart, -7))} title="Previous week">
             ◀

@@ -393,6 +393,126 @@ export function CaseLibraryView() {
     return out;
   }, [cases]);
 
+  // Phone rendering of the same grouped data. The desktop table is a
+  // fixed-layout grid of up to eight columns, which cannot be made legible at
+  // 384px; the section grouping is the part that carries meaning, so it stays
+  // and each case becomes a tappable card carrying its title plus whichever
+  // columns the user has chosen, minus the title column itself.
+  const caseCards = useMemo(() => {
+    if (!narrow) return null;
+    const metaCols = cols.filter((c) => c.key !== 'title');
+    let painted = 0;
+    const out: ReactNode[] = [];
+
+    for (const group of groups) {
+      if (painted >= rowCap) break;
+      const collapsed = st.collapsedSecs.has(group.sectionId);
+      const shown = collapsed ? [] : group.cases.slice(0, rowCap - painted);
+      painted += shown.length;
+
+      out.push(
+        <div key={`sec-${group.sectionId}`} style={{ marginBottom: 10 }}>
+          <button
+            type="button"
+            onClick={() => toggleCollapsedSection(group.sectionId)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              width: '100%',
+              textAlign: 'left',
+              padding: '10px 10px',
+              background: 'var(--bg-panel-high)',
+              border: '1px solid var(--border-soft)',
+              borderRadius: 10,
+              marginBottom: 6,
+            }}
+          >
+            <span aria-hidden style={{ opacity: 0.7, fontSize: 12 }}>{collapsed ? '▶' : '▼'}</span>
+            <span style={{ flex: 1, minWidth: 0, fontWeight: 650, fontSize: 13.5, overflowWrap: 'anywhere' }}>
+              {sectionPath(group.sectionId, sections, st.suites, st.selSuiteId === 'all')}
+            </span>
+            <span className="muted" style={{ fontSize: 11.5 }}>{group.cases.length}</span>
+          </button>
+
+          {shown.map((c) => (
+            <div
+              key={c.id}
+              onClick={() => setDrawerCaseId(c.id)}
+              style={{
+                border: st.caseSel.has(c.id)
+                  ? '1px solid var(--accent-cyan)'
+                  : '1px solid var(--border-soft)',
+                borderRadius: 10,
+                background: 'var(--bg-panel)',
+                padding: '10px 12px',
+                marginBottom: 6,
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <input
+                  type="checkbox"
+                  checked={st.caseSel.has(c.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => {
+                    const on = e.target.checked;
+                    setCaseSelection((next) => {
+                      if (on) next.add(c.id);
+                      else next.delete(c.id);
+                    });
+                  }}
+                  style={{ flex: '0 0 auto', marginTop: 2 }}
+                />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ ...mono, fontSize: 11, opacity: 0.7 }}>C{c.id}</div>
+                  <div style={{ fontSize: 14, lineHeight: 1.35, overflowWrap: 'anywhere', marginTop: 2 }}>
+                    {c.title}
+                    {cellCtx.neverRan(c) ? (
+                      <>
+                        {' '}
+                        <Stamp variant="neverran">never ran</Stamp>
+                      </>
+                    ) : null}
+                  </div>
+                  {metaCols.length > 0 ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', marginTop: 6 }}>
+                      {metaCols.map((col) => (
+                        <span key={col.key} style={{ fontSize: 11.5 }}>
+                          <span className="muted" style={{ marginRight: 4 }}>{col.label}</span>
+                          {col.cell(c, cellCtx)}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>,
+      );
+    }
+
+    if (visible.length > painted) {
+      out.push(
+        <div key="cap" className="tr-empty-note">
+          Showing {painted} of {visible.length} cases — scroll down to load more.
+        </div>,
+      );
+    }
+    if (out.length === 0) {
+      out.push(
+        <div key="empty" className="tr-empty-note">
+          {loadError
+            ? `✕ Failed to load cases: ${loadError} — use ↻ Refresh to retry.`
+            : 'No cases match the current filters.'}
+        </div>,
+      );
+    }
+    return out;
+  }, [narrow, groups, cols, sections, st.suites, st.selSuiteId, st.collapsedSecs, st.caseSel, rowCap, visible.length, cellCtx, loadError]);
+
   // Memoized: up to ROW_CAP rows × ~8 cells used to rebuild on every render
   // (every keystroke and checkbox click).
   const bodyRows: ReactNode[] = useMemo(() => {
@@ -778,6 +898,9 @@ export function CaseLibraryView() {
             ) : null}
           </div>
 
+          {narrow ? (
+            <div>{caseCards}</div>
+          ) : (
           <div style={{ overflowX: 'auto' }}>
             <table className="tr-tbl" style={{ width: tableWidth, tableLayout: 'fixed' }}>
               <thead>
@@ -808,6 +931,7 @@ export function CaseLibraryView() {
               <tbody>{bodyRows}</tbody>
             </table>
           </div>
+          )}
         </div>
       </div>
 
