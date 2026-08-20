@@ -8,10 +8,18 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { trApi } from '../../api/testrail';
-import { ensureCases, ensureSections, initTestRail, selectProject, selectSuite, trStore } from '../../stores/testrail';
+import {
+  ensureCases,
+  ensureSections,
+  initTestRail,
+  selectProject,
+  selectSuite,
+  setFilters,
+  trStore,
+} from '../../stores/testrail';
 import { useStore } from '../../stores/useStore';
 import { pushToast } from '../../stores/toasts';
-import { sectionPath } from '../../lib/testrail';
+import { filterCases, sectionPath } from '../../lib/testrail';
 import type { TrAddCasePayload, TrCase, TrSection, TrSuite } from '../../testrailTypes';
 import { invalidate, useCached } from '../cache';
 import { Empty, ErrorNote, Loading, Muted, Screen, Sheet, tapReset } from '../ui';
@@ -113,6 +121,7 @@ export function MobileCases() {
   const [query, setQuery] = useState('');
   const [projectOpen, setProjectOpen] = useState(false);
   const [suiteOpen, setSuiteOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [editing, setEditing] = useState<{ existing: TrCase | null } | null>(null);
   const [transfer, setTransfer] = useState<'copy' | 'move' | null>(null);
   const [selected, setSelected] = useState<ReadonlySet<number>>(() => new Set());
@@ -138,9 +147,43 @@ export function MobileCases() {
     res.refresh();
   }, [res]);
 
-  const cases = res.data?.cases ?? [];
+  const allCases = res.data?.cases ?? [];
   const sections = res.data?.sections ?? [];
   const needle = query.trim().toLowerCase();
+
+  /** id → display name, the same resolution the desktop filter uses. */
+  const nameOf = useCallback(
+    (id: number | null) => {
+      if (id === null) return '';
+      return st.people[String(id)] ?? st.meta?.users.find((u) => u.id === id)?.name ?? '';
+    },
+    [st.people, st.meta],
+  );
+
+  // filterCases is the desktop's own function, so owner/assignee/title behave
+  // identically on both clients rather than being reimplemented here.
+  const cases = useMemo(
+    () =>
+      filterCases(
+        allCases,
+        {
+          title: st.filters.titleContains,
+          ownerText: st.filters.ownerText,
+          assigneeText: st.filters.assigneeText,
+          neverRan: false,
+          coverage: null,
+          sectionIds: null,
+          sectionPathById: null,
+        },
+        nameOf,
+      ),
+    [allCases, st.filters, nameOf],
+  );
+
+  const activeFilters =
+    (st.filters.titleContains.trim() ? 1 : 0) +
+    (st.filters.ownerText.trim() ? 1 : 0) +
+    (st.filters.assigneeText.trim() ? 1 : 0);
 
   const { roots, orphans } = useMemo(() => buildTree(sections, cases), [sections, cases]);
   const subtreeIndex = useMemo(() => buildSubtreeIndex(roots), [roots]);
@@ -195,6 +238,10 @@ export function MobileCases() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
         <PickerButton label={project ? project.name : 'Project'} onClick={() => setProjectOpen(true)} />
         <PickerButton label={suiteLabel} onClick={() => setSuiteOpen(true)} />
+        <PickerButton
+          label={activeFilters > 0 ? `Filters (${activeFilters})` : 'Filters'}
+          onClick={() => setFiltersOpen(true)}
+        />
       </div>
 
       <input
@@ -301,6 +348,50 @@ export function MobileCases() {
             {p.name}
           </button>
         ))}
+      </Sheet>
+
+      <Sheet
+        open={filtersOpen}
+        title="Filters"
+        onClose={() => setFiltersOpen(false)}
+        footer={
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="btn"
+              style={{ ...tapReset, flex: 1, minHeight: 44, justifyContent: 'center' }}
+              onClick={() => setFilters({ titleContains: '', ownerText: '', assigneeText: '' })}
+            >
+              Clear
+            </button>
+            <button
+              className="btn btn-primary"
+              style={{ ...tapReset, flex: 2, minHeight: 44, justifyContent: 'center' }}
+              onClick={() => setFiltersOpen(false)}
+            >
+              Done
+            </button>
+          </div>
+        }
+      >
+        <Label>Title contains</Label>
+        <Input
+          value={st.filters.titleContains}
+          onChange={(v) => setFilters({ titleContains: v })}
+          placeholder="Any title"
+        />
+        <Label>Owner</Label>
+        <Input value={st.filters.ownerText} onChange={(v) => setFilters({ ownerText: v })} placeholder="Any owner" />
+        <Label>Assigned to</Label>
+        <Input
+          value={st.filters.assigneeText}
+          onChange={(v) => setFilters({ assigneeText: v })}
+          placeholder="Anyone"
+        />
+        <div style={{ marginTop: 12 }}>
+          <Muted>
+            {cases.length} of {allCases.length} cases match.
+          </Muted>
+        </div>
       </Sheet>
 
       <Sheet open={suiteOpen} title="Suite" onClose={() => setSuiteOpen(false)}>

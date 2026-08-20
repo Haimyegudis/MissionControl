@@ -117,15 +117,13 @@ export function installAppListeners(): void {
       backgroundedAt = null;
     });
 
-    // The shell navigates with React state, so window.history is always empty
-    // and the old check exited on the first gesture. Ask the screen stack
-    // first; only leave when nothing claims the press.
+    // The shell navigates with React state, so the screen stack is the only
+    // authority on what "back" means. There is deliberately no window.history
+    // fallback: a WebView reports history.length > 1 from the initial load
+    // onwards, so consulting it walked hash entries silently and the app could
+    // never be closed no matter how many times back was pressed.
     void App.addListener('backButton', () => {
       if (handleBack()) return;
-      if (window.history.length > 1) {
-        window.history.back();
-        return;
-      }
       void App.exitApp();
     });
   });
