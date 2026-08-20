@@ -975,12 +975,27 @@ pre.blocktext {
     height: 0;
   }
 
-  /* The page itself must never scroll sideways — wide content scrolls inside
-     its own box instead (see the table rule below). */
+  /* Nothing may scroll the page sideways — wide content scrolls inside its own
+     box instead. `.mc-main` is the real scroller (body is height-locked), so
+     clamping html/body alone did nothing: a single over-wide row dragged every
+     screen off-centre and clipped the left edge. */
   html,
   body {
     overflow-x: hidden;
     overscroll-behavior-y: none;
+  }
+  .mc-main {
+    overflow-x: hidden !important;
+  }
+
+  /* Desktop rows are laid out on the assumption that they always fit. They
+     wrap here instead of widening the page. Deliberate horizontal rails opt
+     out — they are supposed to scroll. */
+  .mc-main div[style*='display: flex']:not(.mc-rail):not(.mc-chip-row):not(.tr-toolbar) {
+    flex-wrap: wrap;
+  }
+  .mc-main .card {
+    max-width: 100%;
   }
 
   /* -- wide tables -------------------------------------------------------- */

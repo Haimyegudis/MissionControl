@@ -3,6 +3,13 @@
 // HTML5 drag (dragged card opacity .35, column border DodgerBlue on dragover);
 // J/K/↓/↑ flat keyboard navigation + Enter open (skipped while an input is
 // focused); star click flips via callback.
+//
+// On a phone the desktop board does not survive translation. Five equal
+// columns leave ~55px each, HTML5 drag does not exist on touch, and opening a
+// card is bound to double-click. Below the breakpoint the board becomes a
+// horizontal snap rail whose columns are wide enough to read and let the next
+// one peek — that peek is what says "swipe" — a tap opens a card, and a long
+// press offers the move that drag used to perform.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { priorityColor, starColor } from '../lib/colors';
@@ -10,7 +17,9 @@ import { buildColumns, columnForStatus } from '../lib/kanban';
 import type { KanbanColumn } from '../lib/kanban';
 import type { JiraIssue } from '../types';
 import { AgingDot } from './AgingDot';
+import { ContextMenu, type MenuEntry } from './ContextMenu';
 import { EpicChip } from './EpicChip';
+import { useIsNarrow } from '../lib/useViewport';
 
 export type KanbanVariant = 'rich' | 'minimal';
 
@@ -48,6 +57,11 @@ export function Kanban({
 
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const narrow = useIsNarrow();
+  /** Touch replacement for drag: long-press a card to pick a target column. */
+  const [moveMenu, setMoveMenu] = useState<{ issue: JiraIssue; x: number; y: number } | null>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pressOrigin = useRef<{ x: number; y: number } | null>(null);
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +95,26 @@ export function Kanban({
     return () => window.removeEventListener('keydown', onKey);
   }, [flat, focusedKey, onOpen]);
 
+  /** Target columns for the long-press move, minus the card's current one. */
+  const moveEntries = (issue: JiraIssue): MenuEntry[] =>
+    columns
+      .filter((c) => c.title !== columnForStatus(issue.status))
+      .map((c) => ({
+        label: `Move to ${c.title}`,
+        onClick: () => {
+          setMoveMenu(null);
+          onDrop?.(issue, c.title);
+        },
+      }));
+
+  const cancelPress = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+    pressOrigin.current = null;
+  };
+
   const handleDrop = (columnTitle: string, e: React.DragEvent) => {
     e.preventDefault();
     setDragOverColumn(null);
@@ -97,12 +131,27 @@ export function Kanban({
   return (
     <div
       ref={rootRef}
-      style={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`,
-        gap: 10,
-        alignItems: 'start',
-      }}
+      className={narrow ? 'mc-rail' : undefined}
+      style={
+        narrow
+          ? {
+              display: 'flex',
+              gap: 10,
+              alignItems: 'flex-start',
+              overflowX: 'auto',
+              scrollSnapType: 'x mandatory',
+              // Let the rail bleed to the screen edges so a column can sit
+              // centred with its neighbours visibly peeking either side.
+              margin: '0 -8px',
+              padding: '0 8px 4px',
+            }
+          : {
+              display: 'grid',
+              gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`,
+              gap: 10,
+              alignItems: 'start',
+            }
+      }
     >
       {columns.map((col) => (
         <div
@@ -125,6 +174,14 @@ export function Kanban({
             padding: 8,
             minHeight: 120,
             transition: 'border-color 120ms ease',
+            ...(narrow
+              ? {
+                  // 84% leaves a sliver of the next column in view.
+                  flex: '0 0 84%',
+                  maxWidth: 340,
+                  scrollSnapAlign: 'center',
+                }
+              : null),
           }}
         >
           <div
@@ -140,6 +197,11 @@ export function Kanban({
               gap: 8,
               padding: '2px 4px 8px',
               userSelect: 'none',
+              // Keeps the column name and WIP count in view while a long
+              // column scrolls past.
+              ...(narrow
+                ? { position: 'sticky', top: 0, zIndex: 1, background: 'var(--bg-panel)' }
+                : null),
             }}
           >
             <span style={{ fontWeight: 600, fontSize: 12, letterSpacing: '0.03em' }}>{col.title}</span>
@@ -172,8 +234,32 @@ export function Kanban({
                     setDraggingKey(null);
                     setDragOverColumn(null);
                   }}
-                  onClick={() => setFocusedKey(issue.key)}
+                  onClick={() => {
+                    setFocusedKey(issue.key);
+                    // There is no double-click on touch, so a tap opens.
+                    if (narrow) onOpen?.(issue);
+                  }}
                   onDoubleClick={() => onOpen?.(issue)}
+                  onTouchStart={(e) => {
+                    if (!narrow || !onDrop) return;
+                    const t = e.touches[0];
+                    pressOrigin.current = { x: t.clientX, y: t.clientY };
+                    const at = { x: t.clientX, y: t.clientY };
+                    pressTimer.current = setTimeout(
+                      () => setMoveMenu({ issue, x: at.x, y: at.y }),
+                      500,
+                    );
+                  }}
+                  onTouchMove={(e) => {
+                    const start = pressOrigin.current;
+                    if (!start) return;
+                    const t = e.touches[0];
+                    if (Math.abs(t.clientX - start.x) > 10 || Math.abs(t.clientY - start.y) > 10) {
+                      cancelPress();
+                    }
+                  }}
+                  onTouchEnd={cancelPress}
+                  onTouchCancel={cancelPress}
                   style={{
                     background: 'var(--bg-panel-high)',
                     border: isFocused ? '1px solid var(--accent-cyan)' : '1px solid var(--border-soft)',
@@ -182,6 +268,7 @@ export function Kanban({
                     cursor: 'grab',
                     opacity: isDragging ? 0.35 : 1,
                     transition: 'opacity 120ms ease',
+                    ...(narrow ? { touchAction: 'pan-x pan-y', WebkitTapHighlightColor: 'transparent' } : null),
                   }}
                 >
                   {variant === 'rich' ? (
@@ -237,6 +324,14 @@ export function Kanban({
           </div>
         </div>
       ))}
+      {moveMenu ? (
+        <ContextMenu
+          x={moveMenu.x}
+          y={moveMenu.y}
+          entries={moveEntries(moveMenu.issue)}
+          onClose={() => setMoveMenu(null)}
+        />
+      ) : null}
     </div>
   );
 }

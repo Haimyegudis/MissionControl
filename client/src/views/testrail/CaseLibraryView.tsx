@@ -5,6 +5,7 @@
 // drawer/editor, section CRUD.
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useIsNarrow } from '../../lib/useViewport';
 import { trApi } from '../../api/testrail';
 import { Stamp } from '../../components/Stamp';
 import { downloadCsv } from '../../lib/csv';
@@ -140,6 +141,7 @@ export const CASE_COLS: ColDef[] = [
 ];
 
 export function CaseLibraryView() {
+  const narrow = useIsNarrow();
   const st = useTestRail();
   const [drawerCaseId, setDrawerCaseId] = useState<number | null>(null);
   const [editor, setEditor] = useState<{ existing: TrCase | null } | null>(null);
@@ -584,7 +586,16 @@ export function CaseLibraryView() {
 
       <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
         {!st.treeHidden ? (
-          <div className="card" style={{ width: 260, flexShrink: 0, padding: 10, maxHeight: '75vh', overflowY: 'auto' }}>
+          <div
+            className="card"
+            style={{
+              width: narrow ? '100%' : 260,
+              flexShrink: 0,
+              padding: 10,
+              maxHeight: narrow ? '38vh' : '75vh',
+              overflowY: 'auto',
+            }}
+          >
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4, margin: '2px 4px 10px' }}>
               Suite — choose one
               <select
