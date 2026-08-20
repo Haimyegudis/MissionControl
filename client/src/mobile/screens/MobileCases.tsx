@@ -21,9 +21,19 @@ interface StepRow {
   expected: string;
 }
 
+/**
+ * Read the step rows off a case.
+ *
+ * The contract is asymmetric and it matters: TrStep (what the API returns) is
+ * {index, action, expected}, while TrAddCasePayload (what you send back) takes
+ * {content, expected}. Reading `content` therefore always yielded undefined,
+ * which is why cases showed a step count and an expected result with no
+ * action against it.
+ */
 function stepsOf(c: TrCase): StepRow[] {
-  const rows = (c as unknown as { stepsSeparated?: StepRow[] | null }).stepsSeparated;
-  if (Array.isArray(rows) && rows.length > 0) return rows.map((r) => ({ content: r.content ?? '', expected: r.expected ?? '' }));
+  if (Array.isArray(c.stepsSeparated) && c.stepsSeparated.length > 0) {
+    return c.stepsSeparated.map((r) => ({ content: r.action ?? '', expected: r.expected ?? '' }));
+  }
   // Older cases carry a single free-text steps field instead of rows.
   if (c.steps) return [{ content: c.steps, expected: c.expected ?? '' }];
   return [];
@@ -207,6 +217,12 @@ export function MobileCases() {
                 })
               }
               onEdit={() => setEditing({ existing: c })}
+              onTransfer={(mode) => {
+                // Acting on one card targets that card, not the checkbox
+                // selection — the desktop drawer behaves the same way.
+                setSelected(new Set([c.id]));
+                setTransfer(mode);
+              }}
             />
           ))}
         </section>
@@ -284,11 +300,13 @@ function CaseCard({
   selected,
   onToggle,
   onEdit,
+  onTransfer,
 }: {
   tcase: TrCase;
   selected: boolean;
   onToggle: () => void;
   onEdit: () => void;
+  onTransfer: (mode: 'copy' | 'move') => void;
 }) {
   const [open, setOpen] = useState(false);
   const steps = stepsOf(tcase);
@@ -329,6 +347,20 @@ function CaseCard({
               style={{ ...tapReset, minHeight: 34, padding: '0 12px', fontSize: 12 }}
             >
               Edit
+            </button>
+            <button
+              className="btn"
+              onClick={() => onTransfer('copy')}
+              style={{ ...tapReset, minHeight: 34, padding: '0 12px', fontSize: 12 }}
+            >
+              Copy
+            </button>
+            <button
+              className="btn"
+              onClick={() => onTransfer('move')}
+              style={{ ...tapReset, minHeight: 34, padding: '0 12px', fontSize: 12 }}
+            >
+              Move
             </button>
           </div>
         </div>
