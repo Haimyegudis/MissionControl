@@ -177,7 +177,10 @@ async function afterConnect(session: TrSessionStatus): Promise<void> {
     const seed = typeof __MC_PEOPLE__ === 'object' ? __MC_PEOPLE__ : {};
     let seeded = 0;
     for (const [id, personName] of Object.entries(seed)) {
-      if (!people[id]) {
+      // Overwrites placeholders as well as gaps: earlier builds persisted
+      // "User 16903" for ids TestRail would not name, and those must give way
+      // to the curated name.
+      if (isPlaceholderName(people[id])) {
         people[id] = personName;
         seeded += 1;
       }
@@ -217,9 +220,17 @@ async function afterConnect(session: TrSessionStatus): Promise<void> {
  * so unknown ones are fetched individually, merged into the store for every
  * screen at once, and persisted so the cost is paid once per device.
  */
+/** "User 16903" — a stand-in written when TestRail refused to name an id. */
+function isPlaceholderName(name: string | undefined): boolean {
+  return name === undefined || /^User \d+$/.test(name);
+}
+
 export async function resolvePeople(ids: Iterable<number>): Promise<void> {
   const known = trStore.get().people;
-  const missing = [...new Set(ids)].filter((id) => Number.isFinite(id) && !known[String(id)]);
+  // A placeholder counts as unknown, so a real name can still replace it.
+  const missing = [...new Set(ids)].filter(
+    (id) => Number.isFinite(id) && isPlaceholderName(known[String(id)]),
+  );
   if (missing.length === 0) return;
 
   const pairs = await Promise.all(
@@ -235,7 +246,13 @@ export async function resolvePeople(ids: Iterable<number>): Promise<void> {
 
   const merged = { ...trStore.get().people, ...Object.fromEntries(pairs) };
   patch({ people: merged });
-  void trApi.setPeople(merged).catch(() => undefined);
+
+  // Persist only names TestRail actually gave us. Writing placeholders was the
+  // bug behind "Twito is not in the list, there are numbers": they were stored
+  // as though they were real, and the build-time seed then refused to replace
+  // them because the id already had a value.
+  const real = Object.fromEntries(Object.entries(merged).filter(([, name]) => !isPlaceholderName(name)));
+  void trApi.setPeople(real).catch(() => undefined);
 }
 
 export async function connectTestRail(baseUrl: string, email: string, apiKey: string): Promise<void> {
