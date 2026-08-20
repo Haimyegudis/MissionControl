@@ -4,6 +4,16 @@
 
 import { KV_TABLES, MemoryKvStore, type KvRecord, type KvTable, type PeopleStore, type TestRailPerson } from '@mc/core';
 
+/**
+ * Ceiling on a single persisted table. Everything crosses the Capacitor bridge
+ * as one JSON string, which the native side copies several times; a Backlog of
+ * a couple of thousand issues produced a ~55MB allocation and an
+ * OutOfMemoryError. Past this size the table stays in memory for the session
+ * instead of being written — a cold start re-fetches, which is far better than
+ * a crash.
+ */
+export const MAX_PERSISTED_BYTES = 2 * 1024 * 1024;
+
 export interface KvPersistence {
   read(table: KvTable): Promise<Array<[string, KvRecord]> | null>;
   write(table: KvTable, entries: Array<[string, KvRecord]>): Promise<void>;
@@ -11,6 +21,8 @@ export interface KvPersistence {
 
 export class HydratedKvStore extends MemoryKvStore {
   private readonly dirty = new Set<KvTable>();
+  /** Tables skipped by the size cap, exposed for diagnostics. */
+  readonly oversized = new Set<KvTable>();
   private timer: ReturnType<typeof setTimeout> | null = null;
   private pending: Promise<void> = Promise.resolve();
 
@@ -44,7 +56,14 @@ export class HydratedKvStore extends MemoryKvStore {
     this.pending = this.pending.then(async () => {
       for (const table of tables) {
         try {
-          await this.persistence(table).write(table, this.snapshot(table));
+          const entries = this.snapshot(table);
+          const bytes = entries.reduce((sum, [key, rec]) => sum + key.length + rec.json.length, 0);
+          if (bytes > MAX_PERSISTED_BYTES) {
+            this.oversized.add(table);
+            continue;
+          }
+          this.oversized.delete(table);
+          await this.persistence(table).write(table, entries);
         } catch {
           // Losing a cache write is survivable; crashing the app is not.
         }

@@ -999,6 +999,7 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
             variant="minimal"
             onOpen={(issue) => dialogs.openIssueDetails(issue.key)}
             onDrop={(issue, columnTitle) => void handleDrop(issue, columnTitle)}
+            onToggleStar={handleToggleStar}
           />
         </>
       ) : (

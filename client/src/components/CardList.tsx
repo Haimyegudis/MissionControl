@@ -35,6 +35,16 @@ function cell<T>(col: GridColumn<T>, row: T): ReactNode {
   return raw === null || raw === undefined ? '' : String(raw);
 }
 
+/**
+ * A column whose header is a glyph or two — MyWork's '★' favourite toggle, an
+ * aging dot — is an adornment, not data. It rides on the headline row instead
+ * of becoming the card's title, which is what happened when the star column
+ * simply sorted first.
+ */
+function isAdornment<T>(col: GridColumn<T>): boolean {
+  return typeof col.header === 'string' && col.header.trim().length <= 2;
+}
+
 /** Empty cells are noise on a small screen — drop the row entirely. */
 function isBlank(value: ReactNode): boolean {
   return value === '' || value === null || value === undefined;
@@ -110,7 +120,11 @@ export function CardList<T>({
     );
   }
 
-  const [headCol, subCol, ...restCols] = columns;
+  // Leading adornment columns are pulled out before the headline is chosen.
+  let lead = 0;
+  while (lead < columns.length && isAdornment(columns[lead])) lead += 1;
+  const adornments = columns.slice(0, lead);
+  const [headCol, subCol, ...restCols] = columns.slice(lead);
   const inline = restCols.slice(0, Math.max(0, visibleFields - 2));
   const overflow = restCols.slice(Math.max(0, visibleFields - 2));
 
@@ -155,7 +169,14 @@ export function CardList<T>({
             onTouchEnd={cancelPress}
             onTouchCancel={cancelPress}
           >
-            <div style={headlineStyle}>{cell(headCol, row)}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              {adornments.map((col) => (
+                <span key={col.key} style={{ flex: '0 0 auto', fontSize: 16, lineHeight: 1 }}>
+                  {cell(col, row)}
+                </span>
+              ))}
+              <span style={headlineStyle}>{headCol ? cell(headCol, row) : null}</span>
+            </div>
             {subCol && !isBlank(subtitle) ? <div style={subtitleStyle}>{subtitle}</div> : null}
 
             {shown.length > 0 ? (

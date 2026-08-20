@@ -311,7 +311,30 @@ export function Kanban({
                     </>
                   ) : (
                     <>
-                      <span style={{ fontWeight: 700, color: 'var(--accent-cyan)', fontSize: 12 }}>{issue.key}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                        {/* Favourites are a first-class signal in the Backlog
+                            too, not just the Dashboard's rich cards. */}
+                        {onToggleStar ? (
+                          <span
+                            title="Star this issue (cross-tab)"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleStar(issue);
+                            }}
+                            style={{
+                              color: starColor(issue.isStarred),
+                              cursor: 'pointer',
+                              fontSize: 14,
+                              lineHeight: 1,
+                              flex: '0 0 auto',
+                              padding: '2px 2px',
+                            }}
+                          >
+                            ★
+                          </span>
+                        ) : null}
+                        <span style={{ fontWeight: 700, color: 'var(--accent-cyan)', fontSize: 12 }}>{issue.key}</span>
+                      </div>
                       <div style={{ fontSize: 12, marginTop: 4, overflowWrap: 'anywhere' }}>{issue.summary}</div>
                       <div style={{ fontSize: 11.5, marginTop: 4, color: priorityColor(issue.priority) }}>
                         {issue.priority}

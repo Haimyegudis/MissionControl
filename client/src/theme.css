@@ -999,27 +999,20 @@ pre.blocktext {
   }
 
   /* -- wide tables -------------------------------------------------------- */
-  /* Any table still rendering desktop columns becomes its own horizontal
-     scroller, so the page stays put and the data stays aligned. The first
-     column is pinned, which keeps the identifying cell (issue key, case id,
-     name) on screen while the rest scrolls under the thumb. */
-  main table {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto;
-    white-space: nowrap;
-    border-collapse: separate;
-    border-spacing: 0;
-    scroll-snap-type: x proximity;
-  }
-  main table thead th:first-child,
-  main table tbody td:first-child {
+  /* Every real table already sits in an overflow-x wrapper, so it scrolls
+     inside its own box once .mc-main stops scrolling. Do NOT make the table
+     itself display:block here: that destroys column alignment, and a table
+     carrying its own min-width (the weekly timesheet is 756px) then overflows
+     the card instead of scrolling within it.
+
+     Pinning the first column keeps the identifying cell — issue key, case id —
+     on screen while the rest slides under the thumb. */
+  main table th:first-child,
+  main table td:first-child {
     position: sticky;
     left: 0;
     z-index: 2;
     background: var(--bg-panel-high);
-    scroll-snap-align: start;
   }
   main table th,
   main table td {

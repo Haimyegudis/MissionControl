@@ -4,6 +4,11 @@ const config: CapacitorConfig = {
   appId: 'com.hp.missioncontrol',
   appName: 'MissionControl',
   webDir: 'client/dist',
+  // Capacitor's debug bridge logging builds a StringBuilder of every plugin
+  // call's payload. That both leaked the Jira PAT into logcat on each request
+  // and turned a multi-megabyte cache write into a heap-exhausting string
+  // copy. 'production' keeps errors and drops the payload dumps.
+  loggingBehavior: 'production',
   android: {
     // The app talks only to https://*.external.hp.com.
     allowMixedContent: false,
