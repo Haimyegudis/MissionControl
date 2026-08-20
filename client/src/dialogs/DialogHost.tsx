@@ -3,7 +3,7 @@
 // Lumo panel + FAB. Exposes an imperative API via React context (useDialogs)
 // plus a module-level `dialogs` proxy for non-component callers.
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { startPomodoro } from '../stores/pomodoro';
 import type { JiraTransition, JiraTransitionField } from '../types';
@@ -12,7 +12,12 @@ import { CreateIssue } from './CreateIssue';
 import { HelpDialog } from './HelpDialog';
 import { IssueDetails } from './IssueDetails';
 import { LogWork } from './LogWork';
-import { LumoPanel } from './LumoPanel';
+// Lumo is desktop only; lazy + build-target gated so the Android bundle
+// drops the chunk entirely rather than shipping a panel it can never open.
+const LumoPanel =
+  __MC_TARGET__ === 'android'
+    ? null
+    : lazy(() => import('./LumoPanel').then((m) => ({ default: m.LumoPanel })));
 import { TransitionDialog } from './TransitionDialog';
 
 export interface LogWorkOptions {
@@ -224,7 +229,11 @@ export function DialogHost({ children }: { children: ReactNode }) {
         <CommandPalette mode={palette.mode} onClose={closePalette} onPickIssue={onPaletteIssue} />
       )}
 
-      <LumoPanel open={lumoOpen} onClose={() => setLumoOpen(false)} />
+      {LumoPanel !== null && (
+        <Suspense fallback={null}>
+          <LumoPanel open={lumoOpen} onClose={() => setLumoOpen(false)} />
+        </Suspense>
+      )}
       <LumoFab onClick={() => setLumoOpen((v) => !v)} />
     </DialogsContext.Provider>
   );

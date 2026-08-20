@@ -15,6 +15,10 @@ function developmentApiToken(): string {
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    // 'android' drops the desktop-only view chunks at build time.
+    __MC_TARGET__: JSON.stringify(process.env.MC_TARGET === 'android' ? 'android' : 'desktop'),
+  },
   resolve: {
     // Resolve the workspace package to TypeScript source so the client does
     // not need core/dist prebuilt and keeps HMR on shared logic.
