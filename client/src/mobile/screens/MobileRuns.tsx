@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { trApi } from '../../api/testrail';
-import { initTestRail, selectProject, trStore } from '../../stores/testrail';
+import { initTestRail, selectProject, selectSuite, trStore } from '../../stores/testrail';
 import { useStore } from '../../stores/useStore';
 import { pushToast } from '../../stores/toasts';
 import { fmtUnixDate, passPct } from '../../lib/testrail';
@@ -36,6 +36,7 @@ export function MobileRuns() {
     void initTestRail();
   }, []);
   const [projectOpen, setProjectOpen] = useState(false);
+  const [suiteOpen, setSuiteOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [openRun, setOpenRun] = useState<TrRun | null>(null);
 
@@ -75,7 +76,17 @@ export function MobileRuns() {
   }
 
   const project = st.projects.find((p) => p.id === st.projectId);
-  const runs = res.data ?? [];
+  const suiteLabel =
+    st.selSuiteId === 'all'
+      ? 'All suites'
+      : (st.suites.find((x) => x.id === st.selSuiteId)?.name ?? 'Suite');
+  // A run belongs to a suite, so filtering the list by the selected suite is
+  // the same scoping the Cases screen applies.
+  const all = res.data ?? [];
+  const runs =
+    st.selSuiteId === 'all' || st.selSuiteId === null
+      ? all
+      : all.filter((r) => r.suiteId === null || r.suiteId === st.selSuiteId);
 
   return (
     <Screen
@@ -96,24 +107,10 @@ export function MobileRuns() {
         </>
       }
     >
-      <button
-        onClick={() => setProjectOpen(true)}
-        style={{
-          ...tapReset,
-          width: '100%',
-          minHeight: 44,
-          textAlign: 'left',
-          padding: '0 12px',
-          border: '1px solid var(--border-soft)',
-          borderRadius: 10,
-          background: 'var(--bg-panel)',
-          color: 'var(--text-primary)',
-          fontSize: 13.5,
-          marginBottom: 10,
-        }}
-      >
-        {project ? project.name : 'Choose a project'} ›
-      </button>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        <PickerButton label={project ? project.name : 'Project'} onClick={() => setProjectOpen(true)} />
+        <PickerButton label={suiteLabel} onClick={() => setSuiteOpen(true)} />
+      </div>
 
       {res.error ? <ErrorNote onRetry={reload}>{res.error}</ErrorNote> : null}
       {res.loading ? <Loading what="Loading runs" /> : null}
@@ -173,6 +170,30 @@ export function MobileRuns() {
             }}
           >
             {p.name}
+          </button>
+        ))}
+      </Sheet>
+
+      <Sheet open={suiteOpen} title="Suite" onClose={() => setSuiteOpen(false)}>
+        <button
+          onClick={() => {
+            selectSuite('all');
+            setSuiteOpen(false);
+          }}
+          style={pickRow(st.selSuiteId === 'all')}
+        >
+          All suites
+        </button>
+        {st.suites.map((su) => (
+          <button
+            key={su.id}
+            onClick={() => {
+              selectSuite(su.id);
+              setSuiteOpen(false);
+            }}
+            style={pickRow(su.id === st.selSuiteId)}
+          >
+            {su.name}
           </button>
         ))}
       </Sheet>
@@ -375,6 +396,49 @@ function RunDetail({ run, onBack, onChanged }: { run: TrRun; onBack: () => void;
       ))}
     </Screen>
   );
+}
+
+function PickerButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        ...tapReset,
+        flex: 1,
+        minWidth: 0,
+        minHeight: 44,
+        textAlign: 'left',
+        padding: '0 12px',
+        border: '1px solid var(--border-soft)',
+        borderRadius: 10,
+        background: 'var(--bg-panel)',
+        color: 'var(--text-primary)',
+        fontSize: 13,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label} ›
+    </button>
+  );
+}
+
+function pickRow(active: boolean) {
+  return {
+    ...tapReset,
+    display: 'block' as const,
+    width: '100%',
+    textAlign: 'left' as const,
+    minHeight: 48,
+    padding: '10px 2px',
+    background: 'none',
+    border: 'none',
+    borderBottom: '1px solid var(--border-soft)',
+    color: active ? 'var(--accent-cyan)' : 'var(--text-primary)',
+    fontWeight: active ? 650 : 450,
+    fontSize: 14,
+  };
 }
 
 function Field({

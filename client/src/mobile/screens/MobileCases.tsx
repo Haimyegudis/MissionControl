@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { trApi } from '../../api/testrail';
-import { ensureCases, ensureSections, initTestRail, selectProject, trStore } from '../../stores/testrail';
+import { ensureCases, ensureSections, initTestRail, selectProject, selectSuite, trStore } from '../../stores/testrail';
 import { useStore } from '../../stores/useStore';
 import { pushToast } from '../../stores/toasts';
 import { sectionPath } from '../../lib/testrail';
@@ -50,6 +50,7 @@ export function MobileCases() {
   }, []);
   const [query, setQuery] = useState('');
   const [projectOpen, setProjectOpen] = useState(false);
+  const [suiteOpen, setSuiteOpen] = useState(false);
   const [editing, setEditing] = useState<{ existing: TrCase | null } | null>(null);
   const [transfer, setTransfer] = useState<'copy' | 'move' | null>(null);
   const [selected, setSelected] = useState<ReadonlySet<number>>(() => new Set());
@@ -114,6 +115,10 @@ export function MobileCases() {
   }
 
   const project = st.projects.find((p) => p.id === st.projectId);
+  const suiteLabel =
+    st.selSuiteId === 'all'
+      ? 'All suites'
+      : (st.suites.find((x) => x.id === st.selSuiteId)?.name ?? 'Suite');
   const selCount = selected.size;
 
   return (
@@ -135,24 +140,10 @@ export function MobileCases() {
         </>
       }
     >
-      <button
-        onClick={() => setProjectOpen(true)}
-        style={{
-          ...tapReset,
-          width: '100%',
-          minHeight: 44,
-          textAlign: 'left',
-          padding: '0 12px',
-          border: '1px solid var(--border-soft)',
-          borderRadius: 10,
-          background: 'var(--bg-panel)',
-          color: 'var(--text-primary)',
-          fontSize: 13.5,
-          marginBottom: 8,
-        }}
-      >
-        {project ? project.name : 'Choose a project'} ›
-      </button>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        <PickerButton label={project ? project.name : 'Project'} onClick={() => setProjectOpen(true)} />
+        <PickerButton label={suiteLabel} onClick={() => setSuiteOpen(true)} />
+      </div>
 
       <input
         type="search"
@@ -243,6 +234,30 @@ export function MobileCases() {
         ))}
       </Sheet>
 
+      <Sheet open={suiteOpen} title="Suite" onClose={() => setSuiteOpen(false)}>
+        <button
+          onClick={() => {
+            selectSuite('all');
+            setSuiteOpen(false);
+          }}
+          style={rowStyle(st.selSuiteId === 'all')}
+        >
+          All suites
+        </button>
+        {st.suites.map((su) => (
+          <button
+            key={su.id}
+            onClick={() => {
+              selectSuite(su.id);
+              setSuiteOpen(false);
+            }}
+            style={rowStyle(su.id === st.selSuiteId)}
+          >
+            {su.name}
+          </button>
+        ))}
+      </Sheet>
+
       {editing ? (
         <CaseEditorSheet
           existing={editing.existing}
@@ -273,6 +288,32 @@ export function MobileCases() {
         />
       ) : null}
     </Screen>
+  );
+}
+
+function PickerButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        ...tapReset,
+        flex: 1,
+        minWidth: 0,
+        minHeight: 44,
+        textAlign: 'left',
+        padding: '0 12px',
+        border: '1px solid var(--border-soft)',
+        borderRadius: 10,
+        background: 'var(--bg-panel)',
+        color: 'var(--text-primary)',
+        fontSize: 13,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label} ›
+    </button>
   );
 }
 
