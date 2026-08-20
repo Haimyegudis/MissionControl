@@ -17,6 +17,7 @@ import { statusSubmenu } from '../components/StatusMenu';
 import { useTextPrompt } from '../components/TextPrompt';
 import { UserSearchPicker } from '../components/UserSearchPicker';
 import { dialogs } from '../dialogs/DialogHost';
+import { mapWithConcurrency } from '../lib/asyncPool';
 import { priorityColor, starColor, statusColor } from '../lib/colors';
 import { formatDateTime, formatTimeSpan } from '../lib/format';
 import { needsCloseDialog, pickTransition, stampOriginalOrder } from '../lib/viewDashboard';
@@ -195,6 +196,30 @@ export interface MyWorkViewProps {
   board?: BoardParams | null;
 }
 
+type RiskFilter = 'all' | 'blocked' | 'critical' | 'unassigned' | 'stale' | 'changed';
+interface MonitoringView {
+  name: string;
+  risk: RiskFilter;
+  updatedWithin: number;
+  search: string;
+  filters: MyWorkFilters;
+}
+
+const MONITOR_VIEWS_KEY = 'mc.mywork.monitorViews';
+
+function sharedMyWorkParam(name: string): string | null {
+  if (typeof window === 'undefined') return null;
+  const query = window.location.hash.split('?')[1] ?? '';
+  return new URLSearchParams(query).get(name);
+}
+
+function loadMonitoringViews(): MonitoringView[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(MONITOR_VIEWS_KEY) ?? '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
 export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
   const settings = useStore(settingsStore);
   const [board, setBoard] = useState<BoardParams | null>(
@@ -203,10 +228,15 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
   const [jql, setJql] = useState('');
   const [issues, setIssues] = useState<JiraIssue[]>([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [keyContains, setKeyContains] = useState('');
+  const [keyContains, setKeyContains] = useState(() => sharedMyWorkParam('search') ?? '');
   const [assigneeUser, setAssigneeUser] = useState('');
   const [kanban, setKanban] = useState(false);
-  const [filters, setFilters] = useState<MyWorkFilters>(emptyMyWorkFilters);
+  const [filters, setFilters] = useState<MyWorkFilters>(() => {
+    try {
+      const encoded = sharedMyWorkParam('filters');
+      return encoded ? { ...emptyMyWorkFilters(), ...JSON.parse(encoded) } : emptyMyWorkFilters();
+    } catch { return emptyMyWorkFilters(); }
+  });
   const [openFilter, setOpenFilter] = useState<MyWorkFilterKey | null>(null);
   const [quickFilters, setQuickFilters] = useState<JiraQuickFilter[]>([]);
   const [activeQuick, setActiveQuick] = useState<string | null>(null);
@@ -215,7 +245,12 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
   const [rowMenu, setRowMenu] = useState<{ row: JiraIssue; x: number; y: number } | null>(null);
   const [bulkAssign, setBulkAssign] = useState<{ keys: string[] } | null>(null);
   /** Days back for the "Updated" filter (0 = any time). */
-  const [updatedWithin, setUpdatedWithin] = useState(0);
+  const [updatedWithin, setUpdatedWithin] = useState(() => Number(sharedMyWorkParam('updated')) || 0);
+  const [riskFilter, setRiskFilter] = useState<RiskFilter>(() => {
+    const value = sharedMyWorkParam('risk');
+    return ['blocked', 'critical', 'unassigned', 'stale', 'changed'].includes(value ?? '') ? value as RiskFilter : 'all';
+  });
+  const [monitoringViews, setMonitoringViews] = useState<MonitoringView[]>(loadMonitoringViews);
   /** Board mode: scope to the open sprint (default on — boards show the
    *  current sprint, not the whole backlog the board filter matches). */
   const [sprintOnly, setSprintOnly] = useState(true);
@@ -485,16 +520,9 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
     selectedRows.length > 0 ? selectedRows : [row];
 
   const runBulk = async (keys: string[], op: (key: string) => Promise<unknown>, title: string) => {
-    let ok = 0;
-    let fail = 0;
-    for (const key of keys) {
-      try {
-        await op(key);
-        ok++;
-      } catch {
-        fail++;
-      }
-    }
+    const results = await mapWithConcurrency(keys, 4, op);
+    const fail = results.filter((result) => result.status === 'rejected').length;
+    const ok = results.length - fail;
     pushToast({ title, body: `${ok} succeeded, ${fail} failed` });
     void load();
   };
@@ -594,8 +622,60 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
         return t >= cutoff;
       });
     }
+    if (riskFilter === 'blocked') rows = rows.filter((issue) => issue.isBlocked || /block/i.test(issue.status));
+    if (riskFilter === 'critical') rows = rows.filter((issue) => issue.isCritical || /critical|highest|s1/i.test(issue.priority));
+    if (riskFilter === 'unassigned') rows = rows.filter((issue) => !issue.assignee);
+    if (riskFilter === 'stale') {
+      const cutoff = Date.now() - 7 * 86_400_000;
+      rows = rows.filter((issue) => !issue.updated || new Date(issue.updated).getTime() < cutoff);
+    }
+    if (riskFilter === 'changed') rows = rows.filter((issue) => issue.recentlyChanged);
     return rows;
-  }, [issues, filters, keyContains, updatedWithin]);
+  }, [issues, filters, keyContains, updatedWithin, riskFilter]);
+
+  const monitoringTotals = useMemo(() => {
+    const staleCutoff = Date.now() - 7 * 86_400_000;
+    return {
+      visible: viewRows.length,
+      blocked: issues.filter((issue) => issue.isBlocked || /block/i.test(issue.status)).length,
+      critical: issues.filter((issue) => issue.isCritical || /critical|highest|s1/i.test(issue.priority)).length,
+      unassigned: issues.filter((issue) => !issue.assignee).length,
+      stale: issues.filter((issue) => !issue.updated || new Date(issue.updated).getTime() < staleCutoff).length,
+    };
+  }, [issues, viewRows.length]);
+
+  const persistMonitoringViews = (next: MonitoringView[]) => {
+    setMonitoringViews(next);
+    try { localStorage.setItem(MONITOR_VIEWS_KEY, JSON.stringify(next)); } catch { /* unavailable */ }
+  };
+
+  const saveMonitoringView = async () => {
+    const name = (await prompt('Save monitoring view', 'View name:'))?.trim();
+    if (!name) return;
+    const view: MonitoringView = { name, risk: riskFilter, updatedWithin, search: keyContains, filters };
+    persistMonitoringViews([view, ...monitoringViews.filter((item) => item.name.toLowerCase() !== name.toLowerCase())].slice(0, 20));
+    pushToast({ title: 'Monitoring view saved', body: name });
+  };
+
+  const applyMonitoringView = (view: MonitoringView) => {
+    setRiskFilter(view.risk);
+    setUpdatedWithin(view.updatedWithin);
+    setKeyContains(view.search);
+    setFilters({ ...emptyMyWorkFilters(), ...view.filters });
+  };
+
+  const shareMonitoringView = async () => {
+    const baseHash = window.location.hash.split('?')[0] || '#/mywork';
+    const params = new URLSearchParams(window.location.hash.split('?')[1] ?? '');
+    for (const key of ['search', 'updated', 'risk', 'filters']) params.delete(key);
+    if (keyContains) params.set('search', keyContains);
+    if (updatedWithin) params.set('updated', String(updatedWithin));
+    if (riskFilter !== 'all') params.set('risk', riskFilter);
+    if (Object.values(filters).some((values) => values.length)) params.set('filters', JSON.stringify(filters));
+    const url = `${window.location.origin}${window.location.pathname}${baseHash}${params.size ? `?${params}` : ''}`;
+    await navigator.clipboard.writeText(url);
+    pushToast({ title: 'View link copied', body: 'Filters and risk view are included.' });
+  };
 
   const filterOptions = useMemo(() => {
     const out = {} as Record<MyWorkFilterKey, string[]>;
@@ -730,6 +810,69 @@ export function MyWorkView({ board: boardProp }: MyWorkViewProps = {}) {
         <span className="muted" style={{ fontSize: 11.5, marginLeft: 'auto' }}>
           {`${viewRows.length} of ${totalCount || issues.length}`}
         </span>
+      </div>
+
+      <div
+        className="card"
+        style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', padding: '7px 9px' }}
+      >
+        <span className="muted" style={{ fontSize: 10.5, letterSpacing: '0.06em', marginRight: 2 }}>
+          MONITOR
+        </span>
+        {([
+          ['all', 'All'],
+          ['blocked', `Blocked ${monitoringTotals.blocked}`],
+          ['critical', `Critical ${monitoringTotals.critical}`],
+          ['unassigned', `Unassigned ${monitoringTotals.unassigned}`],
+          ['stale', `Stale 7d ${monitoringTotals.stale}`],
+          ['changed', 'Changed'],
+        ] as Array<[RiskFilter, string]>).map(([value, label]) => (
+          <button
+            key={value}
+            className={`btn${riskFilter === value ? ' btn-primary' : ''}`}
+            style={{ padding: '2px 8px', fontSize: 11 }}
+            onClick={() => setRiskFilter(value)}
+          >
+            {label}
+          </button>
+        ))}
+        <span className="muted" style={{ fontSize: 11, marginLeft: 'auto' }}>
+          {monitoringTotals.visible} visible · Shift-click headers for multi-sort
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <span className="muted" style={{ fontSize: 10.5, letterSpacing: '0.06em' }}>
+          VIEWS
+        </span>
+        {monitoringViews.map((view) => (
+          <span
+            key={view.name}
+            style={{ display: 'inline-flex', gap: 6, alignItems: 'center', border: '1px solid var(--border-soft)', borderRadius: 999, padding: '2px 8px', fontSize: 11 }}
+          >
+            <button
+              title={`Apply ${view.name}`}
+              onClick={() => applyMonitoringView(view)}
+              style={{ color: 'var(--accent-cyan)', background: 'none', border: 0, padding: 0, cursor: 'pointer' }}
+            >
+              {view.name}
+            </button>
+            <button
+              title="Delete view"
+              className="muted"
+              onClick={() => persistMonitoringViews(monitoringViews.filter((item) => item.name !== view.name))}
+              style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer' }}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <button className="btn" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => void saveMonitoringView()}>
+          Save view
+        </button>
+        <button className="btn" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => void shareMonitoringView()}>
+          Copy link
+        </button>
       </div>
 
       {/* Saved queries */}

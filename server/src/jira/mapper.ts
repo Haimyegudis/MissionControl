@@ -1,6 +1,7 @@
 import type {
   JiraComment,
   JiraIssue,
+  JiraIssueLink,
   JiraTimelineEvent,
   JiraUser,
   JiraWorklog,
@@ -451,6 +452,33 @@ export function extractAllFields(
     out.push({ key: label, value });
   }
   out.sort((a, b) => a.key.toLowerCase().localeCompare(b.key.toLowerCase()));
+  return out;
+}
+
+/** Flatten Jira's directional issuelinks into a stable client-facing shape. */
+export function extractIssueLinks(fields: Record<string, unknown> | null | undefined): JiraIssueLink[] {
+  const rawLinks = fields?.issuelinks;
+  if (!Array.isArray(rawLinks)) return [];
+  const out: JiraIssueLink[] = [];
+  for (const raw of rawLinks) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+    const link = raw as Record<string, unknown>;
+    const type = (link.type ?? {}) as Record<string, unknown>;
+    const target = (link.outwardIssue ?? link.inwardIssue) as Record<string, unknown> | undefined;
+    if (!target || typeof target.key !== 'string') continue;
+    const targetFields = (target.fields ?? {}) as Record<string, unknown>;
+    const issueType = (targetFields.issuetype ?? {}) as Record<string, unknown>;
+    const outward = Boolean(link.outwardIssue);
+    out.push({
+      key: target.key,
+      summary: typeof targetFields.summary === 'string' ? targetFields.summary : '',
+      issueType: typeof issueType.name === 'string' ? issueType.name : '',
+      relationship:
+        typeof type[outward ? 'outward' : 'inward'] === 'string'
+          ? String(type[outward ? 'outward' : 'inward'])
+          : typeof type.name === 'string' ? type.name : 'relates to',
+    });
+  }
   return out;
 }
 

@@ -1,6 +1,6 @@
 /**
- * Yaki-parity Jira tools implemented over JiraWeb's OWN Jira session +
- * httpClient (NOT Yaki's MCP exe). Ports of assistantAgent.js 'search_jira'
+ * Lumo-parity Jira tools implemented over JiraWeb's OWN Jira session +
+ * httpClient (NOT Lumo's MCP exe). Ports of assistantAgent.js 'search_jira'
  * (JQL builder incl. status !Closed expansion, programCluster variants,
  * reporter/assignee display-name resolution) and mcpManager.textSearchJira
  * (3-stage progressive text search) + fetchJiraTicket.
@@ -11,7 +11,7 @@ import type { JiraSession } from '../../jira/session.js';
 type Rec = Record<string, any>;
 
 // customfield_48002 = "Program Cluster" (e.g. "Kedem C15"), customfield_44502 = "Cluster",
-// customfield_18302 = "Severity" — same field ids Yaki queries on hp-jira.
+// customfield_18302 = "Severity" — same field ids Lumo queries on hp-jira.
 const SEARCH_FIELDS =
   'summary,status,priority,issuetype,assignee,reporter,customfield_18302,customfield_48002,customfield_44502,fixVersions,affectsVersions,description';
 
@@ -47,7 +47,7 @@ export async function resolveJiraUsername(
   }
 }
 
-/** Run a JQL search and map issues to Yaki's compact result shape. */
+/** Run a JQL search and map issues to Lumo's compact result shape. */
 export async function searchJiraJql(
   session: JiraSession,
   jql: string,
@@ -109,7 +109,7 @@ export async function textSearchJira(
   return [];
 }
 
-/** search_jira — the filterable Yaki tool (port of executeTool's case). */
+/** search_jira — the filterable Lumo tool (port of executeTool's case). */
 export async function searchJiraTool(session: JiraSession, args: Rec): Promise<unknown> {
   if (!session.isConnected) return { error: 'No active Jira session.' };
   try {

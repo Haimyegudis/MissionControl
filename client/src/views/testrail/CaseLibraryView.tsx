@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { trApi } from '../../api/testrail';
 import { Stamp } from '../../components/Stamp';
 import { downloadCsv } from '../../lib/csv';
+import { mapWithConcurrency } from '../../lib/asyncPool';
 import {
   csvForCases,
   filterCases,
@@ -358,14 +359,8 @@ export function CaseLibraryView() {
       confirmLabel: 'Delete cases',
       typed: n >= 5 ? 'DELETE' : null,
       onConfirm: async () => {
-        let failed = 0;
-        for (const id of ids) {
-          try {
-            await trApi.deleteCase(id);
-          } catch {
-            failed++;
-          }
-        }
+        const results = await mapWithConcurrency(ids, 4, (id) => trApi.deleteCase(id));
+        const failed = results.filter((result) => result.status === 'rejected').length;
         pushToast({
           title: 'TestRail',
           body: failed ? `Deleted with ${failed} failure(s).` : 'Cases deleted.',

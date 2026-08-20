@@ -57,6 +57,7 @@ function NavItem({ route, active }: { route: { id: RouteId; label: string }; act
   return (
     <button
       onClick={() => navigate(route.id)}
+      aria-current={active ? 'page' : undefined}
       style={{
         display: 'block',
         width: '100%',
@@ -116,6 +117,7 @@ function NavGroup({
       <button
         onClick={toggle}
         title={open ? 'Collapse group' : 'Expand group'}
+        aria-expanded={open}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -182,22 +184,22 @@ function PomodoroWidget({ onPickIssue }: { onPickIssue: () => void }) {
         </span>
       )}
       {state.phase === 'idle' && (
-        <button style={iconBtn} title="Pick issue for Pomodoro" onClick={onPickIssue}>
+        <button style={iconBtn} title="Pick issue for Pomodoro" aria-label="Pick issue for Pomodoro" onClick={onPickIssue}>
           ▶
         </button>
       )}
       {state.phase === 'running' && (
-        <button style={iconBtn} title="Pause" onClick={pausePomodoro}>
+        <button style={iconBtn} title="Pause" aria-label="Pause Pomodoro" onClick={pausePomodoro}>
           ⏸
         </button>
       )}
       {state.phase === 'paused' && (
-        <button style={iconBtn} title="Resume" onClick={resumePomodoro}>
+        <button style={iconBtn} title="Resume" aria-label="Resume Pomodoro" onClick={resumePomodoro}>
           ▶
         </button>
       )}
       {state.phase !== 'idle' && (
-        <button style={iconBtn} title="Stop (logs work when ≥ 1 minute)" onClick={handleStop}>
+        <button style={iconBtn} title="Stop (logs work when ≥ 1 minute)" aria-label="Stop Pomodoro" onClick={handleStop}>
           ■
         </button>
       )}
@@ -301,15 +303,16 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* ------------------------------------------------------- top bar --- */}
-      <header style={topBarStyle}>
+      <header className="mc-topbar" style={topBarStyle}>
         <button
           className="btn btn-icon"
           title={sidebarOpen ? 'Hide menu' : 'Show menu'}
+          aria-label={sidebarOpen ? 'Hide menu' : 'Show menu'}
           onClick={toggleSidebar}
         >
           ☰
         </button>
-        <div
+        <div className="mc-brand"
           style={{
             fontSize: 16,
             fontWeight: 700,
@@ -323,7 +326,7 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
         </div>
         <div style={{ flex: 1 }} />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)' }}>
+        <div className="mc-live" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)' }}>
           <span
             aria-hidden
             style={{
@@ -338,7 +341,7 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
           <span>Live</span>
         </div>
 
-        <div style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+        <div className="mc-refresh-stamp" style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
           Last refresh: {formatClock(lastRefresh)}
         </div>
 
@@ -348,13 +351,14 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
 
         <PomodoroWidget onPickIssue={() => openPalette('pomodoro')} />
 
-        <button className="btn btn-icon" title="Command palette (Ctrl+K)" onClick={() => openPalette()}>
+        <button className="btn btn-icon" title="Command palette (Ctrl+K)" aria-label="Open command palette" onClick={() => openPalette()}>
           🔍
         </button>
 
         <button
           className="btn btn-icon"
           title="JQL search — saved filters + free JQL, results from anywhere"
+          aria-label="Open JQL search"
           onClick={() => setJqlOpen(true)}
         >
           ⚡
@@ -365,12 +369,13 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
         <button
           className="btn btn-icon"
           title="Help — all features and how to use them (F1)"
+          aria-label="Open help"
           onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F1' }))}
         >
           ?
         </button>
 
-        <button className="btn btn-icon" title={themeInfo.label} onClick={cycleTheme}>
+        <button className="btn btn-icon" title={themeInfo.label} aria-label={themeInfo.label} onClick={cycleTheme}>
           {themeInfo.icon}
         </button>
 
@@ -384,15 +389,15 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
           {refreshRunning ? '…' : 'Refresh'}
         </button>
 
-        <div style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+        <div className="mc-user" style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
           {session.user?.displayName ?? ''}
         </div>
       </header>
 
       {/* ---------------------------------------------------- body -------- */}
-      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+      <div className="mc-body" style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {sidebarOpen && (
-        <nav style={sidebarStyle}>
+        <nav className="mc-sidebar" style={sidebarStyle} aria-label="Primary navigation">
           <NavGroup id="jira" label="JIRA" emphasized>
             {ROUTES.filter((r) => r.id !== 'settings').map((r) => (
               <NavItem key={r.id} route={r} active={route === r.id} />
@@ -469,7 +474,7 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
         </nav>
         )}
 
-        <main style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: 16 }}>{children}</main>
+        <main className="mc-main" style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: 16 }}>{children}</main>
       </div>
 
       {jqlOpen && (

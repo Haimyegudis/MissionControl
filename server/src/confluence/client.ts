@@ -78,7 +78,11 @@ export class ConfluenceClient {
       throw new ConfluenceApiError(400, 'Enter a valid Confluence Base URL.');
     }
     if (!['http:', 'https:'].includes(parsed.protocol)) {
-      throw new ConfluenceApiError(400, 'Confluence Base URL must use HTTP or HTTPS.');
+      throw new ConfluenceApiError(400, 'Confluence Base URL must use HTTPS.');
+    }
+    const loopback = ['localhost', '127.0.0.1', '::1'].includes(parsed.hostname.toLowerCase());
+    if (parsed.protocol !== 'https:' && !loopback) {
+      throw new ConfluenceApiError(400, 'Confluence Base URL must use HTTPS (HTTP is allowed only for local development).');
     }
     this.baseUrl = normalized;
     this.pat = connection.pat.trim();
@@ -96,6 +100,7 @@ export class ConfluenceClient {
           ...init?.headers,
         },
         signal: init?.signal ?? AbortSignal.timeout(30_000),
+        redirect: 'manual',
       });
     } catch (error) {
       throw new ConfluenceApiError(502, `Could not reach Confluence: ${error instanceof Error ? error.message : String(error)}`);
@@ -199,6 +204,22 @@ export class ConfluenceClient {
     };
   }
 
+  /** Resolve Confluence's `/display/SPACE/Page+Title` URL form exactly. */
+  async pageBySpaceTitle(spaceKey: string, title: string): Promise<ConfluencePage> {
+    const q = new URLSearchParams({
+      spaceKey,
+      title,
+      limit: '10',
+      expand: 'history,version,space,ancestors',
+    });
+    const root = obj(await this.request(`rest/api/content?${q}`));
+    const pages = array(root.results).map((page) => pageFromJson(page, spaceKey));
+    const exact = pages.find((page) => page.title.localeCompare(title, undefined, { sensitivity: 'accent' }) === 0);
+    const match = exact ?? pages[0];
+    if (!match) throw new ConfluenceApiError(404, `Confluence page "${title}" was not found in ${spaceKey}.`);
+    return match;
+  }
+
   async search(cql: string, limit: number): Promise<ConfluencePage[]> {
     const q = new URLSearchParams({ cql, limit: String(limit), expand: 'history,version,space,ancestors' });
     const root = obj(await this.request(`rest/api/content/search?${q}`));
@@ -244,6 +265,7 @@ export class ConfluenceClient {
     return this.fetchFn(target, {
       headers: { Authorization: `Bearer ${this.pat}` },
       signal: AbortSignal.timeout(30_000),
+      redirect: 'manual',
     });
   }
 }

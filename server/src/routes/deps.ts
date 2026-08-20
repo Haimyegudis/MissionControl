@@ -180,6 +180,8 @@ export interface AppDeps {
   credentials: CredentialsDep;
   /** Per-install API token (security.ts); absent/empty disables auth (tests). */
   apiToken?: string;
+  /** Loopback port used to narrow the Host/Origin allow-list. */
+  apiPort?: number;
   /** Build a throwaway session for the given credentials and GET /myself. */
   testConnection(credentials: Credentials): Promise<JiraUser>;
   /** Fire-and-forget metadata warmup after a successful login. */

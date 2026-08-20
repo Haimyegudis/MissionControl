@@ -30,6 +30,23 @@ function sseSend(res: Response, event: string, data: unknown): void {
 export function lumoRoutes(deps: AppDeps): Router {
   const router = Router();
 
+  router.get('/knowledge-health', async (_req, res) => {
+    try {
+      const { lumoKnowledgeHealth } = await import('../ai/lumo/knowledgeHealth.js');
+      const knowledge = lumoKnowledgeHealth();
+      res.json({
+        ...knowledge,
+        connections: {
+          jira: deps.session.isConnected,
+          testrail: deps.testrail.status().connected,
+          confluence: deps.confluence?.status().connected ?? false,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({ ok: false, error: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
   // Deterministic cluster report — no LLM round-trips, answers in seconds.
   // Release-notes fetches are cached in-memory for 10 minutes.
   const relCache = new Map<string, { at: number; data: any }>();
@@ -49,7 +66,7 @@ export function lumoRoutes(deps: AppDeps): Router {
       const cards: Array<Record<string, unknown>> = [];
 
       if (scope === 'HW' || scope === 'ALL') {
-        const cc = await import('../ai/yaki/configControl.js');
+        const cc = await import('../ai/lumo/configControl.js');
         const hw = cc.searchConfigControl({ program, cluster, limit: 500 }) as Record<string, any>;
         if (hw.error) {
           parts.push(`**HW (Config Control):** ${hw.error}`);
@@ -76,7 +93,7 @@ export function lumoRoutes(deps: AppDeps): Router {
         if (hit && Date.now() - hit.at < REL_TTL_MS) {
           rel = hit.data;
         } else {
-          const cf = await import('../ai/yaki/confluence.js');
+          const cf = await import('../ai/lumo/confluence.js');
           rel = (await cf.getClusterReleaseNotes({ cluster })) as Record<string, any>;
           if (!rel.error) relCache.set(key, { at: Date.now(), data: rel });
         }
@@ -113,11 +130,11 @@ export function lumoRoutes(deps: AppDeps): Router {
     }
   });
 
-  // Cluster picker data for the Lumo context bar (Yaki-style drill-down).
+  // Cluster picker data for the Lumo context bar (Lumo-style drill-down).
   router.get('/clusters', async (req, res) => {
     try {
       const program = typeof req.query.program === 'string' ? req.query.program : 'kedem';
-      const mod = await import('../ai/yaki/configControl.js');
+      const mod = await import('../ai/lumo/configControl.js');
       res.json(mod.listConfigClusters({ program }));
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
@@ -130,12 +147,13 @@ export function lumoRoutes(deps: AppDeps): Router {
   function docIntentQuery(text: string): string | null {
     const t = text.trim();
     if (t.length > 160) return null;
-    const docWord = /(docs?|documents?|swr|מסמך|מסמכים|דוקומנט)/i;
+    const docWord = /\b(documents?|docs?|swr)\b|מסמכים|מסמך|דוקומנט/i;
     if (!docWord.test(t)) return null;
     const cleaned = t
       .replace(/^(please|can you|could you|find|get|show|open|bring|fetch|search( for)?|תמצא|תביא|תפתח|חפש)\s+/gi, '')
       .replace(/\b(the|me|a|an|of|for|את|לי|של)\b/gi, ' ')
-      .replace(docWord, ' ')
+      .replace(new RegExp(docWord.source, 'gi'), ' ')
+      .replace(/\b(across|for|in)\s+all\s+series\b/gi, ' ')
       .replace(/[?.!]+$/g, '')
       .replace(/\s+/g, ' ')
       .trim();
@@ -146,8 +164,9 @@ export function lumoRoutes(deps: AppDeps): Router {
     const q = docIntentQuery(text);
     if (!q) return null;
     try {
-      const vec = await import('../ai/yaki/vectors.js');
-      const result = (await vec.searchConfluenceVectors({ query: q })) as unknown;
+      const vec = await import('../ai/lumo/vectors.js');
+      const namedSeries = text.match(/\bS[3-6]\b/i)?.[0]?.toUpperCase();
+      const result = (await vec.searchConfluenceVectors({ query: q, series: namedSeries ?? 'ALL' })) as unknown;
       const hits: Array<Record<string, any>> = Array.isArray(result)
         ? (result as Array<Record<string, any>>)
         : Array.isArray((result as Record<string, any>)?.results)
@@ -172,6 +191,7 @@ export function lumoRoutes(deps: AppDeps): Router {
   }
 
   router.post('/ask', (req, res) => {
+    const externalSharing = deps.repos.appSettings.get().aiDataSharingEnabled;
     const body = (req.body ?? {}) as Record<string, unknown>;
     // The client sends `messages`; `turns` is accepted as an alias.
     const turns = parseTurns(body.messages ?? body.turns);
@@ -180,7 +200,11 @@ export function lumoRoutes(deps: AppDeps): Router {
         ? body.projectKey.trim()
         : defaultProjectKey(deps);
     let model = typeof body.model === 'string' && body.model.trim().length > 0 ? body.model.trim() : '';
-    if (!model) {
+    if (!externalSharing) {
+      // Privacy-first default: the complete agent and its retrieved content
+      // stay local whenever external data sharing is not explicitly enabled.
+      model = process.env.LUMO_LOCAL_MODEL || 'ollama:gemma3:1b';
+    } else if (!model) {
       try {
         model = deps.repos.appSettings.get().aiModel ?? '';
       } catch {

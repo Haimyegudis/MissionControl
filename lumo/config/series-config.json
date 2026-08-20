@@ -1,0 +1,255 @@
+{
+  "_comment": "Series → TestRail/Confluence/Code program mapping. Drives bootstrap-brain-series.js and parameterized ingest scripts.",
+  "_aliasComment": "programAliases maps ticket-mentioned program names → the canonical program folder that actually carries the automation. Aliases are SKIPPED during code-scan to avoid scanning equivalent codebases multiple times.",
+  "programAliases": {
+    "Hila": "Arad",
+    "Yael": "Arad",
+    "Sufa": "Barak",
+    "Storm": "Barak",
+    "Shani": "Ayala",
+    "Friend": "Ayala",
+    "Arava": "Tamar",
+    "6K+": "Gamla",
+    "6K": "Gamla"
+  },
+  "_pressTypeComment": "programPressType classifies each PROGRAM as a web (roll/roll-fed) or sheetfed (sheet-fed) press. Values confirmed by domain expert 2026-06-11. Allowed: 'web' | 'sheetfed'. Consumed by scripts/build-component-inventory.js → component_registry.press_type. Distinguishing hardware: web presses have RW+UW (rewinder/unwinder) and a WHS (Web Handling System); sheetfed presses have a feeder and a stacker.",
+  "programPressType": {
+    "s6": {
+      "Kedem": "web",
+      "David": "web"
+    },
+    "s4": {
+      "Arad": "web",
+      "Arava": "sheetfed",
+      "Ayala": "sheetfed",
+      "Barak": "sheetfed",
+      "Shani": "sheetfed",
+      "Storm": "sheetfed",
+      "Amit": "sheetfed",
+      "Tamar": "sheetfed",
+      "Hila": "web",
+      "Yael": "web",
+      "Friend": "sheetfed"
+    },
+    "s3": {
+      "Ayalon": "sheetfed",
+      "Daniel": "sheetfed",
+      "Gadot": "sheetfed",
+      "Gamla": "web",
+      "Geffen": "sheetfed",
+      "Givatayim": "sheetfed",
+      "6K": "sheetfed",
+      "6K+": "web",
+      "7K": "sheetfed",
+      "8K": "sheetfed",
+      "HP Indigo 6K": "sheetfed",
+      "HP Indigo 6K+": "web",
+      "HP Indigo 7K": "sheetfed",
+      "HP Indigo 8K": "sheetfed"
+    }
+  },
+  "_pressDomainComment": "Authoritative press domain model (domain expert, 2026-06-11). Drives press-aware test generation: which components exist for a given press type / series / program, and the ink-path transfer model. Consumed by the generation enrichment to ground tests in real hardware.",
+  "pressDomain": {
+    "communalComponents": [
+      "Blanket",
+      "BID",
+      "CVC",
+      "Safety",
+      "CS",
+      "CWS",
+      "UI/UX",
+      "Ink Tube",
+      "ITM",
+      "IMP"
+    ],
+    "communalComponentNotes": {
+      "CS": "Cleaning Station",
+      "CWS": "Cold Water System",
+      "IMP": "Impression Drum",
+      "BID": "Binary Ink Developer",
+      "ITM": "Intermediate Drum"
+    },
+    "pressTypeComponents": {
+      "web": [
+        "RW",
+        "UW",
+        "WHS"
+      ],
+      "sheetfed": [
+        "Feeder",
+        "Stacker"
+      ]
+    },
+    "pressTypeComponentNotes": {
+      "RW": "Rewinder (web only)",
+      "UW": "Unwinder (web only)",
+      "WHS": "Web Handling System (web only)",
+      "Feeder": "Sheet feeder (sheetfed only)",
+      "Stacker": "Sheet stacker (sheetfed only)"
+    },
+    "firstTransferComponent": {
+      "_comment": "Component that holds ink for the FIRST transfer (T1). S6 uses ASID; all other series use PIP.",
+      "s6": "ASID",
+      "default": "PIP"
+    },
+    "firstTransferComponentNotes": {
+      "ASID": "aSID — Amorphous Silicon Drum (photoconductor); first-transfer ink carrier on S6 (per David/Kedem overview)",
+      "PIP": "Photo Imaging Plate — first-transfer ink carrier (photoconductor) on S3/S4"
+    },
+    "programSpecificComponents": {
+      "IFR": [
+        "Shani",
+        "Ayala",
+        "Amit",
+        "Friend"
+      ],
+      "PGR": [
+        "Barak",
+        "Storm"
+      ]
+    },
+    "inkTransferModel": {
+      "T1": "First transfer: ink moves from the first-transfer component (ASID on S6 / PIP otherwise) to the Blanket.",
+      "T2": "Second transfer: ink moves from the Blanket to the substrate."
+    }
+  },
+  "_opcuaProgramsComment": "Programs using UA Expert + gInterface/OPCUAInterface stack. S6 = all; S3 = Gamla (a.k.a. 6K+) only. Other S3 programs do not use OPCUA stack.",
+  "opcuaPrograms": {
+    "s6": "*",
+    "s4": [],
+    "s3": [
+      "Gamla"
+    ]
+  },
+  "series": {
+    "s6": {
+      "projectId": 806,
+      "suiteId": null,
+      "programs": [
+        "Kedem",
+        "David"
+      ],
+      "systemUrls": [
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSEP/Series-6+Press+Machines+Overview",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSEP/Series-6+David+Press+Machine+Overview"
+      ],
+      "seriesLabelRegex": "\\bS6\\b",
+      "jiraAnchorKey": null
+    },
+    "s4": {
+      "_alias": "S4 and S5 are the same pipeline — single key `s4`, TestRail project 807, same programs, same Confluence labels (S4 | S4/5 | S5)",
+      "projectId": 807,
+      "suiteId": null,
+      "programs": [
+        "Arad",
+        "Arava",
+        "Ayala",
+        "Barak",
+        "Shani",
+        "Storm",
+        "Amit",
+        "Tamar",
+        "Hila",
+        "Yael",
+        "Friend"
+      ],
+      "_programsNote": "All folders scanned — hash dedup in codeEmbeddings handles shared content. programAliases resolves ticket→canonical for brain filtering / series detection only. Canonicals: Arad (⇐Hila,Yael), Barak (⇐Sufa,Storm), Ayala (⇐Shani,Friend), Tamar (⇐Arava). Amit listed but no top-level folder yet — scan-code-for-series.js warn-skips.",
+      "_s4SystemSourceComment": "The authoritative S4 system overview is the local confidential PDF (data/source-docs/s4-press-overview.txt) ingested via scripts/ingest-s4-overview.js → data/brain/systems-s4.json. There is NO S4 Confluence page. systemUrls is intentionally [] (it previously WRONGLY held the S6 page 'Series-6+Press+Machines+Overview', which polluted the S4 brain with S6 data).",
+      "systemUrls": [],
+      "seriesLabelRegex": "\\bS4(/5)?\\b|\\bS5\\b",
+      "jiraAnchorKey": null
+    },
+    "s3": {
+      "projectId": 808,
+      "suiteId": null,
+      "_suiteMapComment": "S3 project 808 splits tests per machine model. Map ticket program → suite name. Suite IDs resolved at runtime via TestRail get_suites (name→id). Cross-cutting suites (ATP, Automation Regressions, E2E, Manual Regressions, PC & Windows, PrC, POS) are NOT program-bound.",
+      "suiteMap": {
+        "7200": "72X0",
+        "8000": "8000",
+        "Gamla": "Gamla",
+        "6K+": "Gamla",
+        "HP Indigo 6K+": "Gamla",
+        "6K": "6X00",
+        "HP Indigo 6K": "6X00",
+        "6X00": "6X00",
+        "7K": "7X00",
+        "HP Indigo 7K": "7X00",
+        "7X00": "7X00",
+        "8K": "8000",
+        "HP Indigo 8K": "8000",
+        "72X0": "72X0"
+      },
+      "programs": [
+        "Ayalon",
+        "Daniel",
+        "Gadot",
+        "Gamla",
+        "Geffen",
+        "Givatayim",
+        "6K",
+        "6K+",
+        "7K",
+        "8K",
+        "HP Indigo 6K",
+        "HP Indigo 6K+",
+        "HP Indigo 7K",
+        "HP Indigo 8K"
+      ],
+      "_programsNote": "User spelled 'Gefen' — actual folder is 'Geffen' (double f). Using correct spelling.",
+      "_s3SystemSourceComment": "S3 has the same HW components as S4 but DIFFERENT SW (domain expert 2026-07-06): S3 has NO PEX — IO injection is via SysTab / IO Editor only, configuration changes (new HW / new configurations) via the Press Configuration tool. The PEX component entry is removed from systems-s3.json and promptBuilder + TDR (S3) carry the tooling override. S3 reuses the S4 system knowledge for the shared HW components: data/brain/systems-s3.json is aliased from systems-s4.json (321 components, sourced from data/source-docs/s4-press-overview.txt). systemUrls is intentionally [] — it previously WRONGLY held the S6 page 'Series-6+Press+Machines+Overview', which would pollute the S3 brain with S6 data on any re-ingest. EXCEPTION: Gamla (6K+) behaves like S6 and uses TMC/OPCUA signals; that grounding comes from data/brain/tmc-signals-s3.json via isOpcuaProgram('s3','Gamla'), NOT from this systems KB, so it is unaffected by this alias.",
+      "systemUrls": [],
+      "seriesLabelRegex": "\\bS3\\b",
+      "jiraAnchorKey": null
+    },
+    "autonomous": {
+      "_product": "AutoX / Autonomous — automated operations performed instead of a human technician, SW-only or HW+SW (AMC/AMR executers, Press Orchestrator, KB components, RMS Gateway, PQ RCA). NOT a press and NOT DFE: intentionally absent from programPressType / pressDomain / opcuaPrograms so generation enrichment skips press grounding.",
+      "projectId": null,
+      "_projectIdNote": "TestRail project not assigned yet — set the real project id here to enable uploads for this series.",
+      "suiteId": null,
+      "programs": [],
+      "systemUrls": [
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AMC+Executer+-+Autonomous+-+SW+Requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AMR+Executer+-+Autonomous+-+SW+Requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+-+Hello+World+KB+Component+-+SW+Requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+Press+Orchestrator+-+Agenda++and+step+table+-+requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+Press+Orchestrator+-+orchestration+engine+-+requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Feeder+KB+-+Component+-+Autonomous+-+SW+Requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/ISW-65447+-+User+Story+-+Job+printing+-+Gateway",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Job+list+KB+Component+-+Autonomous+-+SW+Requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Job+print+availability+KB+-+Component+-+Autonomous+-+SW+Requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Job+print+KB+-+Component+-+Autonomous+-+SW+Requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/PQ+RCA+Autonomous+SW+Requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644941457",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Press+Orchestrator+Blocks+definition",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/RMS+Gateway+-+Autonomous+-+SW+Requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Step+Mapper+KB+-+Autonomous+-+SW+Requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/UI+Operation+KB+-+Component+-+Autonomous+-+SW+Requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/PIP+unload+operation+is+unavailable+-+Autonomous+-+USRD",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/AutoX+-+AMR+and+RMS+functional+requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/AutoX+-+Press+orchestrator+solution+-+functional+requirements",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/AutoX+Product%3A+System+Detailed+Description",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/DFE+Job+routing+requirements+-+Autonomous+Product",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/Autonomous+-+Press+Orchestrator+System+architecture",
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/Autonomous+Press+Orchestration+-+SW+Architecture"
+      ],
+      "seriesLabelRegex": "\\bAutoX\\b|\\bAutonomous\\b|\\bAMC\\b|\\bAMR\\b",
+      "jiraAnchorKey": null
+    },
+    "ramon": {
+      "_product": "DFE (Digital Front End) — Ramon code solution (repo Automation_Tests_Ramon). NOT a press: intentionally absent from programPressType / pressDomain / opcuaPrograms so generation enrichment skips press grounding. Code repo cloned to C:\\Ramon (CODE_REPO_ROOT=C:\\, program=Ramon).",
+      "projectId": 603,
+      "suiteId": null,
+      "programs": [
+        "Ramon"
+      ],
+      "systemUrls": [
+        "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=607129560"
+      ],
+      "seriesLabelRegex": "\\bRamon\\b|\\bDFE\\b",
+      "jiraAnchorKey": null,
+      "isolatedCodeIndex": true
+    }
+  }
+}

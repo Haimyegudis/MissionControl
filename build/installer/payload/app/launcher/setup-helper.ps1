@@ -33,7 +33,8 @@ switch ($Action) {
     }
   }
   'stop' {
-    Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
+    Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+      Where-Object { $_.Name -in @('node.exe', 'ollama.exe') } |
       Where-Object { $_.ExecutablePath -and $_.ExecutablePath -like ($InstallDir + '\*') } |
       ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
   }

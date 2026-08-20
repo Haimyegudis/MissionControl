@@ -7,21 +7,28 @@ import {
   hasAutomationTells,
   scrubOperatorAnswer,
   toolResultCap,
+  confluenceFallbackQueries,
+  extractPhysicalSheetSize,
+  isInsufficientKnowledgeAnswer,
   resetLumoConversationContexts,
   type LumoTools,
 } from '../src/ai/lumoAgent.js';
 import {
+  buildCopilotArgs,
   buildClaudeArgs,
   isClaudeModel,
+  isOllamaModel,
   runClaudeCli,
   runCopilotCli,
+  runOllama,
   selectCliRunner,
   CLAUDE_STDIN_TRIGGER,
 } from '../src/ai/cliRunner.js';
-import type { YakiToolset } from '../src/ai/yakiTools.js';
-import { parseEnvFile } from '../src/ai/yaki/env.js';
-import { parseCsv } from '../src/ai/yaki/configControl.js';
-import { parseConfluenceUrl } from '../src/ai/yaki/confluence.js';
+import type { LumoToolset } from '../src/ai/lumoTools.js';
+import { selectRelevantExcerpt } from '../src/ai/lumoTools.js';
+import { parseEnvFile } from '../src/ai/lumo/env.js';
+import { parseCsv } from '../src/ai/lumo/configControl.js';
+import { parseConfluenceUrl } from '../src/ai/lumo/confluence.js';
 import type { JiraIssue, JiraIssueDetails, PagedResult } from '../src/types.js';
 
 // ---------------------------------------------------------------------------
@@ -523,13 +530,13 @@ describe('askLumo — card normalization', () => {
 });
 
 // ---------------------------------------------------------------------------
-// askLumo — Yaki tool catalog dispatch
+// askLumo — Lumo tool catalog dispatch
 // ---------------------------------------------------------------------------
 
-describe('askLumo — Yaki tool dispatch', () => {
-  it('dispatches unknown-to-legacy names through tools.yaki with args and ctx', async () => {
+describe('askLumo — Lumo tool dispatch', () => {
+  it('dispatches unknown-to-legacy names through tools.lumo with args and ctx', async () => {
     const seen: Array<{ name: string; args: unknown; ctx: unknown }> = [];
-    const yaki: YakiToolset = {
+    const lumo: LumoToolset = {
       lookup_component: async (args, ctx) => {
         seen.push({ name: 'lookup_component', args, ctx });
         return { found: true, count: 1, results: [{ component: { id: 'EF501' } }] };
@@ -540,7 +547,7 @@ describe('askLumo — Yaki tool dispatch', () => {
     const round2 = '{"summary":"EF501 is an e-fuse.","cards":[]}';
     const { runCli, prompts } = makeRunCli([round1, round2]);
     const { tools } = makeTools();
-    tools.yaki = yaki;
+    tools.lumo = lumo;
 
     const statuses: string[] = [];
     const result = await askLumo({
@@ -559,8 +566,8 @@ describe('askLumo — Yaki tool dispatch', () => {
     expect(prompts[1]).toContain('"EF501"');
   });
 
-  it('yaki tool throwing surfaces as an {error} tool result, not a crash', async () => {
-    const yaki: YakiToolset = {
+  it('lumo tool throwing surfaces as an {error} tool result, not a crash', async () => {
+    const lumo: LumoToolset = {
       search_confluence_vectors: async () => {
         throw new Error('ollama down');
       },
@@ -570,26 +577,26 @@ describe('askLumo — Yaki tool dispatch', () => {
     const round2 = '{"summary":"handled","cards":[]}';
     const { runCli, prompts } = makeRunCli([round1, round2]);
     const { tools } = makeTools();
-    tools.yaki = yaki;
+    tools.lumo = lumo;
 
     const result = await askLumo(baseOptions(runCli, tools));
     expect(result.summary).toBe('handled');
     expect(prompts[1]).toContain('ollama down');
   });
 
-  it('still reports Unknown tool when the name is not in the yaki set either', async () => {
+  it('still reports Unknown tool when the name is not in the lumo set either', async () => {
     const round1 = '{"tool_calls":[{"name":"nope_tool","arguments":{}}]}';
     const round2 = '{"summary":"ok","cards":[]}';
     const { runCli, prompts } = makeRunCli([round1, round2]);
     const { tools } = makeTools();
-    tools.yaki = {};
+    tools.lumo = {};
     await askLumo(baseOptions(runCli, tools));
     expect(prompts[1]).toContain('Unknown tool: nope_tool');
   });
 
   it('caps tool calls at 5 per user message across rounds', async () => {
     const calls: string[] = [];
-    const yaki: YakiToolset = {
+    const lumo: LumoToolset = {
       lookup_event: async (args) => {
         calls.push(String((args as Record<string, unknown>).n));
         return { found: false };
@@ -604,7 +611,7 @@ describe('askLumo — Yaki tool dispatch', () => {
     const done = '{"summary":"done","cards":[]}';
     const { runCli, prompts } = makeRunCli([fourCalls, threeMore, done]);
     const { tools } = makeTools();
-    tools.yaki = yaki;
+    tools.lumo = lumo;
 
     const result = await askLumo(baseOptions(runCli, tools));
     expect(result.summary).toBe('done');
@@ -615,11 +622,11 @@ describe('askLumo — Yaki tool dispatch', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Per-tool truncation caps (Yaki parity)
+// Per-tool truncation caps (Lumo parity)
 // ---------------------------------------------------------------------------
 
 describe('toolResultCap', () => {
-  it('gives Yaki budgets per tool name', () => {
+  it('gives Lumo budgets per tool name', () => {
     expect(toolResultCap('get_cluster_release_notes')).toBe(30_000);
     expect(toolResultCap('search_config_control')).toBe(20_000);
     expect(toolResultCap('search_jira')).toBe(20_000);
@@ -633,14 +640,14 @@ describe('toolResultCap', () => {
 
   it('lookup_component results above 2000 chars are NOT truncated (60k budget)', async () => {
     const big = 'X'.repeat(5000);
-    const yaki: YakiToolset = {
+    const lumo: LumoToolset = {
       lookup_component: async () => ({ found: true, blob: big }),
     };
     const round1 = '{"tool_calls":[{"name":"lookup_component","arguments":{"query":"k"}}]}';
     const round2 = '{"summary":"ok","cards":[]}';
     const { runCli, prompts } = makeRunCli([round1, round2]);
     const { tools } = makeTools();
-    tools.yaki = yaki;
+    tools.lumo = lumo;
     await askLumo(baseOptions(runCli, tools));
     const p2 = prompts[1];
     expect(p2).toContain(big);
@@ -652,7 +659,7 @@ describe('toolResultCap', () => {
 
   it('get_cluster_release_notes truncates at 30k with an explicit marker', async () => {
     const big = 'R'.repeat(40_000);
-    const yaki: YakiToolset = {
+    const lumo: LumoToolset = {
       get_cluster_release_notes: async () => ({ markdown: big }),
     };
     const round1 =
@@ -660,7 +667,7 @@ describe('toolResultCap', () => {
     const round2 = '{"summary":"ok","cards":[]}';
     const { runCli, prompts } = makeRunCli([round1, round2]);
     const { tools } = makeTools();
-    tools.yaki = yaki;
+    tools.lumo = lumo;
     await askLumo(baseOptions(runCli, tools));
     const p2 = prompts[1];
     expect(p2).toContain('[...truncated]');
@@ -672,7 +679,100 @@ describe('toolResultCap', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Operator-answer scrubber (Yaki parity)
+// Mandatory Confluence fallback for insufficient local-knowledge answers
+// ---------------------------------------------------------------------------
+
+describe('Confluence knowledge fallback', () => {
+  it('recognizes insufficient answers and rewrites S4 sheet-fed size terminology', () => {
+    expect(isInsufficientKnowledgeAnswer('Not documented — I could not find it.')).toBe(true);
+    expect(isInsufficientKnowledgeAnswer('The maximum is 750 × 530 mm.')).toBe(false);
+    expect(
+      confluenceFallbackQueries('What is the substrate maximum size in S4 sheetfed?', 'S4')[0],
+    ).toContain('automatic paper size measurement');
+  });
+
+  it('selects a relevant passage beyond a long page preamble', () => {
+    const content =
+      'Revision history and unrelated material. '.repeat(400) +
+      'Allowed Size: Width=745mm-750mm, Length=525mm-530mm. Enhancement details follow.';
+    const excerpt = selectRelevantExcerpt(
+      content,
+      'What is the substrate maximum size in S4 sheetfed?',
+      2500,
+    );
+    expect(excerpt).toContain('Width=745mm-750mm');
+    expect(excerpt).toContain('Length=525mm-530mm');
+  });
+
+  it('extracts the maximum dimensions from a Confluence allowed-size range', () => {
+    expect(
+      extractPhysicalSheetSize({
+        documents: [
+          {
+            title: 'Automatic paper size measurement',
+            url: 'https://confluence.example/pages/416124688',
+            content: 'Full Format=750X530, Allowed Size: Width=745mm-750mm, Length=525mm-530mm',
+          },
+        ],
+      }),
+    ).toEqual({
+      widthMm: 750,
+      lengthMm: 530,
+      title: 'Automatic paper size measurement',
+      url: 'https://confluence.example/pages/416124688',
+    });
+  });
+
+  it('automatically searches and reads Confluence before accepting Not documented', async () => {
+    const calls: string[] = [];
+    const lumo: LumoToolset = {
+      lookup_parameter: async () => ({ found: false }),
+      search_confluence_vectors: async () => {
+        calls.push('vectors');
+        return [
+          {
+            documentId: '416124688',
+            title: 'Automatic paper size measurement - Printing - S4/5 - SW Requirements',
+            url: 'https://confluence.example/pages/viewpage.action?pageId=416124688',
+          },
+        ];
+      },
+      search_confluence_docs: async () => {
+        calls.push('docs');
+        return {
+          documents: [
+            {
+              title: 'Automatic paper size measurement - Printing - S4/5 - SW Requirements',
+              content: 'Allowed Size: Width=745mm-750mm, Length=525mm-530mm.',
+            },
+          ],
+        };
+      },
+    };
+    const { tools } = makeTools();
+    tools.lumo = lumo;
+    const { runCli, prompts } = makeRunCli([
+      '{"tool_calls":[{"name":"lookup_parameter","arguments":{"query":"substrate maximum size","series":"S4"}}]}',
+      '{"summary":"Not documented — I could not find it.","cards":[]}',
+      '{"summary":"The maximum S4 sheet-fed substrate size is 750 × 530 mm.","cards":[]}',
+    ]);
+
+    const result = await askLumo({
+      ...baseOptions(runCli, tools),
+      turns: [{ role: 'user', content: 'What is the substrate maximum size in S4 sheetfed?' }],
+    });
+
+    expect(result.summary).toContain('750 × 530 mm');
+    expect(calls).toEqual(expect.arrayContaining(['vectors', 'docs']));
+    expect(prompts).toHaveLength(2);
+    expect(result.cards[0]).toEqual(
+      expect.objectContaining({ source: 'confluence', title: expect.stringContaining('Automatic paper size') }),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Operator-answer scrubber (Lumo parity)
 // ---------------------------------------------------------------------------
 
 describe('operator-answer scrubber', () => {
@@ -784,9 +884,26 @@ describe('askLumo — set_context', () => {
 // ---------------------------------------------------------------------------
 
 describe('cliRunner backend selection', () => {
+  it('uses Yaki parity: Sonnet 5 with 1M context and medium reasoning', () => {
+    const args = buildCopilotArgs('claude-sonnet-5');
+    expect(args).toContain('claude-sonnet-5');
+    expect(args.join(' ')).toContain('instructions and response contract');
+    expect(args).not.toContain('--no-custom-instructions');
+    expect(args.slice(args.indexOf('--context'), args.indexOf('--context') + 2)).toEqual([
+      '--context',
+      'long_context',
+    ]);
+    expect(args.slice(args.indexOf('--effort'), args.indexOf('--effort') + 2)).toEqual([
+      '--effort',
+      'medium',
+    ]);
+  });
+
   it('everything runs on Copilot; Claude CLI only behind LUMO_USE_CLAUDE_CLI=1', () => {
     expect(isClaudeModel('claude-sonnet-4-5')).toBe(true);
     expect(isClaudeModel('gpt-4o-mini')).toBe(false);
+    expect(isOllamaModel('ollama:gemma3:4b')).toBe(true);
+    expect(selectCliRunner('ollama:gemma3:4b')).toBe(runOllama);
     // Default: Copilot for every model id (Copilot hosts the claude-* roster).
     delete process.env.LUMO_USE_CLAUDE_CLI;
     expect(selectCliRunner('claude-sonnet-4.6')).toBe(runCopilotCli);

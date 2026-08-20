@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { askLumo } from './ai/lumoAgent.js';
 import { runCliForModel } from './ai/cliRunner.js';
-import { buildYakiTools } from './ai/yakiTools.js';
+import { buildLumoTools } from './ai/lumoTools.js';
 import { createApp } from './app.js';
 import { dbFile, ensureDataDir } from './config/appPaths.js';
 import { CredentialsStore, type Credentials } from './config/credentialsStore.js';
@@ -70,14 +70,14 @@ function getDistinct(projectKey: string, fieldName: string, maxIssues: number): 
 }
 
 // Composite Lumo tool surface: JiraWeb's own issue service (legacy three
-// tools) + the full Yaki tool catalog (brain, vectors, Confluence, TestRail,
-// config control, reasoning) reading Yaki's assets in place (YAKI_ROOT).
+// tools) + the full Lumo tool catalog (brain, vectors, Confluence, TestRail,
+// config control, reasoning) reading Lumo's assets in place (LUMO_ROOT).
 const lumoTools = {
   searchIssues: issueService.searchIssues.bind(issueService),
   getIssueDetails: issueService.getIssueDetails.bind(issueService),
   getIssueTimeline: issueService.getIssueTimeline.bind(issueService),
   addComment: issueService.addComment.bind(issueService),
-  yaki: buildYakiTools({ session, testrail: testRail }),
+  lumo: buildLumoTools({ session, testrail: testRail, confluence }),
 };
 
 /** Throwaway session + GET /myself — used by /auth/test|login and boot. */
@@ -88,11 +88,13 @@ async function testConnection(creds: Credentials): Promise<JiraUser> {
 }
 
 const apiToken = loadOrCreateApiToken(dataDir);
+const port = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 5643;
 
 const app = createApp({
   session,
   credentials,
   apiToken,
+  apiPort: port,
   testConnection,
   warmup: () => {
     void metadataWarmup({ session, metadata, boards, getDistinct });
@@ -160,7 +162,6 @@ async function autoConnectConfluence(): Promise<void> {
   }
 }
 
-const port = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 5643;
 app.listen(port, '127.0.0.1', () => {
   console.log(`JiraWeb server listening on http://127.0.0.1:${port} (data: ${dataDir})`);
   void autoActivate();

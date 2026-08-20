@@ -5,7 +5,7 @@
 import { useState, type ReactNode } from 'react';
 import { Modal } from '../components/Modal';
 
-const VERSION = 'v1.0';
+const VERSION = 'v1.1';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -60,7 +60,7 @@ const legendRows: Array<{ swatch: ReactNode; meaning: string }> = [
   { swatch: <Swatch color="#b558f6" shape="square" />, meaning: 'Issue-type chip: Epic (green Story, red Bug, blue Task).' },
 ];
 
-const TABS = ['Jira', 'TestRail', 'Confluence', 'Lumo (AI)', 'Alerts', 'Editors & Drafts', 'Shortcuts & Legend'] as const;
+const TABS = ['Jira', 'Traceability', 'TestRail', 'Confluence', 'Lumo (AI)', 'Alerts', 'Setup & Data', 'Editors & Drafts', 'Shortcuts & Legend'] as const;
 type Tab = (typeof TABS)[number];
 
 function JiraTab() {
@@ -73,18 +73,23 @@ function JiraTab() {
           Kanban (drag cards to transition; right-click a column header to set a WIP limit) or a table. The user
           picker shows any teammate's sprint.
         </Item>
-        <Item name="Backlog">your issues as kanban or grid, saved queries (with JSON import/export), bulk actions on multi-selected rows.</Item>
+        <Item name="Backlog">
+          your issues as kanban or grid. Search and filter by updated window or column, then use the compact risk
+          chips for Blocked, Critical, Unassigned, Stale 7d and Changed. Shift-click table headers for multi-sort.
+          Save named monitoring views, delete or reapply them later, and copy a share link that includes the current
+          search, risk and filters. Saved JQL queries also support JSON import/export.
+        </Item>
         <Item name="Bulk operations (Backlog table)">
           Select rows like in Explorer — click one, <b>Ctrl+Click</b> to add/remove, <b>Shift+Click</b> for a
           range — then right-click any selected row: <b>Bulk change status</b> (type the target status, matched
           per issue), <b>Bulk assign</b> (searchable user picker), bulk add comment, bulk add label, open all,
           copy keys.
         </Item>
-        <Item name="Incidents">sticky incident filters with dashboard links.</Item>
-        <Item name="Boards">sprint boards with Jira quick filters.</Item>
+        <Item name="Incidents">sticky quick/dropdown filters, removable active-filter chips, summary search, separate all/verification/rejected grids and Jira dashboard links.</Item>
+        <Item name="Boards">search and pin Jira boards; pinned boards open as sprint Kanban with Jira quick filters or the full board backlog.</Item>
         <Item name="JQL search (⚡ in the top bar)">saved JQL filters with an editor and results preview — available from every page.</Item>
         <Item name="Time Spent">worklog reports by period/sprint/range, weekly timesheet, 13-week heatmap, CSV + PNG export.</Item>
-        <Item name="Team">workload and logged hours per member of a saved team.</Item>
+        <Item name="Team">create saved teams, compare workload and logged/remaining hours, and double-click a member for their issue detail.</Item>
       </Section>
       <Section title="Issue dialog">
         Open any issue key (click, double-click or the palette). Transitions run as buttons — when Jira needs
@@ -99,6 +104,35 @@ function JiraTab() {
         The + Create Incident button (top bar) opens the create dialog for your default project (Settings).
         Priority auto-computes from Severity / Environment / Reproducibility. Field defaults can be saved per
         project.
+      </Section>
+    </>
+  );
+}
+
+function TraceabilityTab() {
+  return (
+    <>
+      <Section title="From QA task to release epic">
+        Enter the QA task/ISW key and select <b>Inspect</b>. Mission Control follows the Jira parent chain to the
+        epic; the hierarchy links open in the in-app issue dialog. It then collects documents linked through the
+        epic's SWR, DR, Integration and UX fields or linked Jira document issues, TestRail cases that reference the
+        epic, and TestRail runs whose name or references contain the epic key.
+      </Section>
+      <Section title="Readiness percentage — exactly what it means">
+        The score has four equal checks, each worth <b>25%</b>: Epic complete + at least one linked TestRail case +
+        at least one matching TestRail execution run + at least one resolved Confluence page. Loading tiles are
+        still pending and do not count as ready. This is a traceability checklist, not a test pass-rate or quality
+        prediction.
+      </Section>
+      <Section title="Release cockpit tabs">
+        <Item name="Overview">compact lists of linked cases, execution runs and documents; links stay inside Mission Control.</Item>
+        <Item name="Coverage">requirement → documentation → test design → execution matrix, with the exact missing link.</Item>
+        <Item name="Actions">prioritized gaps such as no owner, stale epic, missing coverage/documents/runs, failed, blocked or untested results.</Item>
+        <Item name="Impact">linked Jira issues, documents and tests that may be affected by a change.</Item>
+      </Section>
+      <Section title="Watchlist">
+        Select <b>Watch epic</b> to keep its last score, status and evidence counts in the Impact tab. Inspect a
+        watched epic again to refresh its compact daily-review snapshot. The watchlist is stored on this PC.
       </Section>
     </>
   );
@@ -131,14 +165,19 @@ function TestRailTab() {
         as a draft — a refresh, crash or accidental close restores it with a banner.
       </Section>
       <Section title="Runs">
-        Project picker → runs and plan runs (full history). New run = full TestRail flow: name, description, refs,
-        assign-to (defaults to you), Include all / Select specific / Dynamic filtering.
+        Project and suite pickers, full run/plan history, free-text search and My runs. Compact risk filters show
+        Active, Failing, Blocked, Untested and Low pass-rate runs; table headers support multi-sort. Create or edit
+        a run with name, description, references, assignee and Include all / Select specific / Dynamic filtering.
       </Section>
       <Section title="Run execution">
         Live status tiles + pass rate over all tests, execution progress bar, per-test quick marks (✓ ✗ ⊘ ↻) with
         Undo, bulk marking, result-with-details dialog, per-test history, filters by status/assignee/"My tests".
       </Section>
-      <Section title="Reports">per-suite distribution and coverage reporting.</Section>
+      <Section title="Reports">
+        <Item name="Overview">active/completed execution, result distribution and recent run progress by suite.</Item>
+        <Item name="Compare runs">case-level regressions, fixes, unchanged failures and additions/removals between two runs.</Item>
+        <Item name="Failure triage">failed/blocked/retest queue with text, status and defect filters; open the case or run directly.</Item>
+      </Section>
     </>
   );
 }
@@ -167,19 +206,29 @@ function LumoTab() {
   return (
     <>
       <Section title="What Lumo knows">
-        Lumo is the AI assistant (✦ button). It runs on GitHub Copilot CLI with your chosen model and has the full
-        Yaki knowledge pack: cluster HW/SW configuration, release notes, Confluence documentation (vector search)
-        and live Jira access.
+        Lumo is Mission Control's personal AI assistant (✦ button). Its self-contained knowledge pack covers all
+        installed press series, cluster HW/SW configuration, release notes, code/system knowledge and indexed
+        TestRail/Confluence material. When connected, it can also search live Jira, TestRail and Confluence.
       </Section>
       <Section title="Fast paths">
         Cluster/HW/SW questions answer in seconds from live data ("Show all changes for kedem cluster C16").
-        Document requests return instantly from the knowledge index and open in-app. Everything else goes through
-        the full agent with Jira/Confluence tools.
+        Document and press-specification requests search the local databases first. If an answer is not documented
+        locally, Lumo searches Confluence automatically. Source cards open in Mission Control so you can verify the
+        Jira issue, Confluence page or TestRail item behind an answer.
       </Section>
       <Section title="Context bar">
         The picker above the input pins a program / cluster / HW-SW scope so follow-up questions inherit it.
       </Section>
-      <Section title="Login">Settings → Connections → Copilot: in-app device-flow login (code + link).</Section>
+      <Section title="Model, privacy and offline use">
+        With external sharing enabled, Lumo uses GitHub Copilot's <b>Claude Sonnet 5</b> profile with a 1M context
+        tier and medium reasoning. Settings → Connections provides the in-app Copilot device-flow login. External
+        sharing is explicit: when off, Lumo uses the bundled local Ollama model and does not send work data to the
+        external provider. The local model is useful offline but is less capable than Sonnet.
+      </Section>
+      <Section title="Verify its brain">
+        Settings → AI Assistant → <b>Verify Lumo knowledge</b> checks every bundled database and brain file,
+        embedding coverage, self-containment, and the live Jira/TestRail/Confluence connections.
+      </Section>
     </>
   );
 }
@@ -188,7 +237,8 @@ function AlertsTab() {
   return (
     <>
       <Section title="Windows alerts (work even when the app is closed)">
-        Settings → Alerts &amp; Reminders. All fire as native Windows toasts via scheduled tasks:
+        Settings → Alerts &amp; Reminders. All fire as native Windows toasts via scheduled tasks, including while on
+        battery; Windows also starts a missed reminder after sleep or downtime:
         <Item name="Log-work reminder">chosen days + time; opens Time Spent.</Item>
         <Item name="In Progress summary">lists your current In Progress tasks live from Jira; silent when empty.</Item>
         <Item name="To Do nudge">reminds you to move waiting tasks to In Progress.</Item>
@@ -198,6 +248,35 @@ function AlertsTab() {
         Toasts show successes (green edge), errors (red), info (cyan); some carry an Undo button. The 🔔 bell in
         the top bar keeps the full session history with an unread badge. Settings → Notifications: mute all or
         errors-only.
+      </Section>
+    </>
+  );
+}
+
+function SetupDataTab() {
+  return (
+    <>
+      <Section title="Connections">
+        Settings keeps every connection in one place: Jira email + PAT, TestRail API key (the Jira email is reused
+        by default), Confluence PAT, and GitHub Copilot device login. Test or disconnect services individually.
+        Saved Jira, TestRail and Confluence credentials are encrypted for the current Windows user with DPAPI and
+        are never included in an installer copied to another press.
+      </Section>
+      <Section title="Preferences & dashboard">
+        Choose Dark, Light or Railbook theme; enable auto-refresh, choose its interval and pause it while minimized;
+        set the default Jira project; enable, disable and reorder Dashboard widgets. Use the single Save button at
+        the bottom to keep these settings.
+      </Section>
+      <Section title="Diagnostics & cleanup">
+        Data → <b>Run diagnostics</b> checks Jira, TestRail and Confluence with latency. Clear only Jira issues, all
+        server caches, or browser-local drafts/layouts/filter snapshots separately. <b>Disconnect all services</b>
+        removes credentials but keeps cached work data. Destructive choices always show a confirmation.
+      </Section>
+      <Section title="Offline one-click installation">
+        MissionControlSetup.exe installs per user without an administrator prompt, can add desktop/startup entries,
+        and bundles the app, Node runtime, production dependencies, Lumo databases/brain, Ollama, embeddings and a
+        local chat model. It can be installed without internet; each press still needs its own Jira, TestRail,
+        Confluence and optional Copilot credentials for live services.
       </Section>
     </>
   );
@@ -216,7 +295,7 @@ function EditorsTab() {
       </Section>
       <Section title="Data grids">
         Click headers to sort, drag edges to resize (persisted). Right-click a header for column visibility and
-        CSV export.
+        CSV export. Where shown, Shift-click adds secondary sort columns.
       </Section>
     </>
   );
@@ -226,14 +305,14 @@ function ShortcutsTab() {
   return (
     <>
       <Section title="Keyboard">
-        <Item name="Ctrl+K / Ctrl+L">command palette — navigate, search Jira (with issue-type chips), search loaded TestRail cases, recents.</Item>
+        <Item name="Ctrl+K / Ctrl+L">command palette — navigate; search Jira, Confluence and TestRail; reopen recent issues.</Item>
         <Item name="F1">this help.</Item>
         <Item name="Esc">closes any dialog / drawer / full-screen page.</Item>
         <Item name="Enter">opens the selected palette row; J/K or arrows move kanban selection.</Item>
       </Section>
       <Section title="Top bar">
         + Create Incident · pomodoro timer (logs the elapsed time to the picked issue when stopped) · 🔍 palette ·
-        🔔 notifications · theme cycle (dark / light / railbook) · Refresh (clears server caches).
+        ⚡ JQL search · ✦ Lumo · 🔔 notifications · theme cycle (dark / light / railbook) · Refresh (clears server caches).
       </Section>
       <Section title="Visual legend">
         <table style={{ borderCollapse: 'collapse' }}>
@@ -282,10 +361,12 @@ export function HelpDialog({ onClose }: { onClose: () => void }) {
         ))}
       </div>
       {tab === 'Jira' ? <JiraTab /> : null}
+      {tab === 'Traceability' ? <TraceabilityTab /> : null}
       {tab === 'TestRail' ? <TestRailTab /> : null}
       {tab === 'Confluence' ? <ConfluenceTab /> : null}
       {tab === 'Lumo (AI)' ? <LumoTab /> : null}
       {tab === 'Alerts' ? <AlertsTab /> : null}
+      {tab === 'Setup & Data' ? <SetupDataTab /> : null}
       {tab === 'Editors & Drafts' ? <EditorsTab /> : null}
       {tab === 'Shortcuts & Legend' ? <ShortcutsTab /> : null}
     </Modal>

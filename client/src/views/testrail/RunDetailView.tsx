@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { trApi } from '../../api/testrail';
 import { Modal } from '../../components/Modal';
 import { buildCsv, downloadCsv } from '../../lib/csv';
+import { mapWithConcurrency } from '../../lib/asyncPool';
 import { RefLinks } from '../../components/RefLinks';
 import { fmtUnixDate, passPct } from '../../lib/testrail';
 import { testrailRunIdStore } from '../../router';
@@ -172,14 +173,8 @@ export function RunDetailView() {
     const previous = testList
       .filter((t) => t.statusId !== 3 && t.statusId !== statusId)
       .map((t) => ({ id: t.id, statusId: t.statusId }));
-    let failed = 0;
-    for (const t of testList) {
-      try {
-        await trApi.addResult(t.id, { statusId });
-      } catch {
-        failed++;
-      }
-    }
+    const results = await mapWithConcurrency(testList, 4, (test) => trApi.addResult(test.id, { statusId }));
+    const failed = results.filter((result) => result.status === 'rejected').length;
     pushToast({
       title: 'TestRail',
       body: failed
@@ -194,13 +189,9 @@ export function RunDetailView() {
               label: `Undo (${previous.length})`,
               onClick: () => {
                 void (async () => {
-                  for (const p of previous) {
-                    try {
-                      await trApi.addResult(p.id, { statusId: p.statusId });
-                    } catch {
-                      /* best effort */
-                    }
-                  }
+                  await mapWithConcurrency(previous, 4, (item) =>
+                    trApi.addResult(item.id, { statusId: item.statusId }),
+                  );
                   pushToast({ title: 'TestRail', body: 'Previous statuses restored.', severity: 'success' });
                   await refresh();
                 })();
@@ -619,14 +610,8 @@ function ResultDialog({
         elapsed: elapsed.trim() || null,
         version: version.trim() || null,
       };
-      let failed = 0;
-      for (const t of tests) {
-        try {
-          await trApi.addResult(t.id, body);
-        } catch {
-          failed++;
-        }
-      }
+      const results = await mapWithConcurrency(tests, 4, (test) => trApi.addResult(test.id, body));
+      const failed = results.filter((result) => result.status === 'rejected').length;
       pushToast({
         title: 'TestRail',
         body: failed ? `Recorded with ${failed} failure(s).` : 'Result recorded.',

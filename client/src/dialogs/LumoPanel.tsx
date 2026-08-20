@@ -237,7 +237,7 @@ export function LumoPanel({ open, onClose }: { open: boolean; onClose: () => voi
     }
   };
 
-  // Yaki-style context bar: program → cluster → HW/SW drill-down (hidden by default).
+  // Lumo-style context bar: program → cluster → HW/SW drill-down (hidden by default).
   // localStorage is absent in SSR test renders — guard access.
   const lsGet = (k: string) => {
     try {
@@ -367,7 +367,11 @@ export function LumoPanel({ open, onClose }: { open: boolean; onClose: () => voi
           <Avatar size={40} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ color: '#FFFFFF', fontSize: 15, fontWeight: 700 }}>Lumo</div>
-            <div style={{ color: '#DDD6FE', fontSize: 10 }}>powered by {model}</div>
+            <div style={{ color: '#DDD6FE', fontSize: 10 }}>
+              {appSettings.aiDataSharingEnabled
+                ? `powered by Copilot · ${model} · 1M · medium`
+                : 'powered by Local Ollama'}
+            </div>
           </div>
           <button
             title="Clear conversation"

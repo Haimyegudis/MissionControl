@@ -1,27 +1,27 @@
 /**
- * Confluence tools over direct REST (port of Yaki's confluenceUtils.js +
+ * Confluence tools over direct REST (port of Lumo's confluenceUtils.js +
  * clusterReleaseNotes.js approach). The on-prem host uses a self-signed cert
  * chain, so TLS verification is relaxed by default (CONFLUENCE_VERIFY_TLS=true
  * or NODE_EXTRA_CA_CERTS re-enables it). Auth: Bearer CONFLUENCE_PAT resolved
- * via process.env → %APPDATA%\Yaki\.env → <YAKI_ROOT>\.env. Missing PAT →
+ * via process.env → %APPDATA%\Lumo\.env → <LUMO_ROOT>\.env. Missing PAT →
  * tools return {error:'confluence not configured'}.
  */
 import https from 'node:https';
 import { readFileSync } from 'node:fs';
-import { getYakiSecret } from './env.js';
+import { getLumoSecret } from './env.js';
 
 type Rec = Record<string, any>;
 
 export function confluenceBaseUrl(): string {
   return (
-    getYakiSecret('CONFLUENCE_BASE_URL') || 'https://v-indigo-confluence.inr.rd.hpicorp.net:6443'
+    getLumoSecret('CONFLUENCE_BASE_URL') || 'https://v-indigo-confluence.inr.rd.hpicorp.net:6443'
   ).replace(/\/+$/, '');
 }
 
 const NOT_CONFIGURED = { error: 'confluence not configured' } as const;
 
 // ---------------------------------------------------------------------------
-// HTTPS agent with relaxed TLS (Yaki confluenceUtils parity)
+// HTTPS agent with relaxed TLS (Lumo confluenceUtils parity)
 // ---------------------------------------------------------------------------
 
 let cachedAgent: https.Agent | null = null;
@@ -95,7 +95,7 @@ function confluenceGetJson(url: string, pat: string, timeoutMs = 30_000): Promis
 // URL parsing + HTML stripping helpers
 // ---------------------------------------------------------------------------
 
-/** Extract page id / space+title from any Confluence URL form (Yaki port). */
+/** Extract page id / space+title from any Confluence URL form (Lumo port). */
 export function parseConfluenceUrl(url: string): {
   pageId: string | null;
   spaceKey: string | null;
@@ -145,7 +145,7 @@ function stripHtml(s: string): string {
 }
 
 function pat(): string {
-  return getYakiSecret('CONFLUENCE_PAT');
+  return getLumoSecret('CONFLUENCE_PAT');
 }
 
 async function resolvePageId(documentUri: string, token: string): Promise<string | null> {
@@ -231,7 +231,7 @@ export async function getConfluencePage(args: Rec): Promise<unknown> {
 
 /**
  * search_confluence_docs — fetch the given pages and return their content so
- * the agent can extract the answer in the follow-up round. (Yaki delegates
+ * the agent can extract the answer in the follow-up round. (Lumo delegates
  * this to an MCP LLM; the server-only port returns the page text instead.)
  */
 export async function searchConfluenceDocs(args: Rec): Promise<unknown> {

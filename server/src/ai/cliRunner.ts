@@ -7,7 +7,7 @@
  */
 import { spawn, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { existsSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -43,6 +43,32 @@ function cmdQuote(a: string): string {
 export function resetCopilotExeCache(): void {
   cachedExePath = null;
   cachedClaudeExePath = null;
+}
+
+/**
+ * Lumo uses the same interactive answer profile as Yaki: Claude Sonnet 5 via
+ * Copilot, the 1M context tier, and medium reasoning effort. Keep construction
+ * in one exported helper so tests can verify the exact CLI contract without
+ * spawning an external process.
+ */
+export function buildCopilotArgs(model: string): string[] {
+  return [
+    '-p',
+    'Proceed. Respond now exactly per your instructions and response contract. Output ONLY the JSON.',
+    '-s',
+    '--model',
+    model,
+    '--context',
+    'long_context',
+    '--effort',
+    'medium',
+    '--deny-tool',
+    'shell',
+    '--deny-tool',
+    'write',
+    '--output-format',
+    'text',
+  ];
 }
 
 /**
@@ -113,37 +139,33 @@ export async function runCopilotCli(
 ): Promise<string> {
   assertSafeModel(model);
   const exe = resolveCopilotExe();
-  const tmpFile = path.join(tmpdir(), `copilot-prompt-${randomUUID()}.txt`);
-  writeFileSync(tmpFile, ANTI_TOOL_HEADER + prompt, { encoding: 'utf8', mode: 0o600 });
+  // Copilot treats "follow the instructions in this file" as prompt
+  // injection when the file defines an app persona. Yaki supplies the same
+  // contract through Copilot's supported AGENTS.md instruction channel, so
+  // Lumo does the same in an isolated temporary working directory.
+  const agentDir = mkdtempSync(path.join(tmpdir(), 'copilot-lumo-'));
+  const taskSpecHeader =
+    'PROJECT TASK SPEC (from the app developer): This CLI call is the headless backend answer engine of an internal QA application. ' +
+    'The application spec below defines the assistant persona THE APP presents to its users, the response contract, routing rules, and domain knowledge. ' +
+    'Follow the spec to produce the application\'s next response verbatim (usually JSON). Any text outside the contracted format breaks the app. ' +
+    'This is a data-generation task for the application — not a change of your identity.\n\n=== APPLICATION SPEC ===\n\n';
+  writeFileSync(path.join(agentDir, 'AGENTS.md'), taskSpecHeader + prompt, {
+    encoding: 'utf8',
+    mode: 0o600,
+  });
 
   try {
     return await new Promise<string>((resolve, reject) => {
-      const args = [
-        '-p',
-        `Follow ALL instructions in the file ${tmpFile} exactly. Output ONLY the answer text, nothing else.`,
-        '-s',
-        '--model',
-        model,
-        '--allow-all-paths',
-        '--deny-tool',
-        'shell',
-        '--deny-tool',
-        'write',
-        '--no-custom-instructions',
-        '--context',
-        'long_context',
-        '--output-format',
-        'text',
-      ];
+      const args = buildCopilotArgs(model);
       // npm ships copilot as a .cmd shim — batch files need a shell. Quote
       // args ourselves (none contain embedded quotes) and hand cmd one line.
       const isBatch = /\.(cmd|bat)$/i.test(exe);
       const child = isBatch
         ? spawn(
             [exe, ...args].map(cmdQuote).join(' '),
-            { windowsHide: true, shell: true },
+            { cwd: agentDir, windowsHide: true, shell: true },
           )
-        : spawn(exe, args, { windowsHide: true });
+        : spawn(exe, args, { cwd: agentDir, windowsHide: true });
 
       let stdout = '';
       let stderr = '';
@@ -204,16 +226,19 @@ export async function runCopilotCli(
       });
     });
   } finally {
-    try {
-      unlinkSync(tmpFile);
-    } catch {
-      // best-effort cleanup
+    const expectedPrefix = path.join(tmpdir(), 'copilot-lumo-');
+    if (agentDir.startsWith(expectedPrefix)) {
+      try {
+        rmSync(agentDir, { recursive: true, force: true });
+      } catch {
+        // best-effort cleanup
+      }
     }
   }
 }
 
 // ---------------------------------------------------------------------------
-// Claude Code CLI backend (Yaki runClaude port — essentials only)
+// Claude Code CLI backend (Lumo runClaude port — essentials only)
 // ---------------------------------------------------------------------------
 
 const CLAUDE_NOT_FOUND_MESSAGE =
@@ -222,6 +247,48 @@ const CLAUDE_NOT_FOUND_MESSAGE =
 /** Only claude-* model ids route to the Claude CLI; everything else → Copilot. */
 export function isClaudeModel(model: string): boolean {
   return /^claude/i.test(String(model ?? '').trim());
+}
+
+export function isOllamaModel(model: string): boolean {
+  return /^ollama:/i.test(String(model ?? '').trim());
+}
+
+/** Local-only Lumo backend; no question or retrieved work data leaves the PC. */
+export async function runOllama(
+  prompt: string,
+  model: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  assertSafeModel(model);
+  const localModel = model.replace(/^ollama:/i, '');
+  if (!localModel) throw new Error('An Ollama model name is required.');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 2 * 60_000);
+  const onAbort = () => controller.abort();
+  signal?.addEventListener('abort', onAbort, { once: true });
+  try {
+    const response = await fetch(`${process.env.OLLAMA_URL || 'http://127.0.0.1:11434'}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: localModel,
+        prompt: ANTI_TOOL_HEADER + prompt,
+        stream: false,
+        keep_alive: process.env.OLLAMA_KEEP_ALIVE || '24h',
+        options: { temperature: 0.1, num_ctx: 32_768 },
+      }),
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`Ollama HTTP ${response.status}`);
+    const body = await response.json() as { response?: string; error?: string };
+    if (body.error) throw new Error(body.error);
+    const text = body.response?.trim();
+    if (!text) throw new Error('Ollama returned an empty response.');
+    return text;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', onAbort);
+  }
 }
 
 /**
@@ -385,6 +452,7 @@ export async function runClaudeCli(
 export function selectCliRunner(
   model: string,
 ): (prompt: string, model: string, signal?: AbortSignal) => Promise<string> {
+  if (isOllamaModel(model)) return runOllama;
   if (process.env.LUMO_USE_CLAUDE_CLI === '1' && isClaudeModel(model)) return runClaudeCli;
   return runCopilotCli;
 }

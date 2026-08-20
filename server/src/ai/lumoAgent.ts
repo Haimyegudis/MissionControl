@@ -1,16 +1,16 @@
 /**
- * Lumo agent loop (ui-parity-contract.md §13.1) — upgraded with the Yaki
+ * Lumo agent loop (ui-parity-contract.md §13.1) — upgraded with the Lumo
  * assistant's full tool catalog and behavioral prompt.
  *
  * Always uses the CLI path: compose a flat text prompt, run the CLI, extract
  * the first balanced JSON object, dispatch tool calls, loop max 3 rounds
  * (max 5 tool calls per user message). Tool results are appended as a
  * [TOOL RESULTS] block with per-tool truncation budgets. Post-processing
- * ports Yaki's operator-answer scrubber and card-source filtering.
+ * ports Lumo's operator-answer scrubber and card-source filtering.
  */
 import type { JiraSession } from '../jira/session.js';
 import type { JiraIssue, JiraIssueDetails, PagedResult } from '../types.js';
-import type { YakiToolContext, YakiToolset } from './yakiTools.js';
+import type { LumoToolContext, LumoToolset } from './lumoTools.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -38,14 +38,14 @@ export interface LumoTurn {
 /**
  * Tool surface Lumo dispatches against. Structurally compatible with
  * JiraIssueService (searchIssues/getIssueDetails/addComment) so the route can
- * pass the service instance directly. The optional `yaki` member carries the
- * full Yaki tool catalog (see yakiTools.ts) keyed by tool name.
+ * pass the service instance directly. The optional `lumo` member carries the
+ * full Lumo tool catalog (see lumoTools.ts) keyed by tool name.
  */
 export interface LumoTools {
   searchIssues(jql: string, startAt?: number, maxResults?: number): Promise<PagedResult<JiraIssue>>;
   getIssueDetails(issueKey: string): Promise<JiraIssueDetails>;
   addComment(issueKey: string, body: string): Promise<void>;
-  yaki?: YakiToolset;
+  lumo?: LumoToolset;
 }
 
 export type RunCliFn = (prompt: string, model: string, signal?: AbortSignal) => Promise<string>;
@@ -66,18 +66,18 @@ export interface AskLumoOptions {
 // ---------------------------------------------------------------------------
 
 const MAX_ROUNDS = 3;
-/** Max tool calls per user message (Yaki parity) to prevent runaway loops. */
+/** Max tool calls per user message (Lumo parity) to prevent runaway loops. */
 const TOOL_CALL_LIMIT = 5;
 const TOOL_RESULT_MAX_CHARS = 2000;
 const DESCRIPTION_MAX_CHARS = 1000;
 const SEARCH_MAX_RESULTS = 20;
 const MAX_CARDS = 10;
 
-/** Card sources the Lumo UI knows how to render (Yaki-parity filter). */
+/** Card sources the Lumo UI knows how to render (Lumo-parity filter). */
 export const ALLOWED_CARD_SOURCES = new Set(['jira', 'confluence', 'testrail', 'github', 'case']);
 
 /**
- * Per-tool result truncation budgets (Yaki assistantAgent.js parity):
+ * Per-tool result truncation budgets (Lumo assistantAgent.js parity):
  * list/lookup tools feed "show me all X" tables and must carry every row.
  */
 export function toolResultCap(name: string): number {
@@ -100,7 +100,7 @@ const FINAL_JSON_INSTRUCTION =
 const REPLY_INSTRUCTION = 'Reply with ONE JSON object only. No prose, no markdown fences.';
 
 // ---------------------------------------------------------------------------
-// System prompt — Yaki's behavioral prompt adapted for Lumo
+// System prompt — Lumo's behavioral prompt adapted for Lumo
 // (identity: Lumo; response contract: Lumo JSON; summaries: PLAIN TEXT)
 // ---------------------------------------------------------------------------
 
@@ -169,6 +169,7 @@ Before calling tools, silently classify the question and route accordingly. If t
 ## Component SWR Flow — "what is <component>" / component behavior questions
 SWR = Software Requirements. Press components (Blanket, BID, ILS, CVC, ...) exist in MORE THAN ONE series (S3/S4/S5/S6) and differ per series. The authoritative source is the component's SWR document in Confluence — the answer usually lives in its Introduction section.
 - Step 0 — series gate. If the Active Context marks the series as "assumed default" (the user never confirmed one) and the question names a component without a series, ask ONE short question first — "Which series do you mean — S3, S4, S5 or S6?" — and do NOT search yet. When the user answers, persist it with set_context ({"series": "..."}). If the user already named a series, skip this.
+- For genuinely series-independent or comparison questions ("in general", "all presses", "across series", or no specific component), search local knowledge with series="ALL" and state any series differences you find. Never silently limit a general question to S6.
 - Step 1 — vector DB first. search_confluence_vectors(query="<component> SWR", series=<confirmed series>). Prefer results whose title looks like the component's SWR / "SW Requirements" / "SW Design" document. Do this EVEN IF lookup_component returned data.
 - Step 2 — fetch the relevant content. search_confluence_docs(prompt=<the user's exact question>, documentUris=[the "url" values from Step 1 hits — never folder/file paths]). Do NOT use get_confluence_page for this — it fetches the whole page and wastes tokens.
 - Step 3 — answer from that content. ALWAYS attach the Confluence document the answer came from as a card (title + url).
@@ -310,11 +311,19 @@ Fetch a single Jira issue by exact key. Parameters: issueKey (string, required, 
 
 ### search_confluence_vectors
 PREFERRED — fast semantic search across Confluence documents using the local vector DB. Returns titles, folders, similarity, url and sectionUrl.
-Parameters: query (string, required); series (string, optional, default "S6")
+Parameters: query (string, required); series (S3|S4|S5|S6|ALL, optional, default "S6")
 
 ### search_testrail_vectors
 PREFERRED — fast semantic search across TestRail test cases using the local vector DB. Returns caseId, title, similarity, url, component.
-Parameters: query (string, required); series (string, optional, default "S6"); component (string, optional — prioritize results from this component, e.g. "BID", "Blanket", "CVC")
+Parameters: query (string, required); series (S3|S4|S5|S6|RAMON|ALL, optional, default "S6"); component (string, optional — prioritize results from this component, e.g. "BID", "Blanket", "CVC")
+
+### search_code_vectors
+Semantic search across the bundled automation code knowledge for every program and series. Use when structured brain lookups do not locate an implementation detail.
+Parameters: query (required); series (S3|S4|S5|S6|RAMON|ALL, default ALL); program and component (optional)
+
+### search_tmc_vectors
+Semantic search across bundled TMC/OPC-UA signal knowledge. TMC collections exist for S6 and the S3 Gamla/6K+ pipeline; other S3/S4/S5 presses use different tooling.
+Parameters: query (required); series (S3|S6|ALL, default ALL); component (optional)
 
 ### search_confluence
 Fallback — free-text Confluence search (slower). Use only if search_confluence_vectors returns no results, and for the SENG (System Engineering) fallback.
@@ -356,7 +365,7 @@ These query pre-extracted structured knowledge (Confluence SWR pages, the automa
 
 ### lookup_component
 Everything known about hardware components (K200, EF501, PS405, FAN200, ...): description, cabinet, configType, monitors, events, parameters. Either componentId OR query required.
-Parameters: componentId (exact id) | query (free-text keywords); series (optional, default "s6")
+Parameters: componentId (exact id) | query (free-text keywords); series (optional, S3/S4/S5/S6; S5 uses the shared S4 brain)
 
 ### lookup_event
 SW events raised by the PLC: description, params, state behavior, suspected cause, what-to-do, raising monitors, involved components. Either eventName OR query required.
@@ -379,10 +388,10 @@ Parameters: component (e.g. "BKT", "BID") | query (e.g. "wait for state"); serie
 
 ### find_signal_usage
 Signal-usage patterns ("set via SetIOWithSimulationFlag", "verify with WaitForNodeValue").
-Parameters: signalOrComponent (string, required)
+Parameters: signalOrComponent (string, required); series (optional, S3/S4/S5/S6/RAMON)
 
 ### find_test_scenarios
-TestRail scenarios + setup patterns + verification patterns from the S6 suite. Accepts a known component tag OR a free-text query (at least one). Component tags are a fixed list (Asid, BDV, BID, Blanket, ChargingSystem, CRC, ILP, ILS, Ink, WEB, PLC, Jobs, ...); topics like "color calibration" map to MULTIPLE tags — use query then.
+TestRail scenarios + setup patterns + verification patterns from the selected series. S5 uses the shared S4 pipeline. Accepts a known component tag OR a free-text query (at least one). Component tags are a fixed list (Asid, BDV, BID, Blanket, ChargingSystem, CRC, ILP, ILS, Ink, WEB, PLC, Jobs, ...); topics like "color calibration" map to MULTIPLE tags — use query then.
 Parameters: component (exact tag) | query (free text); series (optional)
 Returns scenarios[], setupPatterns[], verificationPatterns[], componentsFound[], signalsByComponent.
 
@@ -481,7 +490,7 @@ function findBalancedEnd(text: string, start: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// Per-conversation context (Yaki set_context emulation)
+// Per-conversation context (Lumo set_context emulation)
 // ---------------------------------------------------------------------------
 
 export interface LumoConversationContext {
@@ -491,7 +500,7 @@ export interface LumoConversationContext {
 }
 
 /**
- * Lumo is stateless per request (the client sends full history), so Yaki's
+ * Lumo is stateless per request (the client sends full history), so Lumo's
  * session context is emulated with a module-level map keyed by a hash of the
  * FIRST user message of the conversation. Best-effort: two conversations
  * opening with identical first messages share a context slot, and the store
@@ -542,8 +551,68 @@ export function resetLumoConversationContexts(): void {
   conversationContexts.clear();
 }
 
+/** Answers with these phrases are not terminal: Lumo must search documents. */
+export function isInsufficientKnowledgeAnswer(summary: string): boolean {
+  return /\b(?:not documented|could(?:n't| not) find|cannot find|not found|no (?:relevant |matching )?(?:information|documentation|data)|try a different document|check the seng space)\b/i.test(
+    summary,
+  );
+}
+
+/**
+ * Build deterministic search rewrites for common press terminology. Confluence
+ * calls S4 sheet-fed substrate dimensions "paper size measurement", so a
+ * literal user query alone can rank thickness or web-press pages above it.
+ */
+export function confluenceFallbackQueries(message: string, series: string): string[] {
+  const text = message.trim();
+  const queries: string[] = [];
+  if (
+    /\b(?:sheet[ -]?fed|cut[ -]?sheet)\b/i.test(text) &&
+    /\b(?:substrate|paper|sheet|media)\b/i.test(text) &&
+    /\b(?:size|dimension|width|length|maximum|maximal|max|minimum|min)\b/i.test(text)
+  ) {
+    queries.push(`${series} automatic paper size measurement sheetfed allowed size width length`);
+  }
+  if (/\b(?:maximum|maximal|max|minimum|min|value|range|limit|size|dimension)\b/i.test(text)) {
+    queries.push(`${series} ${text} requirements allowed value limits width length`);
+  }
+  queries.push(text);
+  return [...new Set(queries.map((query) => query.replace(/\s+/g, ' ').trim()).filter(Boolean))];
+}
+
+export interface PhysicalSheetSize {
+  widthMm: number;
+  lengthMm: number;
+  title: string;
+  url: string;
+}
+
+/** Extract an explicit Confluence "Allowed Size" width/length maximum. */
+export function extractPhysicalSheetSize(raw: unknown): PhysicalSheetSize | null {
+  if (!isRecord(raw) || !Array.isArray(raw.documents)) return null;
+  for (const item of raw.documents) {
+    if (!isRecord(item)) continue;
+    const content = toStr(item.content);
+    const allowed = content.match(
+      /Allowed\s+Size\s*:\s*Width\s*=\s*(?:\d+(?:\.\d+)?\s*mm?\s*[-–]\s*)?(\d+(?:\.\d+)?)\s*mm?\s*,?\s*Length\s*=\s*(?:\d+(?:\.\d+)?\s*mm?\s*[-–]\s*)?(\d+(?:\.\d+)?)\s*mm?/i,
+    );
+    const fullFormat = content.match(/Full\s+Format\s*=\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i);
+    const widthMm = Number(allowed?.[1] ?? fullFormat?.[1]);
+    const lengthMm = Number(allowed?.[2] ?? fullFormat?.[2]);
+    if (Number.isFinite(widthMm) && Number.isFinite(lengthMm) && widthMm > 0 && lengthMm > 0) {
+      return {
+        widthMm,
+        lengthMm,
+        title: toStr(item.title) || 'Confluence document',
+        url: toStr(item.url || item.documentUri),
+      };
+    }
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
-// Operator-answer scrubber (Yaki assistantAgent.js port)
+// Operator-answer scrubber (Lumo assistantAgent.js port)
 // ---------------------------------------------------------------------------
 
 export function isOperatorHowToQuery(msg: string): boolean {
@@ -622,9 +691,11 @@ export async function askLumo(options: AskLumoOptions): Promise<LumoResult> {
   const ctx = contextFor(options.turns);
   const turns: LumoTurn[] = [...options.turns];
   const lastUserMessage = [...turns].reverse().find((t) => t.role === 'user')?.content ?? '';
-  const toolCtx: YakiToolContext = { runCli, model, signal };
+  const toolCtx: LumoToolContext = { runCli, model, signal };
 
   let toolCallCount = 0;
+  let confluenceFallbackAttempted = false;
+  let confluenceFallbackCards: LumoCard[] = [];
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
     status(round === 0 ? 'Lumo is thinking...' : `Refining (round ${round + 1})...`);
@@ -641,7 +712,109 @@ export async function askLumo(options: AskLumoOptions): Promise<LumoResult> {
     applySetContext(ctx, obj.set_context);
 
     if (obj.summary !== undefined) {
-      return finalizeResult(obj, lastUserMessage);
+      const proposedSummary = toStr(obj.summary);
+      if (
+        !confluenceFallbackAttempted &&
+        tools.lumo &&
+        isInsufficientKnowledgeAnswer(proposedSummary) &&
+        toolCallCount <= TOOL_CALL_LIMIT - 2
+      ) {
+        confluenceFallbackAttempted = true;
+        const namedSeries = lastUserMessage.match(/\bS[3-6]\b/i)?.[0]?.toUpperCase();
+        const searchSeries = namedSeries ?? (ctx.seriesConfirmed ? ctx.series.toUpperCase() : 'ALL');
+        const hits: Array<Record<string, unknown>> = [];
+        const seenUrls = new Set<string>();
+
+        status('Searching Confluence...');
+        for (const query of confluenceFallbackQueries(lastUserMessage, searchSeries).slice(0, 3)) {
+          const raw = await dispatchTool(
+            tools,
+            'search_confluence_vectors',
+            { query, series: searchSeries },
+            toolCtx,
+          );
+          toolCallCount += 1;
+          const rows = Array.isArray(raw)
+            ? raw
+            : isRecord(raw) && Array.isArray(raw.results)
+              ? raw.results
+              : [];
+          for (const row of rows) {
+            if (!isRecord(row)) continue;
+            const url = toStr(row.url || row.sectionUrl);
+            if (!url || seenUrls.has(url)) continue;
+            seenUrls.add(url);
+            hits.push(row);
+            if (hits.length >= 6) break;
+          }
+          if (hits.length >= 6 || toolCallCount >= TOOL_CALL_LIMIT - 1) break;
+        }
+
+        const documentUris = hits
+          .map((hit) => toStr(hit.url || hit.sectionUrl))
+          .filter(Boolean)
+          .slice(0, 4);
+        if (documentUris.length > 0 && toolCallCount < TOOL_CALL_LIMIT) {
+          status('Reading Confluence documents...');
+          const docs = await dispatchTool(
+            tools,
+            'search_confluence_docs',
+            { prompt: lastUserMessage, documentUris },
+            toolCtx,
+          );
+          toolCallCount += 1;
+          confluenceFallbackCards = hits.slice(0, 4).map((hit) => ({
+            source: 'confluence',
+            title: toStr(hit.title) || 'Confluence document',
+            summary: toStr(hit.section),
+            url: toStr(hit.url || hit.sectionUrl),
+            fields: {},
+          }));
+          if (
+            /\b(?:substrate|paper|sheet|media)\b/i.test(lastUserMessage) &&
+            /\b(?:size|dimension|width|length|maximum|maximal|max)\b/i.test(lastUserMessage)
+          ) {
+            const size = extractPhysicalSheetSize(docs);
+            if (size) {
+              return {
+                summary:
+                  `The maximum ${searchSeries} sheet-fed substrate size is ` +
+                  `**${size.widthMm} × ${size.lengthMm} mm** (width × length).`,
+                cards: [
+                  {
+                    source: 'confluence',
+                    title: size.title,
+                    summary: 'Source for the allowed physical sheet width and length.',
+                    url: size.url,
+                    fields: {},
+                  },
+                ],
+              };
+            }
+          }
+          const docsText = JSON.stringify(docs) ?? 'null';
+          turns.push({ role: 'assistant', content: JSON.stringify(obj) });
+          turns.push({
+            role: 'user',
+            content:
+              '[MANDATORY CONFLUENCE FALLBACK]\n' +
+              `The earlier answer was insufficient. Answer the original question from these retrieved Confluence passages. ` +
+              `Distinguish physical substrate size from printable/image size. Cite the supporting page in cards. ` +
+              `Only say "Not documented" if these passages genuinely contain no answer.\n` +
+              docsText.slice(0, 40_000),
+          });
+          continue;
+        }
+      }
+
+      const result = finalizeResult(obj, lastUserMessage);
+      for (const card of confluenceFallbackCards) {
+        if (result.cards.length >= MAX_CARDS) break;
+        if (!result.cards.some((existing) => existing.url && existing.url === card.url)) {
+          result.cards.push(card);
+        }
+      }
+      return result;
     }
 
     if (Array.isArray(obj.tool_calls)) {
@@ -683,7 +856,7 @@ export async function askLumo(options: AskLumoOptions): Promise<LumoResult> {
 function finalizeResult(obj: Record<string, unknown>, lastUserMessage: string): LumoResult {
   let summary = toStr(obj.summary);
   // Models sometimes park a table in an invented "table" field — fold it
-  // back into the summary so it reaches the user (Yaki parity).
+  // back into the summary so it reaches the user (Lumo parity).
   if (typeof obj.table === 'string' && obj.table.trim().length > 0) {
     summary = `${summary}\n\n${obj.table}`.trim();
   }
@@ -733,7 +906,7 @@ async function dispatchTool(
   tools: LumoTools,
   name: string,
   args: Record<string, unknown>,
-  ctx: YakiToolContext,
+  ctx: LumoToolContext,
 ): Promise<unknown> {
   try {
     switch (name) {
@@ -770,9 +943,9 @@ async function dispatchTool(
         return { ok: true, message: `Comment added to ${key}.` };
       }
       default: {
-        const yakiFn = tools.yaki?.[name];
-        if (yakiFn) {
-          return await yakiFn(args, ctx);
+        const lumoFn = tools.lumo?.[name];
+        if (lumoFn) {
+          return await lumoFn(args, ctx);
         }
         return { error: `Unknown tool: ${name}` };
       }

@@ -156,6 +156,26 @@ button {
   font: inherit;
 }
 
+button:focus-visible,
+[role="button"]:focus-visible,
+[role="option"]:focus-visible,
+th[tabindex]:focus-visible,
+tr[tabindex]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.mc-topbar { overflow-x: auto; scrollbar-width: thin; }
+.mc-body { position: relative; }
+@media (max-width: 900px) {
+  .mc-brand, .mc-live, .mc-refresh-stamp, .mc-user { display: none !important; }
+  .mc-topbar { gap: 7px !important; padding-inline: 8px !important; }
+  .mc-main { padding: 10px !important; }
+}
+@media (max-width: 700px) {
+  .mc-sidebar { position: absolute; inset: 0 auto 0 0; z-index: 30; box-shadow: var(--shadow-card); }
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

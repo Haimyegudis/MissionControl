@@ -1,11 +1,11 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 Builds a ONE-CLICK OFFLINE Windows installer for Mission Control (JiraWeb).
 
-Output: dist-installer\MissionControlSetup.exe  (IExpress self-extractor that
-        extracts install.cmd + MissionControl.zip and runs install.cmd)
-Fallback (if IExpress is unavailable/fails): dist-installer\MissionControlSetup.cmd
-        + dist-installer\MissionControl.zip (run the .cmd - still one click).
+Preferred output: dist-installer\MissionControlSetup.exe (Inno Setup 6,
+        single-file, per-user one-click installer).
+Fallback when Inno Setup is unavailable: dist-installer\MissionControlSetup.cmd
+        + dist-installer\MissionControl.zip (run the .cmd; still one click).
 
 Payload (staged to build\installer\payload\):
   install.cmd            installer entry point ([/norun] [/quiet], MC_INSTALL_DIR env override)
@@ -17,16 +17,18 @@ Payload (staged to build\installer\payload\):
   app\launcher\*         MissionControl.cmd, mission-control-hidden.vbs, setup-helper.ps1
   app\Uninstall.cmd, app\README.txt
 
-Usage: powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 [-SkipAppBuild] [-SkipExe]
+Usage: powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 [-SkipAppBuild] [-SkipExe] [-StageOnly]
 #>
 [CmdletBinding()]
 param(
-  [switch]$IncludeKnowledge, # bundle the Yaki knowledge pack (~2GB: vector DBs + brain JSONs + config control)
+  [switch]$IncludeKnowledge, # compatibility switch; Lumo knowledge is now always bundled
   [switch]$SkipAppBuild,  # reuse existing client/dist + server/dist
-  [switch]$SkipExe        # skip IExpress; emit the cmd+zip pair only
+  [switch]$SkipExe,       # skip IExpress; emit the cmd+zip pair only
+  [switch]$StageOnly      # validate/stage the complete payload without compressing it
 )
 
 $ErrorActionPreference = 'Stop'
+$IncludeKnowledge = $true # Mission Control is self-contained; knowledge is not optional.
 $Root    = Split-Path -Parent $PSScriptRoot
 $Stage   = Join-Path $Root 'build\installer'
 $Payload = Join-Path $Stage 'payload'
@@ -111,46 +113,64 @@ Copy-Item (Join-Path $Assets 'README.txt')                  (Join-Path $App 'REA
 Copy-Item (Join-Path $Assets 'icon\mission-control.ico')    (Join-Path $App 'mission-control.ico')
 Copy-Item (Join-Path $Assets 'install.cmd')                 (Join-Path $Payload 'install.cmd')
 
-# optional: Yaki knowledge pack (vector DBs + brain + config control; no uploads, no .env)
+# Mandatory self-contained Lumo knowledge pack (no credentials or .env files).
 if ($IncludeKnowledge) {
-  $YakiRoot = 'C:\APPS\Yaki'
-  Step "Bundling knowledge pack from $YakiRoot (this is ~2GB)"
-  $KDb = Join-Path $App 'yaki\DB'
-  $KData = Join-Path $App 'yaki\data'
+  $LumoRoot = Join-Path $Root 'lumo'
+  if (-not (Test-Path -LiteralPath $LumoRoot)) { Fail "Bundled Lumo root missing: $LumoRoot" }
+  Step "Bundling knowledge pack from $LumoRoot (this is ~2GB)"
+  $KDb = Join-Path $App 'lumo\DB'
+  $KData = Join-Path $App 'lumo\data'
   New-Item -ItemType Directory -Force -Path $KDb, (Join-Path $KData 'brain') | Out-Null
-  Copy-Item (Join-Path $YakiRoot 'DB\*.db')  $KDb -ErrorAction SilentlyContinue
-  Copy-Item (Join-Path $YakiRoot 'DB\*.db-wal') $KDb -ErrorAction SilentlyContinue
-  Copy-Item (Join-Path $YakiRoot 'DB\*.db-shm') $KDb -ErrorAction SilentlyContinue
-  Copy-Item (Join-Path $YakiRoot 'data\brain\*') (Join-Path $KData 'brain') -Recurse -ErrorAction SilentlyContinue
-  foreach ($pat in '*.xlsx', '*.csv', '*.json') {
-    Copy-Item (Join-Path $YakiRoot "data\$pat") $KData -ErrorAction SilentlyContinue
-  }
+  Copy-Item (Join-Path $LumoRoot 'DB\*.db')  $KDb -ErrorAction SilentlyContinue
+  Copy-Item (Join-Path $LumoRoot 'data\*') $KData -Recurse -ErrorAction SilentlyContinue
+  Copy-Item (Join-Path $LumoRoot 'config') (Join-Path $App 'lumo\config') -Recurse -ErrorAction SilentlyContinue
+  Copy-Item (Join-Path $LumoRoot 'manifest.json') (Join-Path $App 'lumo\manifest.json')
+  Copy-Item (Join-Path $LumoRoot 'README.md') (Join-Path $App 'lumo\README.md')
   $kCount = (Get-ChildItem $KDb, $KData -Recurse -File | Measure-Object).Count
-  if ($kCount -lt 5) { Fail "Knowledge pack looks empty ($kCount files) - is $YakiRoot present?" }
+  if ($kCount -lt 5) { Fail "Knowledge pack looks empty ($kCount files) - is $LumoRoot present?" }
   Step "Knowledge pack staged: $kCount files"
 
-  # Ollama runtime + the embedding model, for fully-offline vector search.
-  Step 'Bundling Ollama + mxbai-embed-large model'
-  $OllamaSetup = Join-Path $Assets 'OllamaSetup.exe'
-  if (-not (Test-Path $OllamaSetup)) { Fail "Missing $OllamaSetup - download https://ollama.com/download/OllamaSetup.exe into scripts\installer\ first" }
+  # Portable CPU Ollama runtime + embedding and local-answer models for
+  # fully-offline Lumo. The official 1.5GB bootstrapper would push this
+  # knowledge package beyond Windows' single-EXE limit.
+  Step 'Bundling Ollama + Lumo embedding and answer models'
   $ODir = Join-Path $App 'ollama'
-  New-Item -ItemType Directory -Force -Path $ODir | Out-Null
-  Copy-Item $OllamaSetup (Join-Path $ODir 'OllamaSetup.exe')
+  $ORuntime = Join-Path $ODir 'runtime'
+  $OllamaInstalled = Join-Path $env:LOCALAPPDATA 'Programs\Ollama'
+  $OllamaExe = Join-Path $OllamaInstalled 'ollama.exe'
+  $OllamaLib = Join-Path $OllamaInstalled 'lib\ollama'
+  if (-not (Test-Path -LiteralPath $OllamaExe)) { Fail "Portable Ollama source missing: $OllamaExe" }
+  if (-not (Test-Path -LiteralPath $OllamaLib)) { Fail "Portable Ollama libraries missing: $OllamaLib" }
+  New-Item -ItemType Directory -Force -Path (Join-Path $ORuntime 'lib\ollama') | Out-Null
+  Copy-Item -LiteralPath $OllamaExe -Destination $ORuntime
+  Get-ChildItem -LiteralPath $OllamaLib -File | Copy-Item -Destination (Join-Path $ORuntime 'lib\ollama')
+  $runtimeSize = (Get-ChildItem -LiteralPath $ORuntime -Recurse -File | Measure-Object Length -Sum).Sum
+  if ($runtimeSize -lt 50MB) { Fail "Portable Ollama runtime looks incomplete ($runtimeSize bytes)" }
 
   $ModelSrc = Join-Path $env:USERPROFILE '.ollama\models'
-  $manifest = Join-Path $ModelSrc 'manifests\registry.ollama.ai\library\mxbai-embed-large\335m'
-  if (-not (Test-Path $manifest)) { Fail "mxbai-embed-large:335m manifest not found at $manifest (run: ollama pull mxbai-embed-large:335m)" }
-  $manDest = Join-Path $ODir 'models\manifests\registry.ollama.ai\library\mxbai-embed-large'
-  New-Item -ItemType Directory -Force -Path $manDest, (Join-Path $ODir 'models\blobs') | Out-Null
-  Copy-Item $manifest (Join-Path $manDest '335m')
-  $mj = Get-Content $manifest -Raw | ConvertFrom-Json
-  $digests = @($mj.config.digest) + ($mj.layers | ForEach-Object { $_.digest })
-  foreach ($d in $digests) {
+  $Models = @(
+    @{ Family = 'mxbai-embed-large'; Tag = '335m' },
+    @{ Family = 'gemma3'; Tag = '1b' }
+  )
+  $allDigests = @{}
+  New-Item -ItemType Directory -Force -Path (Join-Path $ODir 'models\blobs') | Out-Null
+  foreach ($model in $Models) {
+    $modelName = "$($model.Family):$($model.Tag)"
+    $manifest = Join-Path $ModelSrc "manifests\registry.ollama.ai\library\$($model.Family)\$($model.Tag)"
+    if (-not (Test-Path $manifest)) { Fail "$modelName manifest not found at $manifest (run: ollama pull $modelName)" }
+    $manDest = Join-Path $ODir "models\manifests\registry.ollama.ai\library\$($model.Family)"
+    New-Item -ItemType Directory -Force -Path $manDest | Out-Null
+    Copy-Item $manifest (Join-Path $manDest $model.Tag)
+    $mj = Get-Content $manifest -Raw | ConvertFrom-Json
+    $digests = @($mj.config.digest) + ($mj.layers | ForEach-Object { $_.digest })
+    foreach ($d in $digests) { $allDigests[$d] = $true }
+  }
+  foreach ($d in $allDigests.Keys) {
     $blob = Join-Path $ModelSrc ('blobs\' + ($d -replace ':', '-'))
     if (-not (Test-Path $blob)) { Fail "Model blob missing: $blob" }
     Copy-Item $blob (Join-Path $ODir 'models\blobs\')
   }
-  Step "Ollama bundled: setup exe + model ($($digests.Count) blobs)"
+  Step ("Ollama bundled: {0}MB portable CPU runtime + {1} models ({2} unique blobs)" -f [Math]::Round($runtimeSize / 1MB, 1), $Models.Count, $allDigests.Count)
 }
 
 # --- 3. verify: no secrets / no sources in payload --------------------------
@@ -160,11 +180,11 @@ $nameMatches = $allFiles | Where-Object {
   $n = $_.Name
   ($ForbiddenNames | Where-Object { $n -like $_ }).Count -gt 0
 }
-$knowledgeDir = Join-Path $App 'yaki'
+$knowledgeDir = Join-Path $App 'lumo'
 $hits = @()
 foreach ($m in $nameMatches) {
   if ($IncludeKnowledge -and $m.FullName.StartsWith($knowledgeDir, [System.StringComparison]::OrdinalIgnoreCase) -and (@('.db', '.db-wal', '.db-shm') -contains $m.Extension)) {
-    # Knowledge-pack vector DBs are data, not secrets (only *.db under app\yaki).
+    # Knowledge-pack vector DBs are data, not secrets (only *.db under app\lumo).
     continue
   }
   if (Test-IsCompiledAppFile -File $m -PayloadRoot $Payload -RepoRoot $Root) {
@@ -191,6 +211,12 @@ Write-Host '  OK: no .ts sources outside node_modules'
 $addon = Join-Path $App 'server\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
 if (-not (Test-Path $addon)) { Fail 'better_sqlite3.node native addon missing from payload' }
 Write-Host "  OK: native addon present ($addon)"
+
+if ($StageOnly) {
+  Step 'Stage-only build complete'
+  Write-Host "Validated payload: $Payload"
+  exit 0
+}
 
 # --- 4a. preferred: single-file installer via Inno Setup 6 -------------------
 $iscc = @(

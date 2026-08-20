@@ -1,4 +1,4 @@
-// Mini-markdown for Lumo summaries (Yaki-style): pipe tables, **bold**,
+// Mini-markdown for Lumo summaries (Lumo-style): pipe tables, **bold**,
 // `code`, [text](url). Pure segmentation logic — unit tested; rendering
 // happens in LumoMarkdown.tsx.
 

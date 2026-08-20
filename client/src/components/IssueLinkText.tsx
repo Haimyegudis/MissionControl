@@ -2,7 +2,7 @@
 // open details; URLs render as numbered "Link 1", "Link 2", ... with the URL as
 // tooltip, trailing punctuation trimmed, http/https only, opened in a new tab.
 
-import { cleanJiraText, tokenize } from '../lib/linkify';
+import { cleanJiraText, confluencePageIdFromUrl, tokenize } from '../lib/linkify';
 
 export interface IssueLinkTextProps {
   text: string | null | undefined;
@@ -31,12 +31,13 @@ export function IssueLinkText({ text, onOpenIssue }: IssueLinkTextProps) {
             </a>
           );
         }
+        const confluencePageId = confluencePageIdFromUrl(t.url);
         return (
           <a
             key={i}
-            href={t.url}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={confluencePageId ? `#/confluence/${confluencePageId}` : t.url}
+            target={confluencePageId ? undefined : '_blank'}
+            rel={confluencePageId ? undefined : 'noopener noreferrer'}
             title={t.url}
             style={{ color: 'var(--accent-cyan)', textDecoration: 'underline' }}
           >

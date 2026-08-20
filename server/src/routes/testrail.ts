@@ -324,6 +324,64 @@ export function testrailRoutes(deps: AppDeps): Router {
     }),
   );
 
+  // Universal palette search. TestRail has no cross-suite title-search API,
+  // so scan the same bounded, TTL-backed suite caches used by case browsing.
+  router.get(
+    '/search-cases',
+    h(async (req, res) => {
+      const query = (qstr(req.query.q) ?? '').trim().toLowerCase();
+      if (query.length < 2) throw new HttpError(400, 'q must contain at least 2 characters');
+      const projectIds = (qstr(req.query.projects) ?? '')
+        .split(',')
+        .map((value) => Number.parseInt(value, 10))
+        .filter((value) => Number.isInteger(value) && value > 0)
+        .slice(0, 10);
+      if (projectIds.length === 0) throw new HttpError(400, 'projects is required');
+      const client = service.requireClient();
+      const projectNames = new Map<number, string>();
+      try {
+        const projects = await service.cachedJson('projects', () => client.getProjects(), false) as Array<{ id: number; name: string }>;
+        for (const project of projects) projectNames.set(project.id, project.name);
+      } catch { /* names are optional */ }
+      const suiteLists = await Promise.all(projectIds.map(async (projectId) => {
+        try {
+          const suites = await service.cachedJson(`suites:${projectId}`, () => client.getSuites(projectId), false) as Array<{ id: number; name: string }>;
+          return suites.map((suite) => ({ projectId, suite }));
+        } catch { return []; }
+      }));
+      const pairs = suiteLists.flat();
+      const matches: Array<Record<string, unknown>> = [];
+      let cursor = 0;
+      const worker = async () => {
+        while (matches.length < 20) {
+          const pair = pairs[cursor++];
+          if (!pair) return;
+          try {
+            const cases = await service.cachedJson(
+              `cases:${pair.projectId}:${pair.suite.id}:`,
+              () => client.getCases(pair.projectId, pair.suite.id),
+              false,
+            ) as Array<{ id: number; title: string; refs: string | null; suiteId: number | null }>;
+            for (const testCase of cases) {
+              if (matches.length >= 20) return;
+              if (String(testCase.id) === query.replace(/^c/, '') || testCase.title.toLowerCase().includes(query) || (testCase.refs ?? '').toLowerCase().includes(query)) {
+                matches.push({
+                  ...testCase,
+                  suiteId: testCase.suiteId ?? pair.suite.id,
+                  suiteName: pair.suite.name,
+                  projectId: pair.projectId,
+                  projectName: projectNames.get(pair.projectId) ?? '',
+                });
+              }
+            }
+          } catch { /* unreadable suite */ }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(6, pairs.length) }, () => worker()));
+      res.json(matches.slice(0, 20));
+    }),
+  );
+
   router.post(
     '/sections/:id/cases',
     h(async (req, res) => {

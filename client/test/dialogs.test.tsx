@@ -226,7 +226,7 @@ describe('CommandPalette (§11)', () => {
 
   it('renders query box, NAV entries and footer hint', () => {
     const html = renderToString(<CommandPalette onClose={noop} onPickIssue={noop} />);
-    expect(html).toContain('Type to search Jira · Enter to open · Esc to close');
+    expect(html).toContain('Search Jira · Confluence · TestRail · Enter to open · Esc to close');
     expect(html).toContain('NAV');
     expect(html).toContain('Dashboard');
   });
@@ -246,9 +246,11 @@ describe('HelpDialog', () => {
     expect(html).toContain('Confluence');
     expect(html).toContain('Lumo (AI)');
     expect(html).toContain('Alerts');
+    expect(html).toContain('Traceability');
+    expect(html).toContain('Setup &amp; Data');
     expect(html).toContain('Shortcuts');
     expect(html).toContain('Mission Control');
-    expect(html).toContain('v1.0');
+    expect(html).toContain('v1.1');
   });
 });
 

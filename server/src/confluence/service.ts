@@ -21,6 +21,10 @@ const DEFAULT_INDIGO_SPACE_IDENTIFIERS = [
   'Kedem Program',
   'Press SW Design',
   'Press SW Apps',
+  // UX/DR pages referenced directly from Indigo epics (e.g. Link to UX/DR).
+  'UEK',
+  // Integration report pages linked from Jira's Integration Form field.
+  'SWSE',
 ];
 
 function normalized(value: string): string {
@@ -102,6 +106,11 @@ export class ConfluenceService {
     const page = await this.client().page(pageId);
     await this.requireSpace(page.spaceKey);
     return page;
+  }
+
+  async resolvePage(spaceKey: string, title: string): Promise<ConfluencePage> {
+    await this.requireSpace(spaceKey);
+    return this.client().pageBySpaceTitle(spaceKey, title);
   }
 
   async pages(spaceKey: string, startAt = 0, limit = 200): Promise<{ items: ConfluencePage[]; startAt: number; nextStart: number; hasMore: boolean }> {

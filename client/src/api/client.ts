@@ -201,10 +201,16 @@ export const incidents = {
 
 export const settings = {
   get: () => api.get<AppSettings>('/api/settings'),
+  connectionHealth: () => api.get<{
+    checkedAt: string;
+    services: Array<{ name: string; configured: boolean; ok: boolean; latencyMs: number | null; message: string }>;
+  }>('/api/settings/connection-health'),
   /** Server semantics: load-then-mutate — send only the fields to change. */
   put: (partial: Partial<AppSettings>) => api.put<AppSettings>('/api/settings', partial),
   clearIssueCache: () => api.post<void>('/api/settings/clear-issue-cache'),
   hardRefresh: () => api.post<void>('/api/settings/hard-refresh'),
+  clearCaches: () => api.post<void>('/api/settings/clear-caches'),
+  disconnectAll: () => api.post<void>('/api/settings/disconnect-all', { confirmation: 'DISCONNECT' }),
 };
 
 export const filters = {
@@ -267,6 +273,8 @@ export const confluence = {
     api.get<ConfluencePage[]>(`/api/confluence/spaces/${encodeURIComponent(spaceKey)}/tree`),
   children: (pageId: string) => api.get<ConfluencePage[]>(`/api/confluence/pages/${encodeURIComponent(pageId)}/children`),
   page: (pageId: string) => api.get<ConfluencePageContent>(`/api/confluence/pages/${encodeURIComponent(pageId)}`),
+  resolvePage: (spaceKey: string, title: string) =>
+    api.get<ConfluencePage>('/api/confluence/resolve', { spaceKey, title }),
   renderUrl: (pageId: string) => `/api/confluence/pages/${encodeURIComponent(pageId)}/render`,
   search: async (options: ConfluenceSearchOptions) => {
     const payload = await api.get<unknown>('/api/confluence/search', options as unknown as Query);

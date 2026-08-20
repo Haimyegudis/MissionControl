@@ -5,8 +5,40 @@ export type LinkToken =
   | { kind: 'key'; key: string }
   | { kind: 'url'; url: string; index: number };
 
-const LINK_RE = /(https?:\/\/[^\s"<>)]+)|(\b[A-Z][A-Z0-9_]+-\d+\b)/g;
-const TRAILING = new Set(['.', ',', ';', ')']);
+// `]` terminates Jira wiki links (`[label|https://…]`). Including it in the
+// URL produced invalid Tomcat request targets such as `?pageId=123]`.
+const LINK_RE = /(https?:\/\/[^\s"<>)\]]+)|(\b[A-Z][A-Z0-9_]+-\d+\b)/g;
+const TRAILING = new Set(['.', ',', ';', ')', ']']);
+
+export interface ConfluenceUrlReference {
+  pageId?: string;
+  spaceKey?: string;
+  title?: string;
+}
+
+export function confluenceReferenceFromUrl(rawUrl: string): ConfluenceUrlReference | null {
+  try {
+    const url = new URL(rawUrl);
+    const queryId = url.searchParams.get('pageId');
+    if (queryId && /^\d+$/.test(queryId)) return { pageId: queryId };
+    const pathId = url.pathname.match(/\/pages\/(?:viewpage\.action\/)?(\d+)(?:\/|$)/i)?.[1];
+    if (pathId) return { pageId: pathId };
+    const display = url.pathname.match(/^\/display\/([^/]+)\/(.+)$/i);
+    if (display) {
+      return {
+        spaceKey: decodeURIComponent(display[1]),
+        title: decodeURIComponent(display[2]).replace(/\+/g, ' '),
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function confluencePageIdFromUrl(rawUrl: string): string | null {
+  return confluenceReferenceFromUrl(rawUrl)?.pageId ?? null;
+}
 
 /**
  * Split text into text / issue-key / url tokens. URLs are numbered 1-based in

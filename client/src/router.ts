@@ -13,6 +13,7 @@ export type RouteId =
   | 'timelogged'
   | 'dashboards'
   | 'team'
+  | 'traceability'
   | 'settings'
   | 'testrail-cases'
   | 'testrail-runs'
@@ -33,6 +34,7 @@ export const ROUTES: Array<{ id: RouteId; label: string }> = [
   // 'dashboards' (Jira dashboards list) removed from the nav per user
   // request — the route stays reachable via #/dashboards for deep links.
   { id: 'team', label: 'Team' },
+  { id: 'traceability', label: 'Traceability' },
   { id: 'settings', label: 'Settings' },
 ];
 

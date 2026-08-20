@@ -260,7 +260,21 @@ async function createWeeklyTask(name: string, rule: AlertRule, script: string): 
   const res = await run('schtasks', [
     '/Create', '/F', '/SC', 'WEEKLY', '/D', rule.days.join(','), '/ST', rule.time, '/TN', name, '/TR', psFileCommand(script),
   ]);
-  return res.status !== 0 ? (res.out.trim() || 'schtasks failed') : null;
+  if (res.status !== 0) return res.out.trim() || 'schtasks failed';
+
+  // schtasks.exe defaults to refusing battery-powered starts and stopping a
+  // running task when AC power is removed. Press laptops are frequently on
+  // battery, so explicitly make reminders power-source independent and let
+  // Windows deliver a reminder after sleep or another missed start time.
+  const settings =
+    `$s = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries ` +
+    `-DontStopIfGoingOnBatteries -StartWhenAvailable; ` +
+    `Set-ScheduledTask -TaskName '${name}' -Settings $s | Out-Null`;
+  const encoded = Buffer.from(settings, 'utf16le').toString('base64');
+  const configured = await run('powershell', ['-NoProfile', '-EncodedCommand', encoded]);
+  return configured.status !== 0
+    ? configured.out.trim() || 'Unable to configure scheduled-task settings'
+    : null;
 }
 
 /**
@@ -289,7 +303,9 @@ async function syncOnceTasks(
       return (
         `$a = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '${args}'; ` +
         `$t = New-ScheduledTaskTrigger -Once -At ([datetime]'${alert.date}T${alert.time}'); ` +
-        `Register-ScheduledTask -TaskName '${created[i]}' -Action $a -Trigger $t -Force | Out-Null`
+        `$s = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries ` +
+        `-DontStopIfGoingOnBatteries -StartWhenAvailable; ` +
+        `Register-ScheduledTask -TaskName '${created[i]}' -Action $a -Trigger $t -Settings $s -Force | Out-Null`
       );
     }),
   ];

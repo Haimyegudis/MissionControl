@@ -112,6 +112,10 @@ export const trApi = {
         projectName: string;
       }>
     >(`/api/testrail/cases-by-ref?ref=${encodeURIComponent(ref)}&projects=${projectIds.join(',')}`),
+  searchCases: (query: string, projectIds: number[]) =>
+    get<Array<TrCase & { suiteName: string; projectId: number; projectName: string }>>(
+      `/api/testrail/search-cases?q=${encodeURIComponent(query)}&projects=${projectIds.join(',')}`,
+    ),
   addCase: (sectionId: number, payload: TrAddCasePayload) =>
     post<TrCase>(`/api/testrail/sections/${sectionId}/cases`, payload),
   updateCase: (caseId: number, payload: TrAddCasePayload) =>

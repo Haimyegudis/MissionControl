@@ -19,6 +19,8 @@ describe('Confluence Indigo boundary', () => {
     expect(isIndigoSpace({ id: 3, key: 'HR', name: 'People', type: 'global', status: 'current', description: '', labels: [] })).toBe(false);
     expect(isIndigoSpace({ id: 4, key: 'REQ', name: 'Software Requirements', type: 'global', status: 'current', description: '', labels: [] })).toBe(true);
     expect(isIndigoSpace({ id: 5, key: 'PSWA', name: 'Press SW Apps', type: 'global', status: 'current', description: '', labels: [] })).toBe(true);
+    expect(isIndigoSpace({ id: 6, key: 'UEK', name: 'UX Engineering Knowledge', type: 'global', status: 'current', description: '', labels: [] })).toBe(true);
+    expect(isIndigoSpace({ id: 7, key: 'SWSE', name: 'Software System Engineering', type: 'global', status: 'current', description: '', labels: [] })).toBe(true);
   });
 
   it('returns only Indigo spaces from the upstream catalog', async () => {

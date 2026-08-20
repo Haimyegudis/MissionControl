@@ -86,6 +86,13 @@ export interface JiraTransitionField {
   currentValue?: string | null;
 }
 
+export interface JiraIssueLink {
+  key: string;
+  summary: string;
+  issueType: string;
+  relationship: string;
+}
+
 export interface JiraIssueDetails {
   issue: JiraIssue;
   description: string;
@@ -98,6 +105,7 @@ export interface JiraIssueDetails {
   parentKey: string | null;
   parentSummary: string | null;
   parentFieldLabel: string | null;
+  linkedIssues?: JiraIssueLink[];
   timeline: JiraTimelineEvent[];
 }
 
@@ -346,6 +354,8 @@ export interface AppSettings {
   dashboardWidgets: string[];
   aiEndpoint: string | null;
   aiModel: string | null;
+  /** Consent to send prompts and retrieved work data to an external AI provider. */
+  aiDataSharingEnabled: boolean;
   aiCredentialKey: string | null;
   useGhCopilotCli: boolean;
   useCopilotCliExe: boolean;
@@ -388,6 +398,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   dashboardWidgets: ['OpenIssues', 'Critical', 'OnHold', 'UpdatedToday', 'LoggedToday', 'LoggedThisWeek'],
   aiEndpoint: 'https://api.githubcopilot.com/chat/completions',
   aiModel: 'gpt-4o-mini',
+  aiDataSharingEnabled: false,
   aiCredentialKey: null,
   useGhCopilotCli: true,
   useCopilotCliExe: false,

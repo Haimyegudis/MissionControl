@@ -39,12 +39,15 @@ import {
   type ConfirmSpec,
 } from './common';
 
+type RunRisk = 'all' | 'active' | 'failing' | 'blocked' | 'untested' | 'low-pass';
+
 export function RunsView() {
   const st = useTestRail();
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [suiteFilter, setSuiteFilter] = useState('');
   const [myOnly, setMyOnly] = useState(false);
+  const [risk, setRisk] = useState<RunRisk>('all');
   const [editor, setEditor] = useState<{ existing: TrRun | null } | null>(null);
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -77,11 +80,29 @@ export function RunsView() {
       );
     }
     if (myOnly && me != null) list = list.filter((r) => r.createdBy === me);
+    if (risk === 'active') list = list.filter((r) => !r.isCompleted);
+    if (risk === 'failing') list = list.filter((r) => r.failedCount > 0);
+    if (risk === 'blocked') list = list.filter((r) => r.blockedCount > 0);
+    if (risk === 'untested') list = list.filter((r) => r.untestedCount > 0);
+    if (risk === 'low-pass') list = list.filter((r) => {
+      const total = r.passedCount + r.failedCount + r.blockedCount + r.retestCount + r.untestedCount;
+      return total > 0 && r.passedCount / total < 0.8;
+    });
     return [...list].sort((a, b) => (b.createdOn ?? 0) - (a.createdOn ?? 0));
-  }, [runs, suiteFilter, search, myOnly, me, st.people, st.meta]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [runs, suiteFilter, search, myOnly, risk, me, st.people, st.meta]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeCount = filtered.filter((r) => !r.isCompleted).length;
   const myCount = me != null ? runs.filter((r) => r.createdBy === me).length : 0;
+  const runHealth = useMemo(() => ({
+    active: runs.filter((run) => !run.isCompleted).length,
+    failing: runs.filter((run) => run.failedCount > 0).length,
+    blocked: runs.filter((run) => run.blockedCount > 0).length,
+    untested: runs.filter((run) => run.untestedCount > 0).length,
+    lowPass: runs.filter((run) => {
+      const count = run.passedCount + run.failedCount + run.blockedCount + run.retestCount + run.untestedCount;
+      return count > 0 && run.passedCount / count < 0.8;
+    }).length,
+  }), [runs]);
 
   const runColumns = useMemo<GridColumn<TrRun>[]>(
     () => [
@@ -266,6 +287,21 @@ export function RunsView() {
             + New run
           </button>
         </div>
+      </div>
+
+      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', padding: '7px 9px', marginBottom: 10 }}>
+        <span className="muted" style={{ fontSize: 10.5, letterSpacing: '0.06em', marginRight: 2 }}>MONITOR</span>
+        {([
+          ['all', `All ${runs.length}`],
+          ['active', `Active ${runHealth.active}`],
+          ['failing', `Failing ${runHealth.failing}`],
+          ['blocked', `Blocked ${runHealth.blocked}`],
+          ['untested', `Untested ${runHealth.untested}`],
+          ['low-pass', `Pass <80% ${runHealth.lowPass}`],
+        ] as Array<[RunRisk, string]>).map(([value, label]) => (
+          <button key={value} className={`btn${risk === value ? ' btn-primary' : ''}`} style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => setRisk(value)}>{label}</button>
+        ))}
+        <span className="muted" style={{ fontSize: 11, marginLeft: 'auto' }}>{filtered.length} visible · Shift-click headers for multi-sort</span>
       </div>
 
       {/* Unified DataGrid: sort by any column, drag-resize, right-click header

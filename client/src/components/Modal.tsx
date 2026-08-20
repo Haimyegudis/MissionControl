@@ -1,7 +1,7 @@
 // Modal overlay (ui-parity §10.x dialogs): Esc close, click-outside close,
 // light focus trap (Tab cycles within the panel).
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import type { ReactNode } from 'react';
 
 export interface ModalProps {
@@ -28,6 +28,7 @@ export function Modal({
   closeOnBackdrop = true,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
   // Callers pass inline arrows for onClose; keep the latest in a ref so the
   // effect runs once — re-running it would re-focus the first field and steal
   // focus from whatever the user is typing in.
@@ -85,6 +86,8 @@ export function Modal({
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={title !== undefined ? titleId : undefined}
+        aria-label={title === undefined ? 'Dialog' : undefined}
         className="card card-high"
         style={{
           width,
@@ -108,7 +111,7 @@ export function Modal({
               fontSize: 14,
             }}
           >
-            <div style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
+            <div id={titleId} style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
             <button className="btn btn-icon" onClick={onClose} title="Close" aria-label="Close">
               ✕
             </button>

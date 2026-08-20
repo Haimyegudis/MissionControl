@@ -1,10 +1,11 @@
 Mission Control
 ===============
 
-A local web app (Jira/TestRail/Confluence mission control) that runs entirely
-on your machine. The bundled server listens on http://127.0.0.1:5643 and is
-served by the Node.js runtime shipped in this folder — nothing is downloaded
-and nothing leaves your machine.
+A local Jira/TestRail/Confluence mission-control app. The bundled server
+listens only on http://127.0.0.1:5643 and uses the Node.js runtime shipped in
+this folder. Installation downloads nothing. Lumo can answer locally through
+the bundled Ollama runtime; live work-system and external-AI features contact
+their configured services only when you connect/enable them.
 
 Starting the app
 ----------------
@@ -39,5 +40,7 @@ Folder layout
   node\           bundled Node.js runtime (node.exe)
   server\         compiled server (dist) + production node_modules
   client\dist\    built web client (served statically by the server)
+  lumo\           self-contained knowledge databases and brain files
+  ollama\runtime\ portable CPU runtime for offline embeddings/local answers
   launcher\       MissionControl.cmd + hidden launcher scripts
   Uninstall.cmd   uninstaller

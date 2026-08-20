@@ -18,6 +18,7 @@ function sanitizeDescriptionHtml(html: string): string {
 import {
   buildTimeline,
   extractAllFields,
+  extractIssueLinks,
   extractParent,
   mapIssue,
   mapUser,
@@ -406,6 +407,7 @@ export class JiraIssueService {
       parentKey: parent.parentKey,
       parentSummary: parent.parentSummary,
       parentFieldLabel: parent.parentFieldLabel,
+      linkedIssues: extractIssueLinks(fields),
       // Status-change events arrive lazily (getIssueTimeline); comment and
       // worklog events are already known, so the collapsed header count is
       // still meaningful.

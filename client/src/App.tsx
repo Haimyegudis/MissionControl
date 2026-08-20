@@ -32,6 +32,7 @@ const RunsView = lazy(() => import('./views/testrail/RunsView').then((m) => ({ d
 const RunDetailView = lazy(() => import('./views/testrail/RunDetailView').then((m) => ({ default: m.RunDetailView })));
 const TestRailReportsView = lazy(() => import('./views/testrail/TestRailReportsView').then((m) => ({ default: m.TestRailReportsView })));
 const ConfluenceView = lazy(() => import('./views/confluence/ConfluenceView').then((m) => ({ default: m.ConfluenceView })));
+const TraceabilityView = lazy(() => import('./views/TraceabilityView').then((m) => ({ default: m.TraceabilityView })));
 
 const viewFallback = (
   <div className="muted" style={{ padding: 48, textAlign: 'center', fontSize: 13 }}>
@@ -71,6 +72,8 @@ function ActiveView() {
         return <TestRailReportsView />;
       case 'confluence':
         return <ConfluenceView />;
+      case 'traceability':
+        return <TraceabilityView />;
       case 'dashboard':
       default:
         return <DashboardView />;

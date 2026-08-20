@@ -1,4 +1,6 @@
 import { Router, type NextFunction, type Request, type Response } from 'express';
+import { randomBytes } from 'node:crypto';
+import sanitizeHtml from 'sanitize-html';
 import { ConfluenceApiError } from '../confluence/client.js';
 import type { ConfluenceConnection, ConfluenceSearchOptions } from '../confluence/types.js';
 import type { Credentials } from '../config/credentialsStore.js';
@@ -39,9 +41,37 @@ function proxyAssetTag(tag: string, pageUrl: string): string {
   });
 }
 
-function originalPageDocument(page: Awaited<ReturnType<NonNullable<AppDeps['confluence']>['requirePage']>>, baseUrl: string, upstreamHtml: string): string {
+function sanitizeConfluenceBody(html: string): string {
+  return sanitizeHtml(html, {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+      'img', 'span', 'details', 'summary', 'figure', 'figcaption', 'section', 'article',
+      'time', 'mark', 'del', 'ins', 'u', 'colgroup', 'col', 'tbody', 'thead', 'tfoot',
+    ]),
+    allowedAttributes: {
+      '*': ['id', 'class', 'title', 'role', 'aria-*', 'data-*'],
+      a: ['href', 'name', 'target', 'rel'],
+      img: ['src', 'alt', 'width', 'height', 'loading'],
+      td: ['colspan', 'rowspan'],
+      th: ['colspan', 'rowspan', 'scope'],
+      col: ['span', 'width'],
+      time: ['datetime'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto', 'data'],
+    allowedSchemesByTag: { img: ['http', 'https', 'data'] },
+    allowProtocolRelative: false,
+    transformTags: {
+      a: (_tag, attrs) => ({
+        tagName: 'a',
+        attribs: { ...attrs, rel: 'noopener noreferrer' },
+      }),
+      img: (_tag, attrs) => ({ tagName: 'img', attribs: { ...attrs, loading: 'lazy' } }),
+    },
+  });
+}
+
+export function originalPageDocument(page: Awaited<ReturnType<NonNullable<AppDeps['confluence']>['requirePage']>>, baseUrl: string, upstreamHtml: string, nonce = ''): string {
   const pageUrl = new URL(page.url ?? '/', `${baseUrl}/`).toString();
-  const toggleScript = `<script>
+  const toggleScript = `<script nonce="${nonce}">
 document.addEventListener('click',function(event){
   var control=event.target.closest('.expand-control');if(!control)return;
   var container=control.closest('.expand-container');var content=container&&container.querySelector('.expand-content');if(!content)return;
@@ -53,21 +83,16 @@ document.addEventListener('click',function(event){
     .filter((tag) => /\bstylesheet\b/i.test(tag))
     .map((tag) => proxyAssetTag(tag, pageUrl))
     .join('\n');
-  const inlineStyles = (upstreamHtml.match(/<style\b[^>]*>[\s\S]*?<\/style>/gi) ?? []).join('\n');
   const author = page.lastModifiedBy ? ` by ${escapeHtml(page.lastModifiedBy)}` : '';
   const modified = page.lastModifiedAt ? new Date(page.lastModifiedAt).toLocaleString('en-US') : '';
-  const safeBody = (page.viewBody || page.storageBody)
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/\son[a-z]+\s*=\s*(['"])[\s\S]*?\1/gi, '');
+  const safeBody = sanitizeConfluenceBody(page.viewBody || page.storageBody);
   const content = proxyAssetTag(
-    `<div id="jiraweb-confluence-page" class="page view"><h1 id="title-heading" class="pagetitle"><span id="title-text">${escapeHtml(page.title)}</span></h1><div class="page-metadata">Last updated ${escapeHtml(modified)}${author} · Version ${page.version}</div><main id="main-content" class="wiki-content">${safeBody}</main></div>`
-      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
-      .replace(/\son[a-z]+\s*=\s*(['"])[\s\S]*?\1/gi, ''),
+    `<div id="jiraweb-confluence-page" class="page view"><h1 id="title-heading" class="pagetitle"><span id="title-text">${escapeHtml(page.title)}</span></h1><div class="page-metadata">Last updated ${escapeHtml(modified)}${author} · Version ${page.version}</div><main id="main-content" class="wiki-content">${safeBody}</main></div>`,
     pageUrl,
   );
   return `<!doctype html>
 <html><head><meta charset="utf-8"><base href="${escapeHtml(pageUrl)}">
-${stylesheets}${inlineStyles}
+${stylesheets}
 <style>
 html,body{margin:0!important;min-height:100%;background:#fff!important;color:#172b4d!important;color-scheme:light!important}
 body{padding:0!important;font-family:Arial,"Helvetica Neue",sans-serif!important;font-size:14px!important;line-height:1.42857143!important}
@@ -156,12 +181,17 @@ export function confluenceRoutes(deps: AppDeps): Router {
     }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'private, max-age=60');
-    res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:");
-    res.send(originalPageDocument(page, client.baseUrl, upstreamHtml));
+    const nonce = randomBytes(18).toString('base64');
+    res.setHeader('Content-Security-Policy', `default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; frame-ancestors 'self'; sandbox allow-scripts allow-popups`);
+    res.send(originalPageDocument(page, client.baseUrl, upstreamHtml, nonce));
   }));
 
   router.get('/pages/:id', h(async (req, res) => {
     res.json(await service.requirePage(req.params.id));
+  }));
+
+  router.get('/resolve', h(async (req, res) => {
+    res.json(await service.resolvePage(requireString(qstr(req.query.spaceKey), 'spaceKey'), requireString(qstr(req.query.title), 'title')));
   }));
 
   router.get('/search', h(async (req, res) => {

@@ -33,6 +33,13 @@ export function buildApiBaseUrl(rawUrl: string): string {
   } catch {
     throw new TestRailApiError('The TestRail URL is not valid.');
   }
+  if (!['http:', 'https:'].includes(uri.protocol)) {
+    throw new TestRailApiError('The TestRail URL must use HTTPS.');
+  }
+  const loopback = ['localhost', '127.0.0.1', '::1'].includes(uri.hostname.toLowerCase());
+  if (uri.protocol !== 'https:' && !loopback) {
+    throw new TestRailApiError('The TestRail URL must use HTTPS (HTTP is allowed only for local development).');
+  }
   const path = uri.pathname;
   const indexPath = path.toLowerCase().indexOf('/index.php');
   let applicationPath = indexPath >= 0 ? path.slice(0, indexPath) : path.replace(/\/+$/, '');
@@ -90,6 +97,7 @@ export class TestRailHttp {
         headers,
         body,
         signal: controller.signal,
+        redirect: 'manual',
       });
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {

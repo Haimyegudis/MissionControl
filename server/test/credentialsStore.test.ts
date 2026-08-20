@@ -29,7 +29,9 @@ afterEach(() => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-describe('CredentialsStore', () => {
+// DPAPI is implemented by a short-lived PowerShell process. On a busy Windows
+// CI host process startup can exceed Vitest's five-second default.
+describe('CredentialsStore', { timeout: 15_000 }, () => {
   it('exists() is false and load() is null when nothing saved', () => {
     const store = new CredentialsStore();
     expect(store.exists()).toBe(false);
@@ -40,17 +42,21 @@ describe('CredentialsStore', () => {
     const store = new CredentialsStore();
     store.save(sample);
     expect(store.exists()).toBe(true);
-    expect(store.load()).toEqual(sample);
+    expect(new CredentialsStore().load()).toEqual(sample);
   });
 
-  it('writes plain camelCase JSON to config.json in the data dir', () => {
+  it('writes profile JSON with DPAPI-protected secrets', () => {
     const store = new CredentialsStore();
     store.save(sample);
     const file = path.join(tmpDir, 'config.json');
     expect(fs.existsSync(file)).toBe(true);
     const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
     expect(raw.email).toBe('user@example.com');
-    expect(raw.jiraPat).toBe('secret-pat-123');
+    expect(raw.jiraPat).toBeUndefined();
+    expect(raw.testRailApiKey).toBeUndefined();
+    expect(raw.confluencePat).toBeUndefined();
+    expect(raw.protectedSecrets).toEqual(expect.any(String));
+    expect(raw.protectedSecrets).not.toContain('secret-pat-123');
     expect(raw.instanceType).toBe('datacenter');
   });
 
@@ -88,6 +94,15 @@ describe('CredentialsStore', () => {
       confluenceBaseUrl: '',
       confluencePat: '',
     });
+  });
+
+  it('migrates legacy plaintext secrets to DPAPI on load', () => {
+    fs.writeFileSync(path.join(tmpDir, 'config.json'), JSON.stringify(sample));
+    const store = new CredentialsStore();
+    expect(store.load()).toEqual(sample);
+    const migrated = JSON.parse(fs.readFileSync(path.join(tmpDir, 'config.json'), 'utf8'));
+    expect(migrated.jiraPat).toBeUndefined();
+    expect(migrated.protectedSecrets).toEqual(expect.any(String));
   });
 
   it('load() returns null on corrupt JSON', () => {

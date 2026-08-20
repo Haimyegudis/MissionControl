@@ -1,16 +1,15 @@
 /**
  * Config Control — read-only reader for the press configuration-control
- * tables (port of Yaki's configControl.js). Data files live under
- * <YAKI_ROOT>/data and are never written.
+ * tables (port of Lumo's configControl.js). Data files live under
+ * <LUMO_ROOT>/data and are never written.
  *
- * CSV files are parsed natively (no dependency). XLSX workbooks are parsed
- * with the 'xlsx' package loaded from YAKI's node_modules — when that is
- * unavailable and only an .xlsx file exists, the tool returns
- * {error:'xlsx unsupported...'} instead of crashing.
+ * CSV files are parsed natively with no third-party spreadsheet parser. The
+ * original workbooks remain in the knowledge bundle for provenance, while
+ * runtime reads the sanitized CSV exports.
  */
 import { copyFileSync, existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { getYakiSecret, requireFromYaki, yakiPath } from './env.js';
+import { getLumoSecret, lumoPath } from './env.js';
 
 type Rec = Record<string, any>;
 
@@ -23,21 +22,21 @@ interface Book {
 }
 
 function books(): Record<string, Book> {
-  const dataDir = yakiPath('data');
+  const dataDir = lumoPath('data');
   return {
     kedem: {
       key: 'kedem',
       label: 'KEDEM Config Control',
-      local: getYakiSecret('CONFIG_CONTROL_PATH') || path.join(dataDir, 'config-control.xlsx'),
-      source: getYakiSecret('CONFIG_CONTROL_SOURCE'),
+      local: getLumoSecret('CONFIG_CONTROL_PATH') || path.join(dataDir, 'config-control.csv'),
+      source: getLumoSecret('CONFIG_CONTROL_SOURCE'),
       hint: 'Save a copy of the SharePoint "Config control.xlsx"',
     },
     david: {
       key: 'david',
       label: 'DAVID Configuration Control',
       local:
-        getYakiSecret('DAVID_CONFIG_CONTROL_PATH') || path.join(dataDir, 'david-config-control.xlsx'),
-      source: getYakiSecret('DAVID_CONFIG_CONTROL_SOURCE'),
+        getLumoSecret('DAVID_CONFIG_CONTROL_PATH') || path.join(dataDir, 'david-config-control.csv'),
+      source: getLumoSecret('DAVID_CONFIG_CONTROL_SOURCE'),
       hint: 'Export the SharePoint list "David Configuration Control" (Export → Excel/CSV) and save it',
     },
   };
@@ -177,26 +176,9 @@ function load(program: unknown): { rows?: Rec[]; error?: string } {
   if (/\.csv$/i.test(file)) {
     rows = csvToObjects(readFileSync(file, 'utf8'), path.basename(file, path.extname(file)));
   } else {
-    const XLSX = requireFromYaki<Rec>('xlsx');
-    if (!XLSX) {
-      return {
-        error:
-          'xlsx unsupported — the xlsx parser is not available in this deployment and only an ' +
-          `.xlsx copy of ${book.label} exists. Export the table as CSV next to it (same basename) and ask again.`,
-      };
-    }
-    try {
-      const wb = XLSX.readFile(file, { cellDates: true });
-      rows = [];
-      for (const sheetName of wb.SheetNames as string[]) {
-        const json = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' }) as Rec[];
-        for (const r of json) rows.push({ _sheet: sheetName, ...r });
-      }
-    } catch (err) {
-      return {
-        error: `Failed to parse ${path.basename(file)}: ${err instanceof Error ? err.message : String(err)}`,
-      };
-    }
+    return {
+      error: `${book.label} must be exported as CSV next to the bundled source workbook.`,
+    };
   }
   cache.set(book.key, { mtimeMs, file, rows });
   return { rows };

@@ -218,9 +218,10 @@ describe('buildApiBaseUrl', () => {
     );
   });
 
-  it('preserves a non-default port and rejects invalid URLs', () => {
-    expect(buildApiBaseUrl('http://host.example.com:8080/')).toBe(
-      'http://host.example.com:8080/index.php?/api/v2/',
+  it('rejects clear-text remote URLs, permits loopback, and rejects invalid URLs', () => {
+    expect(() => buildApiBaseUrl('http://host.example.com:8080/')).toThrow(/HTTPS/);
+    expect(buildApiBaseUrl('http://localhost:8080/')).toBe(
+      'http://localhost:8080/index.php?/api/v2/',
     );
     expect(() => buildApiBaseUrl('not a url')).toThrow(TestRailApiError);
   });

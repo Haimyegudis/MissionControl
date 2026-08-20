@@ -7,6 +7,7 @@ import {
   tryFindSprint,
   extractAllSprints,
   extractAllFields,
+  extractIssueLinks,
   extractParent,
   tryReadIssueRef,
   buildTimeline,
@@ -21,6 +22,26 @@ import type { JiraComment, JiraWorklog } from '../src/types.js';
 
 beforeEach(() => {
   resetFieldIds();
+});
+
+describe('extractIssueLinks', () => {
+  it('preserves linked issue metadata and direction labels', () => {
+    expect(extractIssueLinks({
+      issuelinks: [
+        {
+          type: { outward: 'implements', inward: 'is implemented by' },
+          outwardIssue: { key: 'ISW-20', fields: { summary: 'SWR document', issuetype: { name: 'SWR' } } },
+        },
+        {
+          type: { outward: 'blocks', inward: 'is blocked by' },
+          inwardIssue: { key: 'ISW-30', fields: { summary: 'Integration', issuetype: { name: 'Task' } } },
+        },
+      ],
+    })).toEqual([
+      { key: 'ISW-20', summary: 'SWR document', issueType: 'SWR', relationship: 'implements' },
+      { key: 'ISW-30', summary: 'Integration', issueType: 'Task', relationship: 'is blocked by' },
+    ]);
+  });
 });
 
 // ---------------------------------------------------------------------------

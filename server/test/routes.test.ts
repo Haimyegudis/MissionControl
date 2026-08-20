@@ -624,8 +624,23 @@ describe('board routes', () => {
 });
 
 describe('lumo SSE route', () => {
+  it('uses the local Ollama model when external data sharing is disabled', async () => {
+    const deps = makeDeps();
+    (deps.askLumo as ReturnType<typeof vi.fn>).mockResolvedValue({ summary: 'Local answer.', cards: [] });
+    const base = await start(deps);
+    const res = await fetch(`${base}/api/lumo/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: 'hi' }] }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('Local answer.');
+    expect(deps.askLumo).toHaveBeenCalledWith(expect.objectContaining({ model: 'ollama:gemma3:1b' }));
+  });
+
   it('streams status events then the final result frame', async () => {
     const deps = makeDeps();
+    deps.repos.appSettings.save({ ...deps.repos.appSettings.get(), aiDataSharingEnabled: true });
     (deps.askLumo as ReturnType<typeof vi.fn>).mockImplementation(
       async ({ onStatus }: { onStatus?: (s: string) => void }) => {
         onStatus?.('Calling model (round 1/3)...');

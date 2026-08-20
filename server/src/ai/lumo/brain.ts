@@ -1,15 +1,20 @@
 /**
- * Brain Bundle lookups — ports of Yaki's assistantAgent.js tool cases that
- * read the pre-extracted knowledge JSONs under <YAKI_ROOT>/data/brain/.
+ * Brain Bundle lookups — ports of Lumo's assistantAgent.js tool cases that
+ * read the pre-extracted knowledge JSONs under <LUMO_ROOT>/data/brain/.
  * All lookups lazy-load + cache per file mtime (readJsonCached) and return
  * plain data objects; missing files degrade to found:false / hint results.
  */
 import { existsSync } from 'node:fs';
-import { readJsonCached, yakiPath } from './env.js';
+import { readJsonCached, lumoPath } from './env.js';
 
 type Rec = Record<string, any>;
 
 const lc = (s: unknown): string => String(s ?? '').toLowerCase();
+/** S5 shares the S4 automation/TestRail brain pipeline by product design. */
+const brainSeries = (value: unknown): string => {
+  const series = lc(value || 's6');
+  return series === 's5' ? 's4' : series;
+};
 
 function terms(query: unknown): string[] {
   return lc(query)
@@ -18,15 +23,16 @@ function terms(query: unknown): string[] {
 }
 
 function brainFile(name: string): string {
-  return yakiPath('data', 'brain', name);
+  return lumoPath('data', 'brain', name);
 }
 
 function systemsKb(series: string): Rec {
-  const kb = readJsonCached<Rec>(brainFile(`systems-${series}.json`));
+  const normalized = brainSeries(series);
+  const kb = readJsonCached<Rec>(brainFile(`systems-${normalized}.json`));
   return (
     kb ?? {
       version: 1,
-      series,
+      series: normalized,
       ingestedAt: null,
       sourcePages: [],
       components: [],
@@ -46,7 +52,7 @@ function systemsKb(series: string): Rec {
 // ---------------------------------------------------------------------------
 
 export function lookupComponent(args: Rec): Rec {
-  const series = lc(args.series || 's6');
+  const series = brainSeries(args.series);
   const id = String(args.componentId ?? '').trim();
   const query = lc(args.query ?? '').trim();
   if (!id && !query) return { error: 'componentId or query required' };
@@ -82,7 +88,7 @@ export function lookupComponent(args: Rec): Rec {
 }
 
 export function lookupEvent(args: Rec): Rec {
-  const series = lc(args.series || 's6');
+  const series = brainSeries(args.series);
   const name = String(args.eventName ?? '').trim();
   const query = lc(args.query ?? '').trim();
   if (!name && !query) return { error: 'eventName or query required' };
@@ -115,7 +121,7 @@ export function lookupEvent(args: Rec): Rec {
 }
 
 export function lookupParameter(args: Rec): Rec {
-  const series = lc(args.series || 's6');
+  const series = brainSeries(args.series);
   const name = String(args.paramName ?? '').trim();
   const query = lc(args.query ?? '').trim();
   if (!name && !query) return { error: 'paramName or query required' };
@@ -142,7 +148,7 @@ export function lookupParameter(args: Rec): Rec {
 }
 
 export function listComponents(args: Rec): Rec {
-  const kb = systemsKb(lc(args.series || 's6'));
+  const kb = systemsKb(brainSeries(args.series));
   let comps: Rec[] = kb.components || [];
   if (args.cabinet) {
     comps = comps.filter((c) => lc(c.cabinet).includes(lc(args.cabinet)));
@@ -177,7 +183,7 @@ export function listComponents(args: Rec): Rec {
 function signalIndexFile(series?: string): string {
   const s = lc(series ?? '');
   if (s) {
-    const cfg = readJsonCached<Rec>(yakiPath('config', 'series-config.json'));
+    const cfg = readJsonCached<Rec>(lumoPath('config', 'series-config.json'));
     if (cfg?.series?.[s]?.isolatedCodeIndex) {
       return brainFile(`code-signal-index-${s}.json`);
     }
@@ -206,7 +212,7 @@ export function findSignalInCode(args: Rec): Rec {
 // ---------------------------------------------------------------------------
 
 export function findHelpersForComponent(args: Rec): Rec {
-  const series = lc(args.series || 's6');
+  const series = brainSeries(args.series);
   const comp = String(args.component ?? '').trim();
   const query = lc(args.query ?? '').trim();
   const file = brainFile(`code-knowledge-${series}.json`);
@@ -231,7 +237,8 @@ export function findHelpersForComponent(args: Rec): Rec {
 }
 
 export function findSignalUsage(args: Rec): Rec {
-  const file = brainFile('code-knowledge-s6.json');
+  const series = brainSeries(args.series);
+  const file = brainFile(`code-knowledge-${series}.json`);
   if (!existsSync(file)) return { found: false, hint: 'code knowledge file not built yet' };
   const kb = readJsonCached<Rec>(file) ?? {};
   const q = lc(args.signalOrComponent ?? '');
@@ -239,7 +246,7 @@ export function findSignalUsage(args: Rec): Rec {
   const usage = ((kb.signalUsage as Rec[]) || []).filter(
     (u) => lc(u.signal).includes(q) || lc(u.component).includes(q),
   );
-  return { count: usage.length, usage: usage.slice(0, 30) };
+  return { series, count: usage.length, usage: usage.slice(0, 30) };
 }
 
 // ---------------------------------------------------------------------------
@@ -247,7 +254,7 @@ export function findSignalUsage(args: Rec): Rec {
 // ---------------------------------------------------------------------------
 
 export function findTestScenarios(args: Rec): Rec {
-  const series = lc(args.series || 's6');
+  const series = brainSeries(args.series);
   const file = brainFile(`testrail-knowledge-${series}.json`);
   if (!existsSync(file)) return { found: false, hint: 'testrail knowledge file not built yet' };
   const kb = readJsonCached<Rec>(file) ?? {};

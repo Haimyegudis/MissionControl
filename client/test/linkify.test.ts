@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { tokenize } from '../src/lib/linkify';
+import { confluencePageIdFromUrl, confluenceReferenceFromUrl, tokenize } from '../src/lib/linkify';
 
 describe('tokenize (ui-parity §12.9)', () => {
   it('finds issue keys', () => {
@@ -31,6 +31,21 @@ describe('tokenize (ui-parity §12.9)', () => {
     const t2 = tokenize('(https://x.com/b);');
     expect(t2).toContainEqual({ kind: 'url', url: 'https://x.com/b', index: 1 });
     expect(t2.filter((t) => t.kind === 'text').map((t) => (t as { text: string }).text).join('')).toBe('();');
+  });
+
+  it('stops Jira wiki URLs before the closing bracket', () => {
+    expect(tokenize('[Link 1|https://confluence.example/pages/viewpage.action?pageId=621544608] '))
+      .toContainEqual({ kind: 'url', url: 'https://confluence.example/pages/viewpage.action?pageId=621544608', index: 1 });
+  });
+
+  it('extracts Confluence page ids from view URLs', () => {
+    expect(confluencePageIdFromUrl('https://confluence.example/pages/viewpage.action?pageId=621544608')).toBe('621544608');
+    expect(confluencePageIdFromUrl('https://confluence.example/pages/621544609/Title')).toBe('621544609');
+  });
+
+  it('extracts Confluence display-space and title references', () => {
+    expect(confluenceReferenceFromUrl('https://docs.example/display/SWSE/Integration+Report+-+Mechanical+Filters'))
+      .toEqual({ spaceKey: 'SWSE', title: 'Integration Report - Mechanical Filters' });
   });
 
   it('only http/https schemes match', () => {

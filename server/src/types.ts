@@ -88,6 +88,13 @@ export interface JiraTransitionField {
   currentValue: string | null;
 }
 
+export interface JiraIssueLink {
+  key: string;
+  summary: string;
+  issueType: string;
+  relationship: string;
+}
+
 export interface JiraIssueDetails {
   issue: JiraIssue;
   /** fields.description (string, or JSON stringified if ADF). */
@@ -104,6 +111,8 @@ export interface JiraIssueDetails {
   parentSummary: string | null;
   /** e.g. "Parent", "IM: Parent Issue" */
   parentFieldLabel: string | null;
+  /** Jira issue links, including their direction-specific relationship. */
+  linkedIssues?: JiraIssueLink[];
   timeline: JiraTimelineEvent[];
 }
 
@@ -371,6 +380,8 @@ export interface AppSettings {
   dashboardWidgets: string[];
   aiEndpoint: string | null;
   aiModel: string | null;
+  /** Consent to send prompts and retrieved work data to an external AI provider. */
+  aiDataSharingEnabled: boolean;
   /** Key into the secrets store, never the token itself. */
   aiCredentialKey: string | null;
   useGhCopilotCli: boolean;
@@ -415,6 +426,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   dashboardWidgets: ['OpenIssues', 'Critical', 'OnHold', 'UpdatedToday', 'LoggedToday', 'LoggedThisWeek'],
   aiEndpoint: 'https://api.githubcopilot.com/chat/completions',
   aiModel: 'claude-sonnet-5',
+  aiDataSharingEnabled: false,
   aiCredentialKey: null,
   useGhCopilotCli: true,
   useCopilotCliExe: false,

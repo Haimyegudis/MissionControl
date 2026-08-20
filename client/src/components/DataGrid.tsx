@@ -81,7 +81,12 @@ export function DataGrid<T>({
   maxHeight,
 }: DataGridProps<T>) {
   const [state, setState] = useState<GridState>(() => loadGridState(stateKey));
-  const [sort, setSort] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
+  const [sorts, setSorts] = useState<Array<{ key: string; dir: 'asc' | 'desc' }>>(() => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(`jiraweb.gridSort.${stateKey}`) ?? '[]');
+      return Array.isArray(parsed) ? parsed.slice(0, 4) : [];
+    } catch { return []; }
+  });
   const [headerMenu, setHeaderMenu] = useState<{ x: number; y: number } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [renderCap, setRenderCap] = useState(RENDER_INITIAL);
@@ -104,6 +109,9 @@ export function DataGrid<T>({
     },
     [],
   );
+  useEffect(() => {
+    try { localStorage.setItem(`jiraweb.gridSort.${stateKey}`, JSON.stringify(sorts)); } catch { /* unavailable */ }
+  }, [sorts, stateKey]);
 
   // Display columns: hidden filtered out, persisted order applied.
   const visibleColumns = useMemo(() => {
@@ -113,27 +121,37 @@ export function DataGrid<T>({
   }, [columns, state]);
 
   const sortedRows = useMemo(() => {
-    if (!sort) return rows;
-    const col = columns.find((c) => c.key === sort.key);
-    if (!col) return rows;
-    const dir = sort.dir === 'asc' ? 1 : -1;
+    if (!sorts.length) return rows;
     return [...rows].sort((a, b) => {
-      const va = sortKey(col, a);
-      const vb = sortKey(col, b);
-      if (va === null && vb === null) return 0;
-      if (va === null) return 1;
-      if (vb === null) return -1;
-      if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
-      return String(va).localeCompare(String(vb), undefined, { sensitivity: 'base' }) * dir;
+      for (const sort of sorts) {
+        const col = columns.find((candidate) => candidate.key === sort.key);
+        if (!col) continue;
+        const va = sortKey(col, a);
+        const vb = sortKey(col, b);
+        if (va === null && vb === null) continue;
+        if (va === null) return 1;
+        if (vb === null) return -1;
+        const compared = typeof va === 'number' && typeof vb === 'number'
+          ? va - vb
+          : String(va).localeCompare(String(vb), undefined, { sensitivity: 'base' });
+        if (compared !== 0) return compared * (sort.dir === 'asc' ? 1 : -1);
+      }
+      return 0;
     });
-  }, [rows, sort, columns]);
+  }, [rows, sorts, columns]);
 
-  const cycleSort = (key: string) => {
+  const cycleSort = (key: string, additive = false) => {
     if (resizingRef.current) return;
-    setSort((cur) => {
-      if (!cur || cur.key !== key) return { key, dir: 'asc' };
-      if (cur.dir === 'asc') return { key, dir: 'desc' };
-      return null;
+    setSorts((current) => {
+      const existing = current.find((sort) => sort.key === key);
+      if (!additive) {
+        if (!existing || current.length > 1) return [{ key, dir: 'asc' as const }];
+        if (existing.dir === 'asc') return [{ key, dir: 'desc' }];
+        return [];
+      }
+      if (!existing) return [...current, { key, dir: 'asc' as const }].slice(-4);
+      if (existing.dir === 'asc') return current.map((sort) => sort.key === key ? { ...sort, dir: 'desc' as const } : sort);
+      return current.filter((sort) => sort.key !== key);
     });
   };
 
@@ -257,10 +275,16 @@ export function DataGrid<T>({
         </colgroup>
         <thead>
           <tr>
-            {visibleColumns.map((c) => (
-              <th
+            {visibleColumns.map((c) => {
+              const sortIndex = sorts.findIndex((sort) => sort.key === c.key);
+              const sort = sortIndex >= 0 ? sorts[sortIndex] : null;
+              return <th
                 key={c.key}
-                onClick={() => cycleSort(c.key)}
+                scope="col"
+                tabIndex={0}
+                aria-sort={sort ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                onClick={(event) => cycleSort(c.key, event.shiftKey)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cycleSort(c.key, e.shiftKey); } }}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   setHeaderMenu({ x: e.clientX, y: e.clientY });
@@ -286,8 +310,8 @@ export function DataGrid<T>({
                 title={c.header}
               >
                 {c.header}
-                {sort?.key === c.key ? (
-                  <span style={{ color: 'var(--accent-cyan)', marginLeft: 4 }}>{sort.dir === 'asc' ? '▲' : '▼'}</span>
+                {sort ? (
+                  <span style={{ color: 'var(--accent-cyan)', marginLeft: 4 }}>{sort.dir === 'asc' ? '▲' : '▼'}{sorts.length > 1 ? sortIndex + 1 : ''}</span>
                 ) : null}
                 <span
                   className="dg-grip"
@@ -299,8 +323,8 @@ export function DataGrid<T>({
                   }}
                   onClick={(e) => e.stopPropagation()}
                 />
-              </th>
-            ))}
+              </th>;
+            })}
           </tr>
         </thead>
         <tbody>
@@ -317,6 +341,9 @@ export function DataGrid<T>({
               return (
                 <tr
                   key={key}
+                  tabIndex={onRowActivate || onRowDoubleClick ? 0 : undefined}
+                  aria-selected={multiSelect ? isSelected : undefined}
+                  onKeyDown={(e) => { if (e.key === 'Enter') (onRowActivate ?? onRowDoubleClick)?.(row); }}
                   onMouseDown={(e) => {
                     // Shift/Ctrl+click extends the ROW selection — stop the
                     // browser from also highlighting the cell text.

@@ -1,23 +1,27 @@
 /**
- * Yaki asset root + secret resolution.
+ * Lumo asset root + secret resolution.
  *
- * Yaki's knowledge assets (brain JSONs, vector DBs, config-control workbooks)
- * are read IN PLACE from an env-configurable root (YAKI_ROOT, default
- * C:\APPS\Yaki). Secrets (CONFLUENCE_PAT, TESTRAIL_* ...) resolve from
- * process.env first, then %APPDATA%\Yaki\.env, then <YAKI_ROOT>\.env.
+ * Lumo's knowledge assets (brain JSONs, vector DBs, config-control workbooks)
+ * ship inside Mission Control's own `lumo` directory. LUMO_ROOT may override
+ * that location for tests or managed deployments, but no external assistant
+ * installation is required. Secrets resolve from process.env first and then
+ * the optional <LUMO_ROOT>\.env file.
  * Secret VALUES are never logged.
  */
 import { createRequire } from 'node:module';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-export function yakiRoot(): string {
-  const fromEnv = process.env.YAKI_ROOT;
-  return fromEnv && fromEnv.trim().length > 0 ? fromEnv.trim() : 'C:\\APPS\\Yaki';
+const bundledLumoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..', 'lumo');
+
+export function lumoRoot(): string {
+  const fromEnv = process.env.LUMO_ROOT;
+  return fromEnv && fromEnv.trim().length > 0 ? fromEnv.trim() : bundledLumoRoot;
 }
 
-export function yakiPath(...parts: string[]): string {
-  return path.join(yakiRoot(), ...parts);
+export function lumoPath(...parts: string[]): string {
+  return path.join(lumoRoot(), ...parts);
 }
 
 // ---------------------------------------------------------------------------
@@ -66,20 +70,14 @@ function readEnvFile(file: string): Record<string, string> {
 }
 
 function candidateEnvFiles(): string[] {
-  const files: string[] = [];
-  const appData = process.env.APPDATA;
-  if (appData && appData.trim().length > 0) {
-    files.push(path.join(appData, 'Yaki', '.env'));
-  }
-  files.push(yakiPath('.env'));
-  return files;
+  return [lumoPath('.env')];
 }
 
 /**
- * Resolve a secret/config value: process.env → %APPDATA%\Yaki\.env →
- * <YAKI_ROOT>\.env. Returns '' when nowhere configured. Never logs values.
+ * Resolve a secret/config value: process.env → <LUMO_ROOT>\.env.
+ * Returns '' when nowhere configured. Never logs values.
  */
-export function getYakiSecret(name: string): string {
+export function getLumoSecret(name: string): string {
   const fromProc = process.env[name];
   if (fromProc && fromProc.trim().length > 0) return fromProc.trim();
   for (const file of candidateEnvFiles()) {
@@ -91,21 +89,21 @@ export function getYakiSecret(name: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Loading CommonJS packages from Yaki's own node_modules (no new deps here)
+// Loading CommonJS knowledge dependencies bundled with Mission Control
 // ---------------------------------------------------------------------------
 
 const moduleCache = new Map<string, unknown | null>();
 
 /**
- * Require a package out of Yaki's node_modules (e.g. 'sqlite-vec', 'xlsx').
- * Returns null when Yaki or the package is absent — callers degrade
+ * Require a Mission Control knowledge dependency (currently sqlite-vec).
+ * Returns null when the package is absent — callers degrade
  * gracefully. Result (including failure) is cached per name.
  */
-export function requireFromYaki<T = unknown>(moduleName: string): T | null {
+export function requireFromLumo<T = unknown>(moduleName: string): T | null {
   if (moduleCache.has(moduleName)) return moduleCache.get(moduleName) as T | null;
   let loaded: unknown | null = null;
   try {
-    const req = createRequire(yakiPath('package.json'));
+    const req = createRequire(import.meta.url);
     loaded = req(moduleName);
   } catch {
     loaded = null;
@@ -115,7 +113,7 @@ export function requireFromYaki<T = unknown>(moduleName: string): T | null {
 }
 
 /** Test hook: forget cached env files and modules. */
-export function resetYakiEnvCaches(): void {
+export function resetLumoEnvCaches(): void {
   envFileCache.clear();
   moduleCache.clear();
 }

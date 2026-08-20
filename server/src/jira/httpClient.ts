@@ -32,6 +32,19 @@ export function agilePrefix(): string {
 export function normalizeBaseUrl(url: string): string {
   const trimmed = url.trim();
   if (trimmed.length === 0) return trimmed;
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new JiraError(400, 'Enter a valid Jira Base URL.');
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new JiraError(400, 'Jira Base URL must use HTTPS.');
+  }
+  const loopback = ['localhost', '127.0.0.1', '::1'].includes(parsed.hostname.toLowerCase());
+  if (parsed.protocol !== 'https:' && !loopback) {
+    throw new JiraError(400, 'Jira Base URL must use HTTPS (HTTP is allowed only for local development).');
+  }
   return trimmed.endsWith('/') ? trimmed : `${trimmed}/`;
 }
 
@@ -129,6 +142,7 @@ export async function jiraFetch(
       headers,
       body,
       signal: controller.signal,
+      redirect: 'manual',
     });
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {

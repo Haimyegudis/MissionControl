@@ -17,6 +17,29 @@ export function settingsRoutes(deps: AppDeps): Router {
   const router = Router();
 
   router.get(
+    '/connection-health',
+    h(async (_req, res) => {
+      const saved = deps.credentials.load();
+      const check = async (name: string, configured: boolean, probe: () => Promise<unknown>) => {
+        if (!configured) return { name, configured: false, ok: false, latencyMs: null, message: 'Not configured' };
+        const started = Date.now();
+        try {
+          await probe();
+          return { name, configured: true, ok: true, latencyMs: Date.now() - started, message: 'Connected' };
+        } catch (error) {
+          return { name, configured: true, ok: false, latencyMs: Date.now() - started, message: error instanceof Error ? error.message : String(error) };
+        }
+      };
+      const [jira, testRail, confluence] = await Promise.all([
+        check('Jira', Boolean(saved?.jiraPat), () => deps.testConnection(saved!)),
+        check('TestRail', Boolean(saved?.testRailApiKey), () => deps.testrail.requireClient().getCurrentUser()),
+        check('Confluence', Boolean(saved?.confluencePat), () => deps.confluence!.test({ baseUrl: saved!.confluenceBaseUrl, pat: saved!.confluencePat })),
+      ]);
+      res.json({ checkedAt: new Date().toISOString(), services: [jira, testRail, confluence] });
+    }),
+  );
+
+  router.get(
     '/',
     h((_req, res) => {
       res.json(redacted(deps.repos.appSettings.get()));
@@ -73,6 +96,31 @@ export function settingsRoutes(deps: AppDeps): Router {
       deps.repos.metadataCache.clearAll();
       deps.createMetaCache.clearAll();
       deps.issues.resetFieldCache();
+      res.status(204).end();
+    }),
+  );
+
+  router.post(
+    '/clear-caches',
+    h((_req, res) => {
+      deps.repos.issueCache.clearAll();
+      deps.repos.metadataCache.clearAll();
+      deps.createMetaCache.clearAll();
+      deps.testrail.clearCache();
+      deps.issues.resetFieldCache();
+      res.status(204).end();
+    }),
+  );
+
+  router.post(
+    '/disconnect-all',
+    h((req, res) => {
+      const confirmation = String((req.body as Record<string, unknown> | undefined)?.confirmation ?? '');
+      if (confirmation !== 'DISCONNECT') throw new HttpError(400, 'Confirmation must be DISCONNECT.');
+      deps.credentials.clear();
+      deps.session.clear();
+      deps.testrail.disconnect();
+      deps.confluence?.disconnect();
       res.status(204).end();
     }),
   );

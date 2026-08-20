@@ -1,18 +1,18 @@
 /**
- * Vector search over Yaki's sqlite-vec embedding DBs (Confluence, TestRail,
- * press issues) + Ollama embedding client — ports of Yaki's
+ * Vector search over Lumo's sqlite-vec embedding DBs (Confluence, TestRail,
+ * press issues) + Ollama embedding client — ports of Lumo's
  * embeddingSearch.js / testrailEmbeddings.js / pressIssuesSearch.js.
  *
  * The sqlite-vec extension is NOT a JiraWeb dependency: it is loaded from
- * Yaki's own node_modules (sqlite-vec package, or the vec0.dll it wraps).
+ * Lumo's own node_modules (sqlite-vec package, or the vec0.dll it wraps).
  * When it cannot be loaded, vector tools return {error:'vector search
  * unavailable'} instead of crashing; press-issue search falls back to
- * keyword matching (as Yaki does).
+ * keyword matching (as Lumo does).
  */
 import Database from 'better-sqlite3';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { getYakiSecret, readJsonCached, requireFromYaki, yakiPath } from './env.js';
+import { getLumoSecret, readJsonCached, requireFromLumo, lumoPath } from './env.js';
 
 type Rec = Record<string, any>;
 
@@ -22,24 +22,26 @@ const PRESS_SIMILARITY_THRESHOLD = 0.55;
 const PRESS_COLLECTION = 'V12-PressIssues';
 
 function confluenceDbPath(): string {
-  const primary = yakiPath('DB', 'EmbeddingsDb.db');
+  const primary = lumoPath('DB', 'EmbeddingsDb.db');
   if (existsSync(primary)) return primary;
-  const mcpCopy = yakiPath('mcp', 'ConfluenceMCP', 'EmbeddingsDB.db');
+  const mcpCopy = lumoPath('mcp', 'ConfluenceMCP', 'EmbeddingsDB.db');
   return existsSync(mcpCopy) ? mcpCopy : primary;
 }
 
-const testrailDbPath = (): string => yakiPath('DB', 'TestRailEmbeddingsDb.db');
-const pressDbPath = (): string => yakiPath('DB', 'PressIssuesEmbeddingsDb.db');
+const testrailDbPath = (): string => lumoPath('DB', 'TestRailEmbeddingsDb.db');
+const codeDbPath = (): string => lumoPath('DB', 'CodeEmbeddingsDb.db');
+const tmcDbPath = (): string => lumoPath('DB', 'TmcEmbeddingsDb.db');
+const pressDbPath = (): string => lumoPath('DB', 'PressIssuesEmbeddingsDb.db');
 
 // ---------------------------------------------------------------------------
-// sqlite-vec loading (from Yaki's node_modules — never a JiraWeb dependency)
+// sqlite-vec loading (from Lumo's node_modules — never a JiraWeb dependency)
 // ---------------------------------------------------------------------------
 
 let vecLoadFailed = false;
 
 function loadSqliteVec(db: InstanceType<typeof Database>): boolean {
   if (vecLoadFailed) return false;
-  const pkg = requireFromYaki<{ load?: (db: unknown) => void; getLoadablePath?: () => string }>(
+  const pkg = requireFromLumo<{ load?: (db: unknown) => void; getLoadablePath?: () => string }>(
     'sqlite-vec',
   );
   try {
@@ -51,7 +53,7 @@ function loadSqliteVec(db: InstanceType<typeof Database>): boolean {
     // fall through to the raw dll
   }
   try {
-    const dll = path.join(yakiPath('node_modules', 'sqlite-vec-windows-x64'), 'vec0.dll');
+    const dll = path.join(lumoPath('node_modules', 'sqlite-vec-windows-x64'), 'vec0.dll');
     if (existsSync(dll)) {
       db.loadExtension(dll);
       return true;
@@ -64,7 +66,7 @@ function loadSqliteVec(db: InstanceType<typeof Database>): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Pooled read-only DB handles + prepared statements (port of Yaki's pool)
+// Pooled read-only DB handles + prepared statements (port of Lumo's pool)
 // ---------------------------------------------------------------------------
 
 interface PreparedStmt {
@@ -104,7 +106,7 @@ function prep(entry: PooledDb, sql: string): PreparedStmt {
 }
 
 // ---------------------------------------------------------------------------
-// Ollama embeddings (staged shrink, port of Yaki's staircase)
+// Ollama embeddings (staged shrink, port of Lumo's staircase)
 // ---------------------------------------------------------------------------
 
 const OLLAMA_URL = (): string => process.env.OLLAMA_URL || 'http://localhost:11434';
@@ -173,8 +175,22 @@ export async function generateEmbedding(text: string): Promise<number[] | null> 
 
 export async function searchConfluenceVectors(args: Rec): Promise<unknown> {
   const query = String(args.query ?? '').trim();
-  const series = String(args.series ?? 'S6');
+  const requestedSeries = String(args.series ?? 'S6').toUpperCase();
   if (!query) return { error: 'query required' };
+  if (requestedSeries === 'ALL') {
+    const combined: Rec[] = [];
+    for (const candidate of ['S3', 'S4', 'S5', 'S6']) {
+      const hits = await searchConfluenceVectors({ ...args, series: candidate });
+      if (Array.isArray(hits)) combined.push(...hits as Rec[]);
+    }
+    const unique = new Map<string, Rec>();
+    for (const hit of combined.sort((a, b) => Number(b.similarity) - Number(a.similarity))) {
+      const key = String(hit.documentId || hit.title);
+      if (!unique.has(key)) unique.set(key, hit);
+    }
+    return [...unique.values()].slice(0, 20);
+  }
+  const series = requestedSeries;
   if (!SAFE_IDENT.test(series)) return { error: `unsafe series: ${series}` };
   const dbFile = confluenceDbPath();
   if (!existsSync(dbFile)) return { error: 'vector search unavailable (Confluence embeddings DB not found)' };
@@ -196,7 +212,7 @@ export async function searchConfluenceVectors(args: Rec): Promise<unknown> {
     const results: Rec[] = [];
     const seen = new Set<string>();
     const confluenceBase =
-      getYakiSecret('CONFLUENCE_BASE_URL') || 'https://v-indigo-confluence.inr.rd.hpicorp.net:6443';
+      getLumoSecret('CONFLUENCE_BASE_URL') || 'https://v-indigo-confluence.inr.rd.hpicorp.net:6443';
 
     for (const vr of vecRows) {
       const similarity = 1.0 - vr.distance;
@@ -224,6 +240,7 @@ export async function searchConfluenceVectors(args: Rec): Promise<unknown> {
       const anchor = heading ? `${url}#${(title + '-' + heading).replace(/\s+/g, '')}` : null;
 
       results.push({
+        series,
         documentId: doc.DocumentId,
         title,
         folder: doc.DocumentFolder,
@@ -245,11 +262,26 @@ export async function searchConfluenceVectors(args: Rec): Promise<unknown> {
 
 export async function searchTestrailVectors(args: Rec): Promise<unknown> {
   const query = String(args.query ?? '').trim();
-  const series = String(args.series ?? 'S6');
+  const requestedSeries = String(args.series ?? 'S6').toUpperCase();
   const component = args.component ? String(args.component) : null;
   const maxResults = 10;
   const threshold = 0.55;
   if (!query) return { error: 'query required' };
+  if (requestedSeries === 'ALL') {
+    const combined: Rec[] = [];
+    for (const candidate of ['S3', 'S4', 'S6', 'RAMON']) {
+      const hits = await searchTestrailVectors({ ...args, series: candidate });
+      if (Array.isArray(hits)) combined.push(...hits as Rec[]);
+    }
+    const unique = new Map<string, Rec>();
+    for (const hit of combined.sort((a, b) => Number(b.similarity) - Number(a.similarity))) {
+      const key = `${hit.series}:${hit.caseId}`;
+      if (!unique.has(key)) unique.set(key, hit);
+    }
+    return [...unique.values()].slice(0, 20);
+  }
+  // S5 shares the S4 TestRail project and embeddings pipeline.
+  const series = requestedSeries === 'S5' ? 'S4' : requestedSeries;
   if (!SAFE_IDENT.test(series)) return { error: `unsafe series: ${series}` };
   const dbFile = testrailDbPath();
   if (!existsSync(dbFile)) return { error: 'vector search unavailable (TestRail embeddings DB not found)' };
@@ -308,9 +340,10 @@ export async function searchTestrailVectors(args: Rec): Promise<unknown> {
 
       const rowComponent = hasComponent ? row.Component || null : null;
       const confluenceBase =
-        getYakiSecret('CONFLUENCE_BASE_URL') || 'https://v-indigo-confluence.inr.rd.hpicorp.net:6443';
+        getLumoSecret('CONFLUENCE_BASE_URL') || 'https://v-indigo-confluence.inr.rd.hpicorp.net:6443';
       const result: Rec = hasDocumentId
         ? {
+            series: requestedSeries,
             caseId,
             title: row.DocumentTitle,
             suiteFolder: row.DocumentFolder,
@@ -321,6 +354,7 @@ export async function searchTestrailVectors(args: Rec): Promise<unknown> {
             component: rowComponent,
           }
         : {
+            series: requestedSeries,
             caseId,
             title: row.Title,
             similarity: Math.round(similarity * 100) / 100,
@@ -361,13 +395,13 @@ export async function searchTestrailVectors(args: Rec): Promise<unknown> {
   }
 }
 
-/** Best-effort owner enrichment via the TestRail REST API (Yaki parity). */
+/** Best-effort owner enrichment via the TestRail REST API (Lumo parity). */
 async function enrichTestrailOwners(results: Rec[]): Promise<void> {
   try {
-    const user = getYakiSecret('TESTRAIL_USER');
-    const key = getYakiSecret('TESTRAIL_API_KEY');
+    const user = getLumoSecret('TESTRAIL_USER');
+    const key = getLumoSecret('TESTRAIL_API_KEY');
     if (!user || !key || results.length === 0) return;
-    const baseUrl = (getYakiSecret('TESTRAIL_BASE_URL') || 'https://hp-testrail.external.hp.com').replace(
+    const baseUrl = (getLumoSecret('TESTRAIL_BASE_URL') || 'https://hp-testrail.external.hp.com').replace(
       /\/+$/,
       '',
     );
@@ -400,6 +434,101 @@ async function enrichTestrailOwners(results: Rec[]): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Code and TMC vector knowledge
+// ---------------------------------------------------------------------------
+
+async function searchTechnicalCollections(
+  dbFile: string,
+  query: string,
+  collections: string[],
+  component?: string | null,
+): Promise<unknown> {
+  if (!existsSync(dbFile)) return { error: 'vector search unavailable (knowledge DB not found)' };
+  const embedding = await generateEmbedding(query);
+  if (!embedding) return { error: 'vector search unavailable (embedding service unreachable)' };
+  try {
+    const pooled = getPooledDb(dbFile);
+    const blob = Buffer.from(new Float32Array(embedding).buffer);
+    const results: Rec[] = [];
+    for (const collection of collections) {
+      if (!SAFE_IDENT.test(collection)) continue;
+      const vecTable = `vec_${collection}`;
+      const exists = prep(pooled, "SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(vecTable);
+      if (!exists) continue;
+      const rows = prep(
+        pooled,
+        `SELECT Sampling, distance FROM "${vecTable}" WHERE SamplingEmbedding MATCH ? AND k = ? ORDER BY distance`,
+      ).all(blob, 16) as Rec[];
+      for (const match of rows) {
+        const similarity = 1 - Number(match.distance);
+        if (similarity < 0.55) continue;
+        const row = prep(
+          pooled,
+          `SELECT Sampling, DocumentId, DocumentTitle, DocumentFolder, DocumentMarkdownFilePath, Component FROM "${collection}" WHERE Sampling = ?`,
+        ).get(match.Sampling) as Rec | undefined;
+        if (!row) continue;
+        if (component && !String(row.Component ?? '').toLowerCase().includes(component.toLowerCase())) continue;
+        results.push({
+          collection,
+          component: row.Component ?? null,
+          title: row.DocumentTitle,
+          folder: row.DocumentFolder,
+          content: row.Sampling,
+          similarity: Math.round(similarity * 100) / 100,
+        });
+      }
+    }
+    const seen = new Set<string>();
+    return results
+      .sort((a, b) => b.similarity - a.similarity)
+      .filter((row) => {
+        const key = `${row.collection}:${row.title}:${row.content}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 20);
+  } catch (err) {
+    return { error: `vector search unavailable (${err instanceof Error ? err.message : String(err)})` };
+  }
+}
+
+function matchingCollections(dbFile: string, suffix: string, requestedSeries: string, program?: string): string[] {
+  try {
+    const pooled = getPooledDb(dbFile);
+    const series = requestedSeries === 'S5' ? 'S4' : requestedSeries;
+    const prefixes = series === 'ALL' ? ['S3-', 'S4-', 'S6-', 'RAMON-'] : [`${series}-`];
+    return (pooled.db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all() as Rec[])
+      .map((row) => String(row.name))
+      .filter((name) => !name.startsWith('vec_') && name.endsWith(suffix))
+      .filter((name) => prefixes.some((prefix) => name.startsWith(prefix)))
+      .filter((name) => !program || name.toLowerCase().includes(`-${program.toLowerCase()}-`));
+  } catch {
+    return [];
+  }
+}
+
+export async function searchCodeVectors(args: Rec): Promise<unknown> {
+  const query = String(args.query ?? '').trim();
+  if (!query) return { error: 'query required' };
+  const series = String(args.series ?? 'ALL').toUpperCase();
+  if (!SAFE_IDENT.test(series)) return { error: `unsafe series: ${series}` };
+  const collections = matchingCollections(codeDbPath(), '-Code', series, args.program ? String(args.program) : undefined);
+  if (!collections.length) return { error: `no code embeddings found for ${series}` };
+  return searchTechnicalCollections(codeDbPath(), query, collections, args.component ? String(args.component) : null);
+}
+
+export async function searchTmcVectors(args: Rec): Promise<unknown> {
+  const query = String(args.query ?? '').trim();
+  if (!query) return { error: 'query required' };
+  const series = String(args.series ?? 'ALL').toUpperCase();
+  if (!SAFE_IDENT.test(series)) return { error: `unsafe series: ${series}` };
+  const collections = matchingCollections(tmcDbPath(), '-TMC-Signals', series);
+  if (!collections.length) return { error: `no TMC signal embeddings found for ${series}` };
+  return searchTechnicalCollections(tmcDbPath(), query, collections, args.component ? String(args.component) : null);
+}
+
+// ---------------------------------------------------------------------------
 // lookup_press_issue
 // ---------------------------------------------------------------------------
 
@@ -408,7 +537,7 @@ function termRe(term: string): RegExp {
 }
 
 function loadSynonymGroups(): string[][] {
-  const parsed = readJsonCached<Rec>(yakiPath('data', 'brain', 'press-synonyms.json'));
+  const parsed = readJsonCached<Rec>(lumoPath('data', 'brain', 'press-synonyms.json'));
   return parsed && Array.isArray(parsed.groups) ? (parsed.groups as string[][]) : [];
 }
 
@@ -427,9 +556,9 @@ function expandQuery(query: string): { expanded: string; matchedGroups: string[]
   return { expanded: extra.length ? `${q} (${extra.join(', ')})` : q, matchedGroups };
 }
 
-/** Read-only feedback boosts from Yaki's press-feedback.json (never written). */
+/** Read-only feedback boosts from Lumo's press-feedback.json (never written). */
 function feedbackBoostsFor(symptom: string): (sol: Rec) => { up: number; down: number } {
-  const store = readJsonCached<Rec>(yakiPath('data', 'brain', 'press-feedback.json')) ?? {
+  const store = readJsonCached<Rec>(lumoPath('data', 'brain', 'press-feedback.json')) ?? {
     entries: {},
   };
   const solutionKey = (sol: Rec) =>
@@ -441,7 +570,7 @@ function feedbackBoostsFor(symptom: string): (sol: Rec) => { up: number; down: n
 
 function formatCluster(cluster: Rec, similarity: number | null): Rec {
   const fb = feedbackBoostsFor(cluster.symptom);
-  const urlTemplate = getYakiSecret('PRESS_CASE_URL_TEMPLATE');
+  const urlTemplate = getLumoSecret('PRESS_CASE_URL_TEMPLATE');
   const solutions = (cluster.solutions as Rec[]).map((s) => {
     const f = fb(s);
     return {
@@ -511,7 +640,7 @@ export async function searchPressIssues(args: Rec): Promise<Rec> {
   const maxResults = 5;
   if (!queries.length) return { found: false, count: 0, issues: [], note: 'Empty query.' };
 
-  const issues = readJsonCached<Rec>(yakiPath('data', 'brain', 'press-issues.json'));
+  const issues = readJsonCached<Rec>(lumoPath('data', 'brain', 'press-issues.json'));
   if (!issues || !Array.isArray(issues.clusters)) {
     return {
       found: false,

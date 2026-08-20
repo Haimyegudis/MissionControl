@@ -40,6 +40,7 @@ export function SettingsView() {
   const [muteAll, setMuteAll] = useState(false);
   const [defaultProjectKey, setDefaultProjectKey] = useState('ISW');
   const [aiModel, setAiModel] = useState('');
+  const [aiDataSharingEnabled, setAiDataSharingEnabled] = useState(false);
   const [widgets, setWidgets] = useState<WidgetToggle[]>([]);
   const [statusMessage, setStatusMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +56,7 @@ export function SettingsView() {
       setMuteAll(s.muteAll);
       setDefaultProjectKey(s.defaultProjectKey);
       setAiModel(s.aiModel ?? '');
+      setAiDataSharingEnabled(s.aiDataSharingEnabled);
       setWidgets(buildWidgetToggles(s.dashboardWidgets));
       setLoaded(true);
     });
@@ -85,6 +87,7 @@ export function SettingsView() {
         muteAll,
         defaultProjectKey,
         aiModel,
+        aiDataSharingEnabled,
         dashboardWidgets: enabledWidgetIds(widgets),
       });
       syncFromSettings(); // restart scheduler on the new interval
@@ -137,7 +140,12 @@ export function SettingsView() {
             onMuteAll={setMuteAll}
           />
           <DashboardSection widgets={widgets} onWidgets={setWidgets} />
-          <AiSection aiModel={aiModel} onAiModel={setAiModel} />
+          <AiSection
+            aiModel={aiModel}
+            onAiModel={setAiModel}
+            dataSharingEnabled={aiDataSharingEnabled}
+            onDataSharingEnabled={setAiDataSharingEnabled}
+          />
           <RemindersSection />
           <DataSection />
         </div>

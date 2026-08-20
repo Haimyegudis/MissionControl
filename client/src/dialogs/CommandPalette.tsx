@@ -3,10 +3,11 @@
 // RECENT (settings MRU). Pomodoro pick mode retitles and routes activation.
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { issues as issuesApi } from '../api/client';
+import { confluence, issues as issuesApi } from '../api/client';
+import { trApi } from '../api/testrail';
 import { Modal } from '../components/Modal';
 import { issueTypeColor } from '../lib/colors';
-import { navigate, ROUTES, TESTRAIL_ROUTES, type RouteId } from '../router';
+import { CONFLUENCE_ROUTES, navigate, ROUTES, TESTRAIL_ROUTES, type RouteId } from '../router';
 import { settingsStore } from '../stores/settings';
 import { allLoadedCases, openCase, trStore } from '../stores/testrail';
 import { useStore } from '../stores/useStore';
@@ -46,8 +47,11 @@ export function CommandPalette({ mode = 'default', onClose, onPickIssue }: Comma
   const appSettings = useStore(settingsStore);
   const [query, setQuery] = useState('');
   const [jiraRows, setJiraRows] = useState<PaletteRow[]>([]);
+  const [confluenceRows, setConfluenceRows] = useState<PaletteRow[]>([]);
+  const [remoteTestRailRows, setRemoteTestRailRows] = useState<PaletteRow[]>([]);
   const [selected, setSelected] = useState(-1);
   const seqRef = useRef(0);
+  const crossServiceSeqRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const pickIssue = (key: string) => onPickIssue(key);
@@ -59,6 +63,7 @@ export function CommandPalette({ mode = 'default', onClose, onPickIssue }: Comma
     const entries: Array<{ id: RouteId | 'help'; label: string }> = [
       ...ROUTES,
       ...TESTRAIL_ROUTES.map((r) => ({ id: r.id, label: `TestRail ${r.label}` })),
+      ...CONFLUENCE_ROUTES.map((r) => ({ id: r.id, label: `Confluence ${r.label}` })),
       { id: 'help', label: 'Help' },
     ];
     return entries
@@ -148,9 +153,49 @@ export function CommandPalette({ mode = 'default', onClose, onPickIssue }: Comma
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
+  // CONFLUENCE + TESTRAIL live groups. Failures are intentionally silent so
+  // one disconnected service never hides valid results from the others.
+  useEffect(() => {
+    if (mode === 'pomodoro') return;
+    const q = query.trim();
+    const seq = ++crossServiceSeqRef.current;
+    if (q.length < 2) {
+      setConfluenceRows([]);
+      setRemoteTestRailRows([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      void confluence.search({ query: q, limit: 8 }).then((pages) => {
+        if (crossServiceSeqRef.current !== seq) return;
+        setConfluenceRows(pages.slice(0, 8).map((page) => ({
+          group: 'CONFLUENCE',
+          key: page.spaceKey,
+          label: page.title,
+          action: () => { window.location.hash = `#/confluence/${page.id}`; },
+        })));
+      }).catch(() => { if (crossServiceSeqRef.current === seq) setConfluenceRows([]); });
+      const projectIds = trState.projects.map((project) => project.id);
+      if (projectIds.length > 0) {
+        void trApi.searchCases(q, projectIds).then((cases) => {
+          if (crossServiceSeqRef.current !== seq) return;
+          setRemoteTestRailRows(cases.slice(0, 8).map((testCase) => ({
+            group: 'TESTRAIL',
+            key: `C${testCase.id}`,
+            label: testCase.title,
+            action: () => { openCase(testCase.id, testCase.suiteId ?? 0); navigate('testrail-cases'); },
+          })));
+        }).catch(() => { if (crossServiceSeqRef.current === seq) setRemoteTestRailRows([]); });
+      }
+    }, 220);
+    return () => clearTimeout(timer);
+  }, [mode, query, trState.projects]);
+
   const rows = useMemo(
-    () => [...navRows, ...jiraRows, ...testrailRows, ...recentRows],
-    [navRows, jiraRows, testrailRows, recentRows],
+    () => {
+      const loadedKeys = new Set(testrailRows.map((row) => row.key));
+      return [...navRows, ...jiraRows, ...confluenceRows, ...testrailRows, ...remoteTestRailRows.filter((row) => !loadedKeys.has(row.key)), ...recentRows];
+    },
+    [navRows, jiraRows, confluenceRows, testrailRows, remoteTestRailRows, recentRows],
   );
 
   useEffect(() => {
@@ -190,12 +235,16 @@ export function CommandPalette({ mode = 'default', onClose, onPickIssue }: Comma
           style={{ width: '100%' }}
         />
 
-        <div style={{ flex: 1, minHeight: 200, overflowY: 'auto' }}>
+        <div role="listbox" aria-label="Search results" style={{ flex: 1, minHeight: 200, overflowY: 'auto' }}>
           {rows.map((row, i) => (
             <div
               key={`${row.group}:${row.key}:${i}`}
+              role="option"
+              tabIndex={0}
+              aria-selected={i === selected}
               onClick={() => setSelected(i)}
               onDoubleClick={() => activate(row)}
+              onKeyDown={(event) => { if (event.key === 'Enter') activate(row); }}
               style={{
                 display: 'flex',
                 alignItems: 'baseline',
@@ -259,7 +308,7 @@ export function CommandPalette({ mode = 'default', onClose, onPickIssue }: Comma
         </div>
 
         <div className="muted" style={{ fontSize: 11.5, textAlign: 'center' }}>
-          Type to search Jira · Enter to open · Esc to close
+          Search Jira · Confluence · TestRail · Enter to open · Esc to close
         </div>
       </div>
     </Modal>

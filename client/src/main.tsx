@@ -5,11 +5,41 @@ import { initRouter } from './router';
 import { initSession } from './stores/session';
 import './theme.css';
 
-initRouter();
-void initSession();
+/**
+ * The launcher puts the owner-only API token in the URL fragment. Fragments
+ * never reach HTTP servers or logs. Exchange it once for an HttpOnly cookie,
+ * then scrub it from browser history before mounting the application.
+ */
+function takeBootstrapToken(): string | null {
+  const hash = window.location.hash;
+  const question = hash.indexOf('?');
+  if (question < 0) return null;
+  const route = hash.slice(0, question);
+  const params = new URLSearchParams(hash.slice(question + 1));
+  const token = params.get('mc_token');
+  if (!token) return null;
+  params.delete('mc_token');
+  const cleanHash = route + (params.size > 0 ? `?${params}` : '');
+  window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${cleanHash}`);
+  return token;
+}
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+async function bootstrap(): Promise<void> {
+  const token = takeBootstrapToken();
+  // In Vite development the proxy injects the token for this endpoint.
+  const headers = token ? { 'x-mc-token': token } : undefined;
+  await fetch('/api/bootstrap', { method: 'POST', headers }).catch(() => undefined);
+}
+
+async function start(): Promise<void> {
+  await bootstrap();
+  initRouter();
+  void initSession();
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+}
+
+void start();

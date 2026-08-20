@@ -3,7 +3,7 @@
 
 import { Router } from 'express';
 import { Readable } from 'node:stream';
-import { resolveJiraUsername } from '../ai/yaki/jiraSearch.js';
+import { resolveJiraUsername } from '../ai/lumo/jiraSearch.js';
 import { normalizeBaseUrl } from '../jira/httpClient.js';
 import type { JiraUser } from '../types.js';
 import { defaultProjectKey, h, HttpError, qstr, requireString, type AppDeps } from './deps.js';

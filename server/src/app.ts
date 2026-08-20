@@ -58,7 +58,7 @@ export function createApp(deps: AppDeps): Express {
   app.disable('x-powered-by');
   // Host/Origin allow-list + per-install API token (empty token in tests
   // keeps the auth check off while Host/Origin still apply).
-  app.use(securityMiddleware(deps.apiToken ?? ''));
+  app.use(securityMiddleware(deps.apiToken ?? '', { apiPort: deps.apiPort }));
   app.use(express.json({ limit: '2mb' }));
 
   const api = express.Router();

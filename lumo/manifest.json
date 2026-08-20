@@ -1,0 +1,21 @@
+{
+  "name": "Mission Control Lumo Knowledge Bundle",
+  "version": 1,
+  "generatedAt": "2026-08-17T17:15:00+03:00",
+  "embeddingModel": "mxbai-embed-large:335m",
+  "assets": [
+    { "path": "DB/CodeEmbeddingsDb.db", "bytes": 399273984, "sha256": "ee63215a87448ae1bbda646536a36e7e609d2f8019f6faeb32ba8ce18d416577" },
+    { "path": "DB/EmbeddingsDb.db", "bytes": 319340544, "sha256": "237cfe2170dc222cacb62b98e96691e21d526eb923b03a46f9b4a9d55ed72a09" },
+    { "path": "DB/PressIssuesEmbeddingsDb.db", "bytes": 4636672, "sha256": "ef5038d29e746310d3627785804fbe13483c435f6acc0b7f43839f76bc907efc" },
+    { "path": "DB/TestRailEmbeddingsDb.db", "bytes": 318435328, "sha256": "d93a61f7989ba88585ac3961fd0cf2615c20e292bd1cded37268694b0f9df326" },
+    { "path": "DB/TmcEmbeddingsDb.db", "bytes": 775847936, "sha256": "df14fd2b299975492d076f4b21f9edefa0b6ce237ac1916e8ff0994ef32ddd4d" },
+    { "path": "data/testbrain.db", "bytes": 48807936, "sha256": "8e8cf86558b726ea19dc8d7521cf1d9d00eff82188aa7c0b4675e6c34997e989" }
+  ],
+  "coverage": {
+    "confluence": ["S3", "S4", "S5", "S6", "Autonomous", "Ramon"],
+    "testrail": ["S3", "S4/S5", "S6", "Ramon"],
+    "code": ["S3", "S4/S5", "S6", "Ramon"],
+    "tmcSignals": ["S3 Gamla/6K+", "S6"],
+    "pressIssues": ["V12 field cases"]
+  }
+}
