@@ -4,4 +4,8 @@
 
 export const JIRA_URL = 'https://hp-jira.external.hp.com';
 export const TESTRAIL_URL = 'https://hp-testrail.external.hp.com';
-export const CONFLUENCE_URL = 'https://v-indigo-confluence.inr.rd.hpicorp.net:6443';
+// Blank in the Android bundle: mobile has no Confluence screen, and shipping an
+// internal RD hostname inside an APK that gets passed around discloses estate
+// detail for no benefit. The desktop value is unchanged.
+export const CONFLUENCE_URL =
+  __MC_TARGET__ === 'android' ? '' : 'https://v-indigo-confluence.inr.rd.hpicorp.net:6443';
