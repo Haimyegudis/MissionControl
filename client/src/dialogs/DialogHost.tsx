@@ -234,7 +234,8 @@ export function DialogHost({ children }: { children: ReactNode }) {
           <LumoPanel open={lumoOpen} onClose={() => setLumoOpen(false)} />
         </Suspense>
       )}
-      <LumoFab onClick={() => setLumoOpen((v) => !v)} />
+      {/* No Lumo in the Android build, so no floating button for it either. */}
+      {LumoPanel !== null && <LumoFab onClick={() => setLumoOpen((v) => !v)} />}
     </DialogsContext.Provider>
   );
 }

@@ -20,20 +20,20 @@ import { DashboardView } from './views/DashboardView';
 // Route-level code splitting: only the dashboard ships in the entry chunk;
 // every other view loads on first visit.
 const MyWorkView = lazy(() => import('./views/MyWorkView').then((m) => ({ default: m.MyWorkView })));
-const IncidentsView = __MC_TARGET__ === 'android' ? Unavailable : lazy(() => import('./views/IncidentsView').then((m) => ({ default: m.IncidentsView })));
-const BoardsView = __MC_TARGET__ === 'android' ? Unavailable : lazy(() => import('./views/BoardsView').then((m) => ({ default: m.BoardsView })));
-const FiltersView = __MC_TARGET__ === 'android' ? Unavailable : lazy(() => import('./views/FiltersView').then((m) => ({ default: m.FiltersView })));
-const RecentUpdatesView = __MC_TARGET__ === 'android' ? Unavailable : lazy(() => import('./views/RecentUpdatesView').then((m) => ({ default: m.RecentUpdatesView })));
-const TimeLoggedView = __MC_TARGET__ === 'android' ? Unavailable : lazy(() => import('./views/TimeLoggedView').then((m) => ({ default: m.TimeLoggedView })));
-const DashboardsView = __MC_TARGET__ === 'android' ? Unavailable : lazy(() => import('./views/DashboardsView').then((m) => ({ default: m.DashboardsView })));
-const TeamView = __MC_TARGET__ === 'android' ? Unavailable : lazy(() => import('./views/TeamView').then((m) => ({ default: m.TeamView })));
+const IncidentsView = lazy(() => import('./views/IncidentsView').then((m) => ({ default: m.IncidentsView })));
+const BoardsView = lazy(() => import('./views/BoardsView').then((m) => ({ default: m.BoardsView })));
+const FiltersView = lazy(() => import('./views/FiltersView').then((m) => ({ default: m.FiltersView })));
+const RecentUpdatesView = lazy(() => import('./views/RecentUpdatesView').then((m) => ({ default: m.RecentUpdatesView })));
+const TimeLoggedView = lazy(() => import('./views/TimeLoggedView').then((m) => ({ default: m.TimeLoggedView })));
+const DashboardsView = lazy(() => import('./views/DashboardsView').then((m) => ({ default: m.DashboardsView })));
+const TeamView = lazy(() => import('./views/TeamView').then((m) => ({ default: m.TeamView })));
 const SettingsView = lazy(() => import('./views/SettingsView').then((m) => ({ default: m.SettingsView })));
-const CaseLibraryView = __MC_TARGET__ === 'android' ? Unavailable : lazy(() => import('./views/testrail/CaseLibraryView').then((m) => ({ default: m.CaseLibraryView })));
+const CaseLibraryView = lazy(() => import('./views/testrail/CaseLibraryView').then((m) => ({ default: m.CaseLibraryView })));
 const RunsView = lazy(() => import('./views/testrail/RunsView').then((m) => ({ default: m.RunsView })));
 const RunDetailView = lazy(() => import('./views/testrail/RunDetailView').then((m) => ({ default: m.RunDetailView })));
-const TestRailReportsView = __MC_TARGET__ === 'android' ? Unavailable : lazy(() => import('./views/testrail/TestRailReportsView').then((m) => ({ default: m.TestRailReportsView })));
+const TestRailReportsView = lazy(() => import('./views/testrail/TestRailReportsView').then((m) => ({ default: m.TestRailReportsView })));
 const ConfluenceView = __MC_TARGET__ === 'android' ? Unavailable : lazy(() => import('./views/confluence/ConfluenceView').then((m) => ({ default: m.ConfluenceView })));
-const TraceabilityView = __MC_TARGET__ === 'android' ? Unavailable : lazy(() => import('./views/TraceabilityView').then((m) => ({ default: m.TraceabilityView })));
+const TraceabilityView = lazy(() => import('./views/TraceabilityView').then((m) => ({ default: m.TraceabilityView })));
 /**
  * Stand-in for a view that is not part of the Android build. Reaching it means
  * a route slipped past the gate below, so say so rather than rendering blank.

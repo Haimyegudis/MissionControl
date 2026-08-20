@@ -7,6 +7,20 @@
 // and must keep the same status codes, payload shapes and validation messages.
 
 import type { Core } from './composition.js';
+import type { TrAddCasePayload } from './testrail/types.js';
+import { INCIDENT_FILTERS } from './jira/incidentCatalog.js';
+import { buildIncidentJql } from './jira/jqlBuilder.js';
+import { jqlQuote } from './jira/jqlEscape.js';
+import { BOARDS_CACHE_KEY } from './jira/cached.js';
+import type { TimeLoggedPeriod } from './jira/timeLogged.js';
+import { apiPrefix, jiraFetch } from './jira/httpClient.js';
+import type {
+  BoardWorkspace,
+  JiraFilterSelection,
+  PinnedBoard,
+  SavedFilter,
+  Team,
+} from './types.js';
 import { DEFAULT_APP_SETTINGS, type AppSettings, type Credentials, type JiraIssue, type JiraUser } from './types.js';
 
 export interface DispatchResponse {
@@ -33,6 +47,65 @@ const DEFAULT_JIRA_BASE_URL = 'https://hp-jira.external.hp.com';
 const DEFAULT_TESTRAIL_BASE_URL = 'https://hp-testrail.external.hp.com';
 
 const KNOWN_SETTINGS_KEYS = new Set(Object.keys(DEFAULT_APP_SETTINGS));
+
+/** Single-profile deployment — fixed pinned-board / workspace profile id. */
+const PINNED_PROFILE_ID = '00000000-0000-0000-0000-000000000000';
+
+const INCIDENT_MAX_RESULTS = 200;
+const DISTINCT_MAX = 5000;
+
+const PEOPLE_FIELDS = new Set(['assignee', 'reporter', 'primary developer', 'primary tester']);
+const VERSION_FIELDS = new Set([
+  'fixversion',
+  'fix version/s',
+  'affectedversion',
+  'affects version',
+  'affects version/s',
+]);
+const COMPONENT_FIELDS = new Set(['components', 'component']);
+
+const TIME_PERIODS: ReadonlySet<string> = new Set([
+  'today',
+  'yesterday',
+  'thisWeek',
+  'previousWeek',
+  'thisMonth',
+  'customRange',
+]);
+
+/** C# `.Trim('"')` — strip all leading/trailing double quotes. */
+function stripQuotes(value: string): string {
+  return value.replace(/^"+/, '').replace(/"+$/, '');
+}
+
+function parseSelections(raw: unknown): JiraFilterSelection[] {
+  if (!Array.isArray(raw)) return [];
+  const out: JiraFilterSelection[] = [];
+  for (const el of raw) {
+    if (!el || typeof el !== 'object') continue;
+    const filterId = (el as Record<string, unknown>).filterId;
+    const values = (el as Record<string, unknown>).values;
+    if (typeof filterId !== 'string' || filterId.length === 0) continue;
+    out.push({
+      filterId,
+      values: Array.isArray(values) ? values.filter((v): v is string => typeof v === 'string') : [],
+    });
+  }
+  return out;
+}
+
+function parseDate(value: string | null, name: string): Date | null {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) throw new DispatchError(400, `Invalid date for ${name}: ${value}`);
+  return d;
+}
+
+function numericId(raw: string, name: string): number {
+  const id = Number(raw);
+  if (!Number.isFinite(id)) throw new DispatchError(400, `Invalid ${name}: ${raw}`);
+  return id;
+}
 
 /** `yyyy-MM-dd HH:mm` in local time (JQL `updated >=` literal). */
 export function formatJqlMinute(d: Date): string {
@@ -100,6 +173,36 @@ function optStr(value: unknown): string | null {
 function intArray(value: unknown): number[] {
   if (!Array.isArray(value)) return [];
   return value.map((v) => optInt(v)).filter((n): n is number => n !== null);
+}
+
+/** [{content, expected}] rows for custom_steps_separated; null when absent. */
+function stepRows(value: unknown): Array<{ content: string; expected: string }> | null {
+  if (!Array.isArray(value)) return null;
+  return value
+    .map((row) => {
+      const r = (row ?? {}) as Record<string, unknown>;
+      return {
+        content: typeof r.content === 'string' ? r.content : '',
+        expected: typeof r.expected === 'string' ? r.expected : '',
+      };
+    })
+    .filter((r) => r.content.trim().length > 0 || r.expected.trim().length > 0);
+}
+
+function casePayload(body: Record<string, unknown>): TrAddCasePayload {
+  return {
+    title: requireString(body.title, 'title'),
+    typeId: optInt(body.typeId),
+    priorityId: optInt(body.priorityId),
+    estimate: optStr(body.estimate),
+    refs: optStr(body.refs),
+    description: optStr(body.description),
+    preconds: optStr(body.preconds),
+    steps: optStr(body.steps),
+    stepsSeparated: stepRows(body.stepsSeparated),
+    expected: optStr(body.expected),
+    ownerId: optInt(body.ownerId),
+  };
 }
 
 const NOT_FOUND: DispatchResponse = {
@@ -513,6 +616,37 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
       if (method === 'GET' && third === 'runs') {
         return ok(await service.cachedJson(`runs:${pid}`, () => service.requireClient().getRuns(pid), fresh));
       }
+      if (method === 'GET' && third === 'sections') {
+        const suiteId = optInt(query.get('suiteId'));
+        return ok(
+          await service.cachedJson(
+            `sections:${pid}:${suiteId ?? ''}`,
+            () => service.requireClient().getSections(pid, suiteId),
+            fresh,
+          ),
+        );
+      }
+      if (method === 'GET' && third === 'cases') {
+        const suiteId = optInt(query.get('suiteId'));
+        const sectionId = optInt(query.get('sectionId'));
+        return ok(
+          await service.cachedJson(
+            `cases:${pid}:${suiteId ?? ''}:${sectionId ?? ''}`,
+            () => service.requireClient().getCases(pid, suiteId, sectionId),
+            fresh,
+          ),
+        );
+      }
+      if (method === 'POST' && third === 'sections') {
+        return ok(
+          await service.requireClient().addSection(pid, {
+            suiteId: optInt(body.suiteId),
+            parentId: optInt(body.parentId),
+            name: requireString(body.name, 'name'),
+            description: optStr(body.description),
+          }),
+        );
+      }
       if (method === 'GET' && third === 'planruns') {
         return ok(await service.cachedJson(`planruns:${pid}`, () => service.requireClient().getPlanRuns(pid), fresh));
       }
@@ -529,6 +663,86 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
             caseIds: includeAll ? undefined : intArray(body.caseIds),
           }),
         );
+      }
+      return NOT_FOUND;
+    }
+
+    if (head === 'sections' && second !== undefined) {
+      const sectionId = requireInt(second, 'sectionId');
+      if (method === 'PUT' && third === undefined) {
+        return ok(
+          await service
+            .requireClient()
+            .updateSection(sectionId, requireString(body.name, 'name'), optStr(body.description)),
+        );
+      }
+      if (method === 'DELETE' && third === undefined) {
+        await service.requireClient().deleteSection(sectionId);
+        return NO_CONTENT;
+      }
+      if (method === 'POST' && third === 'move') {
+        await service.requireClient().moveSection(sectionId, optInt(body.parentId), optInt(body.afterId));
+        return NO_CONTENT;
+      }
+      if (method === 'POST' && third === 'cases') {
+        return ok(await service.requireClient().addCase(sectionId, casePayload(body)));
+      }
+      return NOT_FOUND;
+    }
+
+    if (head === 'cases' && second !== undefined) {
+      // Bulk partial edit — only provided fields change on each selected case.
+      if (method === 'PUT' && second === 'bulk') {
+        const ids = intArray(body.caseIds);
+        if (ids.length === 0) throw new DispatchError(400, 'caseIds is required');
+        const set = (body.set ?? {}) as Record<string, unknown>;
+        const fields: Record<string, unknown> = {};
+        if (optInt(set.ownerId) !== null) fields.custom_testcaseowner = optInt(set.ownerId);
+        if (optInt(set.assignedToId) !== null) fields.case_assignedto_id = optInt(set.assignedToId);
+        if (optInt(set.priorityId) !== null) fields.priority_id = optInt(set.priorityId);
+        if (optInt(set.typeId) !== null) fields.type_id = optInt(set.typeId);
+        if (typeof set.estimate === 'string' && set.estimate.trim()) fields.estimate = set.estimate.trim();
+        if (typeof set.refs === 'string' && set.refs.trim()) fields.refs = set.refs.trim();
+        if (Object.keys(fields).length === 0) throw new DispatchError(400, 'No fields to set');
+
+        const client = service.requireClient();
+        const failures: Array<{ id: number; error: string }> = [];
+        let next = 0;
+        const worker = async (): Promise<void> => {
+          for (;;) {
+            const i = next++;
+            if (i >= ids.length) return;
+            try {
+              await client.updateCaseFields(ids[i], fields);
+            } catch (err) {
+              failures.push({ id: ids[i], error: err instanceof Error ? err.message : String(err) });
+            }
+          }
+        };
+        await Promise.all(Array.from({ length: Math.min(6, ids.length) }, () => worker()));
+        return ok({ updated: ids.length - failures.length, failures });
+      }
+      if (method === 'POST' && second === 'copy') {
+        await service
+          .requireClient()
+          .copyCasesToSection(requireInt(body.targetSectionId, 'targetSectionId'), intArray(body.caseIds));
+        return NO_CONTENT;
+      }
+      if (method === 'POST' && second === 'move') {
+        await service
+          .requireClient()
+          .moveCasesToSection(
+            requireInt(body.targetSectionId, 'targetSectionId'),
+            optInt(body.targetSuiteId),
+            intArray(body.caseIds),
+          );
+        return NO_CONTENT;
+      }
+      const caseId = requireInt(second, 'caseId');
+      if (method === 'PUT') return ok(await service.requireClient().updateCase(caseId, casePayload(body)));
+      if (method === 'DELETE') {
+        await service.requireClient().deleteCase(caseId);
+        return NO_CONTENT;
       }
       return NOT_FOUND;
     }
@@ -604,6 +818,187 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
     return NOT_FOUND;
   }
 
+  async function boardsRoute(
+    method: string,
+    rest: string[],
+    query: URLSearchParams,
+  ): Promise<DispatchResponse> {
+    if (method !== 'GET') return NOT_FOUND;
+    if (rest.length === 0) {
+      if (query.get('force')) core.metadataCache.delete(BOARDS_CACHE_KEY);
+      return ok((await core.boards.getBoards()).boards);
+    }
+    // Raw JQL of a board's saved filter — board mode rewrites it.
+    if (rest[0] === 'filter' && rest[2] === 'jql') {
+      const id = numericId(rest[1], 'board id');
+      const prefix = apiPrefix(core.session.profile?.instanceType ?? 'datacenter');
+      const filter = (await jiraFetch(core.session, `${prefix}/filter/${id}`)) as { jql?: unknown } | null;
+      return ok({ jql: typeof filter?.jql === 'string' ? filter.jql : null });
+    }
+    const boardId = numericId(rest[0], 'board id');
+    if (rest[1] === 'sprints') return ok(await core.boards.getActiveSprints(boardId));
+    if (rest[1] === 'issues') return ok(await core.boards.getBoardIssues(boardId, query.get('jql') ?? undefined));
+    if (rest[1] === 'quickfilters') return ok(await core.boards.getQuickFilters(boardId));
+    return NOT_FOUND;
+  }
+
+  async function incidentsRoute(
+    method: string,
+    rest: string[],
+    b: Record<string, unknown>,
+  ): Promise<DispatchResponse> {
+    if (method === 'POST' && rest[0] === 'search') {
+      // Summary search stays client-side; body.summarySearch is accepted and ignored.
+      const jql = buildIncidentJql(INCIDENT_FILTERS, parseSelections(b.selections), defaultProjectKey());
+      const [all, verification, rejected] = await Promise.all([
+        core.issues.searchIssues(jql.main, 0, INCIDENT_MAX_RESULTS),
+        core.issues.searchIssues(jql.verification, 0, INCIDENT_MAX_RESULTS),
+        core.issues.searchIssues(jql.rejected, 0, INCIDENT_MAX_RESULTS),
+      ]);
+      return ok({ all: all.items, verification: verification.items, rejected: rejected.items });
+    }
+    if (method === 'GET' && rest[0] === 'definitions') return ok(INCIDENT_FILTERS);
+    if (method === 'GET' && rest[0] === 'filter-options' && rest[1] !== undefined) {
+      const def = INCIDENT_FILTERS.find((f) => f.id.toLowerCase() === rest[1].toLowerCase());
+      if (!def) throw new DispatchError(404, `Unknown incident filter: ${rest[1]}`);
+      const field = stripQuotes((def.jiraFieldName ?? def.displayName).trim());
+      const lower = field.toLowerCase();
+      const project = defaultProjectKey();
+
+      if (lower === 'priority') return ok(await core.metadata.getPriorities());
+      if (lower === 'status') return ok(await core.metadata.getStatuses());
+      if (lower === 'issuetype') return ok(await core.metadata.getIssueTypes());
+
+      let options = await core.getDistinct(project, field, DISTINCT_MAX);
+      if (options.length === 0 && VERSION_FIELDS.has(lower)) {
+        options = await core.metadata.getVersions(project);
+      } else if (options.length === 0 && COMPONENT_FIELDS.has(lower)) {
+        options = await core.metadata.getComponents(project);
+      } else if (options.length === 0 && !PEOPLE_FIELDS.has(lower)) {
+        options = await core.metadata.getFieldSuggestions(field);
+      }
+      return ok(options);
+    }
+    return NOT_FOUND;
+  }
+
+  async function timeLoggedRoute(
+    method: string,
+    rest: string[],
+    query: URLSearchParams,
+  ): Promise<DispatchResponse> {
+    if (method !== 'GET') return NOT_FOUND;
+    if (rest[0] === 'sprint') return ok(await core.timeLogged.buildReportForSprint(query.get('name') ?? ''));
+    if (rest[0] === 'range') {
+      const from = parseDate(query.get('from'), 'from');
+      const to = parseDate(query.get('to'), 'to');
+      if (!from || !to) throw new DispatchError(400, 'Both from and to are required.');
+      return ok(await core.timeLogged.buildReportForRange(from, to));
+    }
+    if (rest.length > 0) return NOT_FOUND;
+
+    const period = query.get('period') ?? 'thisWeek';
+    if (!TIME_PERIODS.has(period)) throw new DispatchError(400, `Invalid period: ${period}`);
+    // extraJql replaces the default scope; ?user= composes the same default
+    // scope pinned to that assignee (the client sends one or the other).
+    let extraJql = query.get('extraJql');
+    const user = query.get('user');
+    if (!extraJql && user) {
+      extraJql =
+        `project = ${defaultProjectKey()} AND sprint in openSprints() AND assignee = ${jqlQuote(user)}` +
+        ' AND issuetype != Incident ORDER BY updated DESC';
+    }
+    return ok(
+      await core.timeLogged.buildReport(
+        period as TimeLoggedPeriod,
+        parseDate(query.get('from'), 'from'),
+        parseDate(query.get('to'), 'to'),
+        extraJql,
+      ),
+    );
+  }
+
+  function filtersRoute(method: string, rest: string[], b: Record<string, unknown>): DispatchResponse {
+    if (method === 'GET' && rest.length === 0) return ok(core.savedFilters.getAll());
+    if (method === 'POST' && rest.length === 0) {
+      const filter: SavedFilter = {
+        id: typeof b.id === 'string' ? b.id : '',
+        name: requireString(b.name, 'name'),
+        description: typeof b.description === 'string' ? b.description : null,
+        jql: requireString(b.jql, 'jql'),
+        isFavorite: b.isFavorite === true,
+        created: typeof b.created === 'string' ? b.created : '',
+        lastUsed: typeof b.lastUsed === 'string' ? b.lastUsed : null,
+      };
+      return ok(core.savedFilters.upsert(filter));
+    }
+    if (method === 'DELETE' && rest[0] !== undefined) {
+      core.savedFilters.delete(rest[0]);
+      return NO_CONTENT;
+    }
+    return NOT_FOUND;
+  }
+
+  function teamsRoute(method: string, rest: string[], b: Record<string, unknown>): DispatchResponse {
+    if (method === 'GET' && rest.length === 0) return ok(core.teams.getAll());
+    if (method === 'POST' && rest.length === 0) {
+      const team: Team = {
+        id: typeof b.id === 'string' ? b.id : '',
+        name: requireString(b.name, 'name'),
+        members: Array.isArray(b.members) ? b.members.filter((m): m is string => typeof m === 'string') : [],
+      };
+      return ok(core.teams.upsert(team));
+    }
+    if (method === 'DELETE' && rest[0] !== undefined) {
+      core.teams.delete(rest[0]);
+      return NO_CONTENT;
+    }
+    return NOT_FOUND;
+  }
+
+  function pinnedBoardsRoute(method: string, rest: string[], b: Record<string, unknown>): DispatchResponse {
+    if (method === 'GET' && rest.length === 0) return ok(core.pinnedBoards.getForProfile(PINNED_PROFILE_ID));
+    if (method === 'POST' && rest.length === 0) {
+      const board: PinnedBoard = {
+        id: typeof b.id === 'string' ? b.id : '',
+        profileId: PINNED_PROFILE_ID,
+        boardId: typeof b.boardId === 'number' ? b.boardId : Number(b.boardId ?? NaN),
+        name: typeof b.name === 'string' ? b.name : '',
+        filterId: typeof b.filterId === 'number' ? b.filterId : null,
+      };
+      if (!Number.isFinite(board.boardId)) throw new DispatchError(400, 'Missing required parameter: boardId');
+      return ok(core.pinnedBoards.upsert(board));
+    }
+    if (method === 'DELETE' && rest[0] !== undefined) {
+      core.pinnedBoards.delete(rest[0]);
+      return NO_CONTENT;
+    }
+    return NOT_FOUND;
+  }
+
+  function workspacesRoute(method: string, rest: string[], b: Record<string, unknown>): DispatchResponse {
+    if (method === 'GET' && rest.length === 0) return ok(core.boardWorkspaces.getForProfile(PINNED_PROFILE_ID));
+    if (method === 'POST' && rest[1] === 'default' && rest[0] !== undefined) {
+      core.boardWorkspaces.setDefault(rest[0], PINNED_PROFILE_ID);
+      return NO_CONTENT;
+    }
+    if (method === 'POST' && rest.length === 0) {
+      const ws: BoardWorkspace = {
+        id: typeof b.id === 'string' ? b.id : '',
+        profileId: PINNED_PROFILE_ID,
+        name: requireString(b.name, 'name'),
+        boardIds: intArray(b.boardIds),
+        isDefault: b.isDefault === true,
+      };
+      return ok(core.boardWorkspaces.upsert(ws));
+    }
+    if (method === 'DELETE' && rest[0] !== undefined) {
+      core.boardWorkspaces.delete(rest[0]);
+      return NO_CONTENT;
+    }
+    return NOT_FOUND;
+  }
+
   async function route(
     method: string,
     segments: string[],
@@ -625,10 +1020,29 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
         return metadataRoute(method, rest, query);
       case 'testrail':
         return testrailRoute(method, rest, query, body);
-      // Saved filters are desktop-only in Phase 1; an empty list keeps the
-      // Backlog's JQL dialog working instead of throwing.
+      case 'boards':
+        return boardsRoute(method, rest, query);
+      case 'incidents':
+        return incidentsRoute(method, rest, b);
+      case 'timelogged':
+        return timeLoggedRoute(method, rest, query);
+      case 'teams':
+        return teamsRoute(method, rest, b);
+      case 'pinned-boards':
+        return pinnedBoardsRoute(method, rest, b);
+      case 'board-workspaces':
+        return workspacesRoute(method, rest, b);
+      case 'dashboard':
+        return method === 'GET' && rest[0] === 'snapshot'
+          ? ok(await core.aggregator.buildDashboardSnapshot())
+          : NOT_FOUND;
+      case 'dashboards':
+        if (method !== 'GET') return NOT_FOUND;
+        return rest.length === 0
+          ? ok(await core.dashboards.getDashboards())
+          : ok(await core.dashboards.getDashboardDetails(rest[0]));
       case 'filters':
-        return method === 'GET' && rest.length === 0 ? ok([]) : NOT_FOUND;
+        return filtersRoute(method, rest, b);
       default:
         return NOT_FOUND;
     }

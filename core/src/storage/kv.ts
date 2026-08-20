@@ -2,9 +2,9 @@
 // so are their callers, so the Android backend hydrates into memory at boot
 // rather than forcing every caller to become async.
 
-export type KvTable = 'appSettings' | 'issueCache' | 'metadataCache' | 'trCache';
+export type KvTable = 'appSettings' | 'issueCache' | 'metadataCache' | 'trCache' | 'lists';
 
-export const KV_TABLES: readonly KvTable[] = ['appSettings', 'issueCache', 'metadataCache', 'trCache'];
+export const KV_TABLES: readonly KvTable[] = ['appSettings', 'issueCache', 'metadataCache', 'trCache', 'lists'];
 
 export interface KvRecord {
   json: string;

@@ -1,7 +1,10 @@
 // Composition root shared by the desktop server and the Android shell. Both
 // build the identical service graph; only the injected ports differ.
 
+import { DashboardAggregator } from './jira/aggregator.js';
 import { CachedBoardService, CachedMetadataService } from './jira/cached.js';
+import { JiraCreateIssueService } from './jira/createIssueService.js';
+import { JiraDashboardService } from './jira/dashboardService.js';
 import { JiraBoardService } from './jira/boardService.js';
 import { JiraIssueService } from './jira/issueService.js';
 import { JiraMetadataService } from './jira/metadataService.js';
@@ -9,6 +12,12 @@ import { JiraSession } from './jira/session.js';
 import { JiraWorklogService } from './jira/worklogService.js';
 import { TimeLoggedService } from './jira/timeLogged.js';
 import { AppSettingsRepo, IssueCacheRepo, MetadataCacheRepo } from './storage/repos.js';
+import {
+  KvBoardWorkspaceRepo,
+  KvPinnedBoardRepo,
+  KvSavedFilterRepo,
+  KvTeamRepo,
+} from './storage/lists.js';
 import type { KvStore, PeopleStore } from './storage/kv.js';
 import { TestRailService } from './testrail/service.js';
 import type { Credentials, JiraUser } from './types.js';
@@ -44,6 +53,13 @@ export interface Core {
   metadata: CachedMetadataService;
   timeLogged: TimeLoggedService;
   testrail: TestRailService;
+  dashboards: JiraDashboardService;
+  createIssues: JiraCreateIssueService;
+  aggregator: DashboardAggregator;
+  savedFilters: KvSavedFilterRepo;
+  teams: KvTeamRepo;
+  pinnedBoards: KvPinnedBoardRepo;
+  boardWorkspaces: KvBoardWorkspaceRepo;
   settings: AppSettingsRepo;
   issueCache: IssueCacheRepo;
   metadataCache: MetadataCacheRepo;
@@ -65,6 +81,9 @@ export function createCore(ports: CorePorts): Core {
   const metadata = new CachedMetadataService(new JiraMetadataService(session), metadataCache);
   const timeLogged = new TimeLoggedService(session, issues, worklogs);
   const testrail = new TestRailService(ports.kv, ports.people);
+  const dashboards = new JiraDashboardService(session);
+  const createIssues = new JiraCreateIssueService(session);
+  const aggregator = new DashboardAggregator(session, issues, timeLogged);
 
   return {
     session,
@@ -74,6 +93,13 @@ export function createCore(ports: CorePorts): Core {
     metadata,
     timeLogged,
     testrail,
+    dashboards,
+    createIssues,
+    aggregator,
+    savedFilters: new KvSavedFilterRepo(ports.kv),
+    teams: new KvTeamRepo(ports.kv),
+    pinnedBoards: new KvPinnedBoardRepo(ports.kv),
+    boardWorkspaces: new KvBoardWorkspaceRepo(ports.kv),
     settings: new AppSettingsRepo(ports.kv),
     issueCache: new IssueCacheRepo(ports.kv, now),
     metadataCache,

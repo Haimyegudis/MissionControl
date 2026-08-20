@@ -1,4 +1,5 @@
 import type { Credentials, JiraInstanceType } from '../types.js';
+import { base64Utf8 } from '../base64.js';
 import type { JiraSession } from './session.js';
 
 /**
@@ -78,7 +79,7 @@ export function extractErrorMessage(body: string): string | null {
 
 function authHeader(profile: Credentials): string {
   if (profile.instanceType === 'cloud') {
-    const token = Buffer.from(`${profile.email}:${profile.jiraPat}`, 'utf8').toString('base64');
+    const token = base64Utf8(`${profile.email}:${profile.jiraPat}`);
     return `Basic ${token}`;
   }
   return `Bearer ${profile.jiraPat}`;

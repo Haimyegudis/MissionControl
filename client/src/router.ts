@@ -39,14 +39,26 @@ export const ROUTES: Array<{ id: RouteId; label: string }> = [
 ];
 
 /**
- * Routes ported to the Android shell in Phase 1. Everything else is desktop
+ * Routes the Android build can serve. Only Confluence is excluded: its host
+ * is internal-only and unreachable from a phone, verified on device. Everything else is desktop
  * only for now; isRouteAvailable keeps an unported view unreachable there
  * rather than letting it render against a 404ing dispatcher.
  */
 export const MOBILE_ROUTE_IDS: ReadonlySet<RouteId> = new Set<RouteId>([
+  'dashboard',
   'mywork',
+  'incidents',
+  'boards',
+  'filters',
+  'recent',
+  'timelogged',
+  'dashboards',
+  'team',
+  'traceability',
+  'testrail-cases',
   'testrail-runs',
   'testrail-run',
+  'testrail-reports',
   'settings',
 ]);
 

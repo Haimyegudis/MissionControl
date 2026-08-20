@@ -32,9 +32,10 @@ function harness() {
 }
 
 describe('routing', () => {
-  it('404s a path outside the Phase 1 table', async () => {
+  it('404s a route group the mobile build does not serve', async () => {
     const { dispatch } = harness();
-    expect(await dispatch('GET', '/api/dashboard/snapshot')).toEqual({
+    // Confluence is the one excluded group: its host is internal-only.
+    expect(await dispatch('GET', '/api/confluence/status')).toEqual({
       status: 404,
       body: { message: 'Not available in the mobile build.' },
     });
@@ -360,5 +361,100 @@ describe('MyWork JQL helpers', () => {
     expect(injectUpdatedClause('project = X', new Date(2026, 7, 20, 9, 5))).toBe(
       'project = X AND updated >= "2026-08-20 09:05"',
     );
+  });
+});
+
+
+describe('the wider Jira surface', () => {
+  it('serves saved filters from storage rather than an empty stub', async () => {
+    const { dispatch } = harness();
+    const created = await dispatch('POST', '/api/filters', { name: 'Mine', jql: 'project = ISW' });
+    expect(created.status).toBe(200);
+    const id = (created.body as { id: string }).id;
+    expect(id).toBeTruthy();
+
+    const list = await dispatch('GET', '/api/filters');
+    expect((list.body as unknown[]).length).toBe(1);
+
+    expect(await dispatch('DELETE', `/api/filters/${id}`)).toEqual({ status: 204, body: undefined });
+    expect(await dispatch('GET', '/api/filters')).toEqual({ status: 200, body: [] });
+  });
+
+  it('round-trips a team', async () => {
+    const { dispatch } = harness();
+    const created = await dispatch('POST', '/api/teams', { name: 'Squad', members: ['a', 'b'] });
+    expect((created.body as { members: string[] }).members).toEqual(['a', 'b']);
+    expect(((await dispatch('GET', '/api/teams')).body as unknown[]).length).toBe(1);
+  });
+
+  it('rejects a pinned board with no boardId', async () => {
+    const { dispatch } = harness();
+    expect(await dispatch('POST', '/api/pinned-boards', { name: 'X' })).toEqual({
+      status: 400,
+      body: { message: 'Missing required parameter: boardId' },
+    });
+  });
+
+  it('round-trips a pinned board under the fixed profile', async () => {
+    const { dispatch } = harness();
+    await dispatch('POST', '/api/pinned-boards', { boardId: 12, name: 'Board' });
+    const list = (await dispatch('GET', '/api/pinned-boards')).body as Array<{ boardId: number }>;
+    expect(list.map((b) => b.boardId)).toEqual([12]);
+  });
+
+  it('routes board sub-resources by id', async () => {
+    const { core, dispatch } = harness();
+    const sprints = vi.spyOn(core.boards, 'getActiveSprints').mockResolvedValue([] as never);
+    await dispatch('GET', '/api/boards/42/sprints');
+    expect(sprints).toHaveBeenCalledWith(42);
+  });
+
+  it('rejects a non-numeric board id', async () => {
+    const { dispatch } = harness();
+    expect((await dispatch('GET', '/api/boards/abc/sprints')).status).toBe(400);
+  });
+
+  it('runs the three incident searches in one call', async () => {
+    const { core, dispatch } = harness();
+    const search = vi.spyOn(core.issues, 'searchIssues').mockResolvedValue({ items: [], total: 0 } as never);
+    const res = await dispatch('POST', '/api/incidents/search', { selections: [] });
+    expect(res.status).toBe(200);
+    expect(search).toHaveBeenCalledTimes(3);
+    expect(res.body).toEqual({ all: [], verification: [], rejected: [] });
+  });
+
+  it('exposes the incident filter catalog', async () => {
+    const { dispatch } = harness();
+    const res = await dispatch('GET', '/api/incidents/definitions');
+    expect(Array.isArray(res.body)).toBe(true);
+  });
+
+  it('rejects an unknown time-logged period', async () => {
+    const { dispatch } = harness();
+    expect(await dispatch('GET', '/api/timelogged?period=someday')).toEqual({
+      status: 400,
+      body: { message: 'Invalid period: someday' },
+    });
+  });
+
+  it('requires both ends of a time-logged range', async () => {
+    const { dispatch } = harness();
+    expect((await dispatch('GET', '/api/timelogged/range?from=2026-01-01')).status).toBe(400);
+  });
+
+  it('serves the dashboard snapshot from the aggregator', async () => {
+    const { core, dispatch } = harness();
+    const build = vi.spyOn(core.aggregator, 'buildDashboardSnapshot').mockResolvedValue({ ok: true } as never);
+    expect(await dispatch('GET', '/api/dashboard/snapshot')).toEqual({ status: 200, body: { ok: true } });
+    expect(build).toHaveBeenCalled();
+  });
+
+  it('lists and details Jira dashboards', async () => {
+    const { core, dispatch } = harness();
+    vi.spyOn(core.dashboards, 'getDashboards').mockResolvedValue([] as never);
+    const details = vi.spyOn(core.dashboards, 'getDashboardDetails').mockResolvedValue({ id: '7' } as never);
+    expect((await dispatch('GET', '/api/dashboards')).status).toBe(200);
+    await dispatch('GET', '/api/dashboards/7');
+    expect(details).toHaveBeenCalledWith('7');
   });
 });

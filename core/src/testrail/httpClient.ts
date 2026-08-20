@@ -1,4 +1,5 @@
 import type { TrConnection } from './types.js';
+import { base64Utf8 } from '../base64.js';
 
 /**
  * TestRail HTTP client (Phase 2 — unified-deck plan T6).
@@ -58,7 +59,7 @@ export class TestRailHttp {
     private readonly timeoutMs: number = 60_000,
   ) {
     this.apiBaseUrl = buildApiBaseUrl(connection.baseUrl);
-    const token = Buffer.from(`${connection.email}:${connection.apiKey}`, 'utf8').toString('base64');
+    const token = base64Utf8(`${connection.email}:${connection.apiKey}`);
     this.authorization = `Basic ${token}`;
   }
 

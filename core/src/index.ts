@@ -22,6 +22,12 @@ export {
   toPascalKeys,
   type MetadataCacheEntry,
 } from './storage/repos.js';
+export {
+  KvBoardWorkspaceRepo,
+  KvPinnedBoardRepo,
+  KvSavedFilterRepo,
+  KvTeamRepo,
+} from './storage/lists.js';
 
 // --- composition -------------------------------------------------------------
 export {

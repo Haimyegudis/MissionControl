@@ -21,6 +21,9 @@ const SPECS: Record<KvTable, TableSpec> = {
   issueCache: { table: 'IssueCache', keyCol: 'CacheKey', jsonCol: 'Json', tsCol: 'UpdatedUtc', tsKind: 'iso' },
   metadataCache: { table: 'MetadataCache', keyCol: 'CacheKey', jsonCol: 'Json', tsCol: 'UpdatedUtc', tsKind: 'iso' },
   trCache: { table: 'TestRailCache', keyCol: 'key', jsonCol: 'json', tsCol: 'updatedAt', tsKind: 'epoch' },
+  // Mobile-only: the desktop keeps its row-shaped SavedFilters/Teams/
+  // PinnedBoards/BoardWorkspaces tables and never routes them through here.
+  lists: { table: 'KvLists', keyCol: 'key', jsonCol: 'json', tsCol: 'updatedAt', tsKind: 'epoch' },
 };
 
 function encodeTs(kind: TsKind, ms: number): string | number | null {

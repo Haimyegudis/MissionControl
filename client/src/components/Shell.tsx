@@ -4,6 +4,7 @@ import { lazy, Suspense, useCallback, useEffect, useState, type CSSProperties, t
 import { settings as settingsApi } from '../api/client';
 import { Modal } from './Modal';
 import { BottomTabs } from './BottomTabs';
+import { MobileNav } from './MobileNav';
 import { useIsNarrow } from '../lib/useViewport';
 
 // Lazy — keeps the JQL editor + results grid out of the entry chunk.
@@ -218,6 +219,7 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
   const [refreshRunning, setRefreshRunning] = useState(false);
   const pinned = useStore(pinnedBoardsStore);
   const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem('mc.sidebar') !== '0');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [jqlOpen, setJqlOpen] = useState(false);
 
   const toggleSidebar = () =>
@@ -306,12 +308,15 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* ------------------------------------------------------- top bar --- */}
-      <header className="mc-topbar" style={topBarStyle}>
+      <header
+        className="mc-topbar"
+        style={narrow ? { ...topBarStyle, overflowX: 'hidden', padding: '0 8px', gap: 8 } : topBarStyle}
+      >
         <button
           className="btn btn-icon"
-          title={sidebarOpen ? 'Hide menu' : 'Show menu'}
-          aria-label={sidebarOpen ? 'Hide menu' : 'Show menu'}
-          onClick={toggleSidebar}
+          title={narrow ? 'Menu' : sidebarOpen ? 'Hide menu' : 'Show menu'}
+          aria-label="Menu"
+          onClick={() => (narrow ? setMobileNavOpen(true) : toggleSidebar())}
         >
           ☰
         </button>
@@ -329,6 +334,8 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
         </div>
         <div style={{ flex: 1 }} />
 
+        {!narrow && (
+        <>
         <div className="mc-live" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)' }}>
           <span
             aria-hidden
@@ -366,9 +373,13 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
         >
           ⚡
         </button>
+        </>
+        )}
 
         <NotificationBell />
 
+        {!narrow && (
+        <>
         <button
           className="btn btn-icon"
           title="Help — all features and how to use them (F1)"
@@ -395,6 +406,8 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
         <div className="mc-user" style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
           {session.user?.displayName ?? ''}
         </div>
+        </>
+        )}
       </header>
 
       {/* ---------------------------------------------------- body -------- */}
@@ -488,6 +501,22 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
       {/* On a phone the 220px sidebar is replaced by a bottom tab bar over the
           Phase 1 routes. */}
       {narrow && <BottomTabs active={route} />}
+
+      <MobileNav
+        open={narrow && mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+        active={route}
+        userName={session.user?.displayName ?? ''}
+        themeLabel={themeInfo.label}
+        themeIcon={themeInfo.icon}
+        onCreateIncident={() => onCreateIncident?.()}
+        onOpenPalette={() => openPalette()}
+        onOpenJql={() => setJqlOpen(true)}
+        onOpenHelp={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F1' }))}
+        onToggleTheme={cycleTheme}
+        onRefresh={() => void refreshNow()}
+        refreshRunning={refreshRunning}
+      />
 
       {jqlOpen && (
         <Modal title="JQL search & saved filters" width={1150} maxHeight="90vh" onClose={() => setJqlOpen(false)}>
