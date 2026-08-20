@@ -5,14 +5,19 @@
 import { KV_TABLES, MemoryKvStore, type KvRecord, type KvTable, type PeopleStore, type TestRailPerson } from '@mc/core';
 
 /**
- * Ceiling on a single persisted table. Everything crosses the Capacitor bridge
- * as one JSON string, which the native side copies several times; a Backlog of
- * a couple of thousand issues produced a ~55MB allocation and an
- * OutOfMemoryError. Past this size the table stays in memory for the session
- * instead of being written — a cold start re-fetches, which is far better than
- * a crash.
+ * Ceiling on a single persisted table.
+ *
+ * The original OutOfMemoryError came from Capacitor's debug logging building a
+ * StringBuilder copy of every payload, which turned a few megabytes into a
+ * ~55MB allocation. That logging is now off (loggingBehavior: 'none'), so the
+ * real cost is one JSON string across the bridge and the 2MB emergency cap was
+ * throwing away caches that comfortably fit.
+ *
+ * This matters for speed: below the cap the TestRail cache survives a restart
+ * and cases come back from disk instead of the network. Above it the table
+ * stays in memory for the session only.
  */
-export const MAX_PERSISTED_BYTES = 2 * 1024 * 1024;
+export const MAX_PERSISTED_BYTES = 12 * 1024 * 1024;
 
 export interface KvPersistence {
   read(table: KvTable): Promise<Array<[string, KvRecord]> | null>;

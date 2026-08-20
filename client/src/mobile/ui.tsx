@@ -15,6 +15,7 @@
 //   - text wraps or truncates, never widens its container
 
 import { useEffect, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
+import { pushBackHandler } from './backHandler';
 
 /* ---------------------------------------------------------------- scale --- */
 /**
@@ -391,7 +392,15 @@ export function Sheet({
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    // The back gesture should dismiss the sheet before it touches navigation.
+    const release = pushBackHandler(() => {
+      onClose();
+      return true;
+    });
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      release();
+    };
   }, [open, onClose]);
 
   if (!open) return null;

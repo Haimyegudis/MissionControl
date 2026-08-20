@@ -13,6 +13,7 @@ import {
 } from '@mc/core';
 import { setNativeDispatch } from '../api/client';
 import { LOCK_TIMEOUT_MS, requireUnlock } from './biometric';
+import { handleBack } from '../mobile/backHandler';
 import { KeystoreCredentials } from './credentials';
 import { HydratedKvStore, PreferencesPeopleStore } from './kvStore';
 import { persistenceFor } from './persistence';
@@ -116,9 +117,16 @@ export function installAppListeners(): void {
       backgroundedAt = null;
     });
 
-    void App.addListener('backButton', ({ canGoBack }) => {
-      if (canGoBack) window.history.back();
-      else void App.exitApp();
+    // The shell navigates with React state, so window.history is always empty
+    // and the old check exited on the first gesture. Ask the screen stack
+    // first; only leave when nothing claims the press.
+    void App.addListener('backButton', () => {
+      if (handleBack()) return;
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+      void App.exitApp();
     });
   });
 }

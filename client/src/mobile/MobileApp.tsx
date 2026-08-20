@@ -16,7 +16,7 @@
 // The area lives in the tab bar; the screen within it lives in a tab strip
 // under it. Two levels, both reachable by thumb.
 
-import { lazy, Suspense, useEffect, useState, type CSSProperties } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { DialogHost } from '../dialogs/DialogHost';
 import { ToastHost } from '../components/Toast';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -26,6 +26,8 @@ import { useSplashDismiss, useThemeSync } from '../lib/appChrome';
 import { useStore } from '../stores/useStore';
 import { LoginPage } from '../views/LoginPage';
 import { Loading, tapReset } from './ui';
+import { pushBackHandler } from './backHandler';
+import { pushToast } from '../stores/toasts';
 
 const MobileDashboard = lazy(() => import('./screens/MobileDashboard').then((m) => ({ default: m.MobileDashboard })));
 const MobileTimeSpent = lazy(() => import('./screens/MobileTimeSpent').then((m) => ({ default: m.MobileTimeSpent })));
@@ -84,6 +86,32 @@ export function MobileApp() {
   useEffect(() => {
     void loadSettings();
   }, []);
+
+  // Back gesture: leave a sub-screen first, then return to Jira → Dashboard,
+  // and only ask to exit once already there. Two presses to close, as on any
+  // Android app.
+  const exitArmed = useRef(false);
+  useEffect(
+    () =>
+      pushBackHandler(() => {
+        const home = area === 'jira' && sub.jira === 'dashboard';
+        if (!home) {
+          setArea('jira');
+          setSub((prev) => ({ ...prev, jira: 'dashboard' }));
+          return true;
+        }
+        if (!exitArmed.current) {
+          exitArmed.current = true;
+          pushToast({ title: 'Press back again to exit', body: '', duration: 2000 });
+          window.setTimeout(() => {
+            exitArmed.current = false;
+          }, 2000);
+          return true;
+        }
+        return false; // second press within the window closes the app
+      }),
+    [area, sub.jira],
+  );
 
   if (session.phase !== 'connected') {
     return (

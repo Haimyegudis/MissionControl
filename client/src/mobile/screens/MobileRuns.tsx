@@ -16,6 +16,7 @@ import { pushToast } from '../../stores/toasts';
 import { fmtUnixDate, passPct } from '../../lib/testrail';
 import type { TrRun, TrTest } from '../../testrailTypes';
 import { invalidate, useCached } from '../cache';
+import { pushBackHandler } from '../backHandler';
 import { Empty, ErrorNote, ListCard, Loading, Muted, Pill, Screen, Sheet, tapReset } from '../ui';
 
 /** TestRail's built-in status ids. */
@@ -300,6 +301,16 @@ function CreateRunSheet({ onClose, onCreated }: { onClose: () => void; onCreated
 
 function RunDetail({ run, onBack, onChanged }: { run: TrRun; onBack: () => void; onChanged: () => void }) {
   const [filter, setFilter] = useState<'all' | 'untested' | 'failed'>('all');
+
+  // Back leaves the run rather than the app.
+  useEffect(
+    () =>
+      pushBackHandler(() => {
+        onBack();
+        return true;
+      }),
+    [onBack],
+  );
 
   const res = useCached<TrTest[]>(`run:${run.id}:tests`, () => trApi.tests(run.id), { ttlMs: 60_000 });
 
