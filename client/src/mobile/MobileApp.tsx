@@ -35,15 +35,16 @@ const MobileTimeSpent = lazy(() => import('./screens/MobileTimeSpent').then((m) 
 const MobileIncidents = lazy(() => import('./screens/MobileIncidents').then((m) => ({ default: m.MobileIncidents })));
 const MobileCases = lazy(() => import('./screens/MobileCases').then((m) => ({ default: m.MobileCases })));
 const MobileRuns = lazy(() => import('./screens/MobileRuns').then((m) => ({ default: m.MobileRuns })));
-const MobileConfluence = lazy(() => import('./screens/MobileConfluence').then((m) => ({ default: m.MobileConfluence })));
 const MobileSettings = lazy(() => import('./screens/MobileSettings').then((m) => ({ default: m.MobileSettings })));
 
-export type Area = 'jira' | 'testrail' | 'confluence' | 'more';
+// Confluence is absent by design: it lives on an internal host published only
+// through Zscaler Private Access, and that app segment is not granted to
+// mobile devices, so the screen could never load anything.
+export type Area = 'jira' | 'testrail' | 'more';
 
 const AREAS: ReadonlyArray<{ id: Area; label: string; icon: string }> = [
   { id: 'jira', label: 'Jira', icon: '◈' },
   { id: 'testrail', label: 'TestRail', icon: '✓' },
-  { id: 'confluence', label: 'Wiki', icon: '▤' },
   { id: 'more', label: 'More', icon: '⋯' },
 ];
 
@@ -57,7 +58,6 @@ const SUB: Record<Area, ReadonlyArray<{ id: string; label: string }>> = {
     { id: 'cases', label: 'Cases' },
     { id: 'runs', label: 'Runs' },
   ],
-  confluence: [],
   more: [],
 };
 
@@ -87,7 +87,6 @@ export function MobileApp() {
   const [lastScreen, setLastScreen] = useState<Record<Area, string>>({
     jira: 'dashboard',
     testrail: 'cases',
-    confluence: '',
     more: '',
   });
   // Visited screens, most recent last. Back pops this before anything else.
@@ -183,7 +182,6 @@ export function MobileApp() {
 
   const current = here.screen;
   const screen = (() => {
-    if (area === 'confluence') return <MobileConfluence />;
     if (area === 'more') return <MobileSettings />;
     if (area === 'testrail') return current === 'runs' ? <MobileRuns /> : <MobileCases />;
     if (current === 'incidents') return <MobileIncidents />;

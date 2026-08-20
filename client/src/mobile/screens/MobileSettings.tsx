@@ -9,25 +9,19 @@ import { useEffect, useState } from 'react';
 import { connectTestRail, disconnectTestRail, initTestRail, trStore } from '../../stores/testrail';
 import { sessionStore } from '../../stores/session';
 import { useStore } from '../../stores/useStore';
-import { auth, confluence } from '../../api/client';
+import { auth } from '../../api/client';
 import { pushToast } from '../../stores/toasts';
-import { CONFLUENCE_URL, JIRA_URL, TESTRAIL_URL } from '../../lib/serviceUrls';
-import { Muted, Screen, tapReset } from '../ui';
+import { JIRA_URL, TESTRAIL_URL } from '../../lib/serviceUrls';
+import { Screen, tapReset } from '../ui';
 
 export function MobileSettings() {
   const session = useStore(sessionStore);
   const tr = useStore(trStore);
   const [trKey, setTrKey] = useState('');
-  const [cfPat, setCfPat] = useState('');
-  const [cfConnected, setCfConnected] = useState<boolean | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
     void initTestRail();
-    confluence
-      .status()
-      .then((s) => setCfConnected(s.connected))
-      .catch(() => setCfConnected(false));
   }, []);
 
   const email = session.user?.emailAddress ?? session.profile?.email ?? '';
@@ -109,41 +103,6 @@ export function MobileSettings() {
         )}
       </Block>
 
-      <Block
-        name="Confluence"
-        url={CONFLUENCE_URL}
-        connected={cfConnected === true}
-        detail={cfConnected ? 'Connected' : 'Not connected — corporate VPN only'}
-      >
-        {cfConnected ? null : (
-          <>
-            <Field value={cfPat} onChange={setCfPat} placeholder="Confluence PAT" secret />
-            <Action
-              primary
-              label="Connect"
-              busy={busy === 'cf'}
-              onClick={async () => {
-                setBusy('cf');
-                try {
-                  await confluence.connect(CONFLUENCE_URL, cfPat.trim());
-                  setCfPat('');
-                  setCfConnected(true);
-                  pushToast({ title: 'Confluence', body: 'Connected.' });
-                } catch (e) {
-                  pushToast({
-                    title: 'Confluence',
-                    body: e instanceof Error ? e.message : String(e),
-                    severity: 'error',
-                  });
-                } finally {
-                  setBusy(null);
-                }
-              }}
-            />
-            <Muted>This host is internal-only. It will fail unless the phone is on VPN.</Muted>
-          </>
-        )}
-      </Block>
     </Screen>
   );
 }
