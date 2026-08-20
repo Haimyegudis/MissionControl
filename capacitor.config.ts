@@ -18,6 +18,11 @@ const config: CapacitorConfig = {
     // TestRail REST send no CORS headers, so a WebView-origin fetch to them
     // would be blocked by the browser's same-origin policy.
     CapacitorHttp: { enabled: true },
+    // Share android.webkit.CookieManager between the WebView and native HTTP.
+    // Load-bearing for HP OneUID sign-in: the SAML session cookie is set inside
+    // the in-app login WebView, and CapacitorHttp must send it on REST calls
+    // for cookie authentication to work at all.
+    CapacitorCookies: { enabled: true },
   },
 };
 

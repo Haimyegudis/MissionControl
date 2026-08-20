@@ -5,6 +5,12 @@ export interface TrConnection {
   baseUrl: string;
   email: string;
   apiKey: string;
+  /**
+   * Authenticate with the SAML session cookie instead of the API key. Set only
+   * by the Android shell after an HP OneUID sign-in; when the cookie has
+   * lapsed, requests fall back to the key if one is stored.
+   */
+  cookieAuth?: boolean;
 }
 
 export interface TrProject {

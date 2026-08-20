@@ -63,12 +63,16 @@ export async function buildNativeRuntime(deps: RuntimeDeps): Promise<NativeRunti
     core,
     async reconnectTestRail() {
       const creds = deps.credentials.load();
-      if (!creds || creds.testRailApiKey.trim().length === 0) return;
+      // Under SSO the session cookie stands in for the key, so an empty key is
+      // no longer a reason to skip the reconnect.
+      const sso = creds?.authMode === 'sso';
+      if (!creds || (!sso && creds.testRailApiKey.trim().length === 0)) return;
       try {
         await core.testrail.connect({
           baseUrl: creds.testRailBaseUrl,
           email: creds.testRailEmail,
           apiKey: creds.testRailApiKey,
+          cookieAuth: sso,
         });
       } catch {
         // A failed TestRail reconnect must not block the Jira side of the app.

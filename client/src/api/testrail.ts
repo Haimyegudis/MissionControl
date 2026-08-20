@@ -93,7 +93,7 @@ const freshAmp = (flag?: boolean) => (flag ? '&fresh=1' : '');
 export const trApi = {
   // ---- session ----
   session: () => get<TrSessionStatus>('/api/testrail/session'),
-  connect: (body: { baseUrl: string; email: string; apiKey: string }) =>
+  connect: (body: { baseUrl: string; email: string; apiKey: string; cookieAuth?: boolean }) =>
     post<{ connected: boolean; user: TrUser }>('/api/testrail/session', body),
   disconnect: () => del<void>('/api/testrail/session'),
 

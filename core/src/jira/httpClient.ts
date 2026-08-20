@@ -107,7 +107,10 @@ export async function jiraFetch(
   opts: JiraFetchOptions = {},
 ): Promise<any> {
   const profile = session.profile;
-  if (!profile || profile.jiraPat.trim().length === 0 || profile.jiraBaseUrl.trim().length === 0) {
+  const ssoMode = profile?.authMode === 'sso';
+  // Under SSO the cookie is the credential, so an empty token is legitimate.
+  const missingToken = !ssoMode && (profile?.jiraPat.trim().length ?? 0) === 0;
+  if (!profile || missingToken || profile.jiraBaseUrl.trim().length === 0) {
     throw new Error('No active Jira session.');
   }
 
@@ -121,10 +124,14 @@ export async function jiraFetch(
     }
   }
 
-  const headers: Record<string, string> = {
-    Accept: 'application/json',
-    Authorization: authHeader(profile),
-  };
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  const hasToken = profile.jiraPat.trim().length > 0;
+  // Cookie first under SSO; the header is the fallback once it lapses. Jira
+  // accepts cookie-authenticated writes without an XSRF token on this
+  // instance, verified against POST /rest/api/2/search.
+  if (!ssoMode || session.cookieExpired === true) {
+    if (hasToken) headers.Authorization = authHeader(profile);
+  }
 
   let body: string | undefined;
   if (opts.body !== undefined) {
@@ -157,6 +164,12 @@ export async function jiraFetch(
   if (!response.ok) {
     const text = await response.text().catch(() => '');
     const status = response.status;
+    if (ssoMode && !session.cookieExpired && hasToken && (status === 401 || status === 403)) {
+      // The SAML session has lapsed. Mark it and replay once on the stored
+      // token so background work continues without prompting.
+      session.cookieExpired = true;
+      return jiraFetch(session, path, opts);
+    }
     if (status === 401 || status === 403) {
       throw new JiraError(status, 'You do not have permission to view this Jira resource.');
     }

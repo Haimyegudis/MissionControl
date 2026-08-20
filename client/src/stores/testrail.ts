@@ -255,8 +255,13 @@ export async function resolvePeople(ids: Iterable<number>): Promise<void> {
   void trApi.setPeople(real).catch(() => undefined);
 }
 
-export async function connectTestRail(baseUrl: string, email: string, apiKey: string): Promise<void> {
-  await trApi.connect({ baseUrl, email, apiKey });
+export async function connectTestRail(
+  baseUrl: string,
+  email: string,
+  apiKey: string,
+  cookieAuth = false,
+): Promise<void> {
+  await trApi.connect({ baseUrl, email, apiKey, cookieAuth });
   const session = await trApi.session();
   patch({ phase: 'loading' });
   await afterConnect(session);

@@ -16,6 +16,16 @@ export interface Credentials {
   testRailApiKey: string;
   confluenceBaseUrl: string;
   confluencePat: string;
+  /**
+   * How REST calls authenticate.
+   *
+   * 'pat' (the default, and the only mode the desktop uses) sends the stored
+   * token in an Authorization header. 'sso' omits that header and relies on the
+   * SAML session cookie established by an in-app HP OneUID login, falling back
+   * to the token when the cookie has expired. Optional so existing stored
+   * credentials keep working untouched.
+   */
+  authMode?: 'pat' | 'sso';
 }
 
 // Domain models for JiraWeb — camelCase on the wire.

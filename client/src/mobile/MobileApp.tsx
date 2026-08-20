@@ -25,6 +25,7 @@ import { loadSettings } from '../stores/settings';
 import { useSplashDismiss, useThemeSync } from '../lib/appChrome';
 import { useStore } from '../stores/useStore';
 import { LoginPage } from '../views/LoginPage';
+import { MobileSsoLogin } from './MobileSsoLogin';
 import { Loading, tapReset } from './ui';
 import { pushBackHandler } from './backHandler';
 import { pushToast } from '../stores/toasts';
@@ -172,8 +173,11 @@ export function MobileApp() {
   );
 
   if (session.phase !== 'connected') {
+    // The SSO button sits above the shared LoginPage rather than inside it, so
+    // the desktop component stays exactly as the desktop renders it.
     return (
       <>
+        <MobileSsoLogin />
         <LoginPage />
         <ToastHost />
       </>

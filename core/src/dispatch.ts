@@ -355,7 +355,9 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
       email: typeof body.email === 'string' ? body.email : '',
       jiraBaseUrl:
         typeof body.baseUrl === 'string' && body.baseUrl.trim() ? body.baseUrl : DEFAULT_JIRA_BASE_URL,
-      jiraPat: requireString(body.pat, 'pat'),
+      // Under SSO the session cookie authenticates, so an empty token is
+      // valid; every other caller must still supply one.
+      jiraPat: body.authMode === 'sso' ? String(body.pat ?? '') : requireString(body.pat, 'pat'),
       instanceType: body.instanceType === 'cloud' ? 'cloud' : 'datacenter',
       defaultProjectKey: defaultProjectKey(),
       testRailBaseUrl: saved?.testRailBaseUrl ?? '',
@@ -363,6 +365,7 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
       testRailApiKey: saved?.testRailApiKey ?? '',
       confluenceBaseUrl: saved?.confluenceBaseUrl ?? '',
       confluencePat: saved?.confluencePat ?? '',
+      authMode: body.authMode === 'sso' ? 'sso' : saved?.authMode,
     };
   }
 
@@ -612,10 +615,19 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
         const baseUrl =
           typeof body.baseUrl === 'string' && body.baseUrl.trim() ? body.baseUrl : DEFAULT_TESTRAIL_BASE_URL;
         const email = requireString(body.email, 'email');
-        const apiKey = requireString(body.apiKey, 'apiKey');
-        const user = await service.connect({ baseUrl, email, apiKey });
+        // Under SSO the cookie authenticates, so the key may legitimately be
+        // blank; every other caller still has to supply one.
+        const cookieAuth = body.cookieAuth === true;
+        const apiKey = cookieAuth ? String(body.apiKey ?? '') : requireString(body.apiKey, 'apiKey');
+        const user = await service.connect({ baseUrl, email, apiKey, cookieAuth });
         const saved = core.credentials.load() ?? emptyCredentials();
-        core.credentials.save({ ...saved, testRailBaseUrl: baseUrl, testRailEmail: email, testRailApiKey: apiKey });
+        core.credentials.save({
+          ...saved,
+          testRailBaseUrl: baseUrl,
+          testRailEmail: email,
+          testRailApiKey: apiKey,
+          authMode: cookieAuth ? 'sso' : saved.authMode,
+        });
         return ok({ connected: true, user });
       }
       if (method === 'DELETE') {

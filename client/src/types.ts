@@ -440,6 +440,8 @@ export interface LoginRequest {
   email: string;
   pat: string;
   instanceType: InstanceType;
+  /** Android only: authenticate with the HP OneUID session cookie. */
+  authMode?: 'pat' | 'sso';
 }
 
 // ---------------------------------------------------------------------------

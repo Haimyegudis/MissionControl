@@ -10,22 +10,34 @@ export type SessionChangedListener = () => void;
 export class JiraSession {
   profile: Credentials | null = null;
   currentUser: JiraUser | null = null;
+  /**
+   * Set once a cookie-authenticated call comes back unauthorised, so later
+   * requests go straight to the stored token instead of paying for a doomed
+   * attempt on every call. Reset by a fresh sign-in via activate().
+   */
+  cookieExpired = false;
 
   private readonly listeners = new Set<SessionChangedListener>();
 
   get isConnected(): boolean {
-    return this.profile !== null && this.profile.jiraPat.trim().length > 0;
+    if (this.profile === null) return false;
+    // Under SSO the session cookie is the credential, so a stored token is
+    // optional rather than proof of a connection.
+    if (this.profile.authMode === 'sso') return true;
+    return this.profile.jiraPat.trim().length > 0;
   }
 
   activate(credentials: Credentials, user: JiraUser | null): void {
     this.profile = credentials;
     this.currentUser = user;
+    this.cookieExpired = false;
     this.emit();
   }
 
   clear(): void {
     this.profile = null;
     this.currentUser = null;
+    this.cookieExpired = false;
     this.emit();
   }
 

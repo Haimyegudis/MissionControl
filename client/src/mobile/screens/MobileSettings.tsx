@@ -13,11 +13,13 @@ import { auth } from '../../api/client';
 import { pushToast } from '../../stores/toasts';
 import { JIRA_URL, TESTRAIL_URL } from '../../lib/serviceUrls';
 import { Screen, tapReset } from '../ui';
+import { signInWithSso } from '../../native/sso';
 
 export function MobileSettings() {
   const session = useStore(sessionStore);
   const tr = useStore(trStore);
   const [trKey, setTrKey] = useState('');
+  const [showKey, setShowKey] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,21 +75,27 @@ export function MobileSettings() {
           />
         ) : (
           <>
-            <Field value={trKey} onChange={setTrKey} placeholder="TestRail API key" secret />
             <Action
               primary
-              label="Connect"
-              busy={busy === 'tr'}
+              label="Sign in with HP OneUID"
+              busy={busy === 'tr-sso'}
               onClick={async () => {
-                if (!trKey.trim() || !email) {
-                  pushToast({ title: 'TestRail', body: 'Enter your API key.', severity: 'error' });
+                if (!email) {
+                  pushToast({ title: 'TestRail', body: 'Sign in to Jira first.', severity: 'error' });
                   return;
                 }
-                setBusy('tr');
+                setBusy('tr-sso');
                 try {
-                  await connectTestRail(TESTRAIL_URL, email, trKey.trim());
+                  const signedIn = await signInWithSso('testrail', TESTRAIL_URL);
+                  if (!signedIn) {
+                    pushToast({ title: 'TestRail', body: 'Sign-in cancelled.', severity: 'error' });
+                    return;
+                  }
+                  // The SAML cookie now lives in the shared jar; the stored key
+                  // (if any) stays as the fallback for when it expires.
+                  await connectTestRail(TESTRAIL_URL, email, trKey.trim(), true);
                   setTrKey('');
-                  pushToast({ title: 'TestRail', body: 'Connected.' });
+                  pushToast({ title: 'TestRail', body: 'Signed in.' });
                 } catch (e) {
                   pushToast({
                     title: 'TestRail',
@@ -99,6 +107,43 @@ export function MobileSettings() {
                 }
               }}
             />
+
+            <button
+              onClick={() => setShowKey((v) => !v)}
+              style={{ ...tapReset, background: 'none', border: 'none', color: 'var(--muted)', fontSize: 12, minHeight: 40 }}
+            >
+              {showKey ? 'Hide API key' : 'Use an API key instead'}
+            </button>
+
+            {showKey ? (
+              <>
+                <Field value={trKey} onChange={setTrKey} placeholder="TestRail API key" secret />
+                <Action
+                  label="Connect with key"
+                  busy={busy === 'tr'}
+                  onClick={async () => {
+                    if (!trKey.trim() || !email) {
+                      pushToast({ title: 'TestRail', body: 'Enter your API key.', severity: 'error' });
+                      return;
+                    }
+                    setBusy('tr');
+                    try {
+                      await connectTestRail(TESTRAIL_URL, email, trKey.trim());
+                      setTrKey('');
+                      pushToast({ title: 'TestRail', body: 'Connected.' });
+                    } catch (e) {
+                      pushToast({
+                        title: 'TestRail',
+                        body: e instanceof Error ? e.message : String(e),
+                        severity: 'error',
+                      });
+                    } finally {
+                      setBusy(null);
+                    }
+                  }}
+                />
+              </>
+            ) : null}
           </>
         )}
       </Block>

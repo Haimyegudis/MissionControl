@@ -118,6 +118,31 @@ describe('buildNativeRuntime', () => {
       baseUrl: CREDS.testRailBaseUrl,
       email: CREDS.testRailEmail,
       apiKey: CREDS.testRailApiKey,
+      cookieAuth: false,
+    });
+  });
+
+  it('reconnects TestRail under SSO even with no stored API key', async () => {
+    // The SAML cookie is the credential in this mode, so an empty key must not
+    // short-circuit the reconnect the way it does for token auth.
+    const connect = vi.fn(async () => ({ id: 1, name: 'Me', email: 'a@hp.com' }));
+    const runtime = await buildNativeRuntime(
+      deps({
+        credentials: {
+          hydrate: async () => {},
+          load: () => ({ ...CREDS, testRailApiKey: '', authMode: 'sso' as const }),
+          save: () => {},
+          clear: () => {},
+        } as RuntimeDeps['credentials'],
+      }),
+    );
+    vi.spyOn(runtime.core.testrail, 'connect').mockImplementation(connect as never);
+    await runtime.reconnectTestRail();
+    expect(connect).toHaveBeenCalledWith({
+      baseUrl: CREDS.testRailBaseUrl,
+      email: CREDS.testRailEmail,
+      apiKey: '',
+      cookieAuth: true,
     });
   });
 
