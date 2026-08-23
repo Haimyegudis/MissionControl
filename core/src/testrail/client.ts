@@ -230,9 +230,10 @@ export class TestRailClient implements TestRailClientLike {
   }
 
   getUsers(projectId?: number | null): Promise<TrUser[]> {
-    // Non-admin accounts may only list users scoped to a project (TestRail 6.6+).
+    // Non-admin accounts may only list users scoped to a project (TestRail
+    // 6.6+). TestRail models that as a path segment, not a query parameter.
     const command =
-      projectId === null || projectId === undefined ? 'get_users' : `get_users&project_id=${projectId}`;
+      projectId === null || projectId === undefined ? 'get_users' : `get_users/${projectId}`;
     return this.getPaged(command, 'users', readUser, { paginateArrayForm: true });
   }
 

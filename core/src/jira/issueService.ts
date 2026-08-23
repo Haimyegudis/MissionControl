@@ -11,7 +11,7 @@ function sanitizeDescriptionHtml(html: string): string {
       img: ['src', 'alt', 'title', 'width', 'height'],
       '*': ['class'],
     },
-    allowedSchemes: ['http', 'https', 'data'],
+    allowedSchemes: ['https', 'data'],
     disallowedTagsMode: 'discard',
   });
 }

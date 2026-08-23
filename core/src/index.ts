@@ -81,6 +81,21 @@ export { jqlQuote } from './jira/jqlEscape.js';
 export { DashboardAggregator } from './jira/aggregator.js';
 export { metadataWarmup } from './jira/warmup.js';
 
+// --- watch -------------------------------------------------------------------
+export {
+  DEFAULT_WATCH_CONFIG,
+  WATCH_EVENT_KINDS,
+  WATCH_INTERVALS,
+  diffSnapshots,
+  sanitizeWatchConfig,
+  type IssueSnapshot,
+  type WatchConfig,
+  type WatchEvent,
+  type WatchEventKind,
+} from './watch/differ.js';
+export { KvWatchRepo, WatchService } from './watch/service.js';
+export { FEED_CAP, type WatchState } from './watch/types.js';
+
 // --- Confluence --------------------------------------------------------------
 export { ConfluenceApiError, ConfluenceClient } from './confluence/client.js';
 export {

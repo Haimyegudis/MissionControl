@@ -334,6 +334,9 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
 
   function authStatus(): unknown {
     const profile = core.session.profile;
+    // The saved identity carries no secret, and travels even while
+    // disconnected so a re-login only has to ask for the token.
+    const saved = core.credentials.load();
     return {
       connected: core.session.isConnected,
       user: core.session.currentUser,
@@ -346,6 +349,10 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
             authMode: profile.authMode,
           }
         : null,
+      saved:
+        saved && saved.email.trim().length > 0
+          ? { email: saved.email, jiraBaseUrl: saved.jiraBaseUrl, instanceType: saved.instanceType }
+          : null,
     };
   }
 
@@ -387,9 +394,20 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
     if (method === 'POST' && action === 'logout') {
       // Disconnect Jira without destroying an independent TestRail connection.
       const saved = core.credentials.load();
-      if (saved) core.credentials.save({ ...saved, email: '', jiraBaseUrl: '', jiraPat: '' });
+      if (saved) {
+        core.credentials.save({
+          ...saved,
+          email: '',
+          jiraBaseUrl: '',
+          jiraPat: '',
+          authMode: saved.testRailBaseUrl && saved.authMode === 'sso' ? 'sso' : undefined,
+        });
+      }
       else core.credentials.clear();
       core.session.clear();
+      core.issueCache.clearAll();
+      core.metadataCache.clearAll();
+      core.issues.resetFieldCache();
       return NO_CONTENT;
     }
     return NOT_FOUND;
@@ -556,6 +574,17 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
       core.testrail.disconnect();
       return NO_CONTENT;
     }
+    if (method === 'POST' && rest[0] === 'erase-local-data') {
+      if (String(b.confirmation ?? '') !== 'ERASE') {
+        throw new DispatchError(400, 'Confirmation must be ERASE.');
+      }
+      core.credentials.clear();
+      core.session.clear();
+      core.testrail.disconnect();
+      core.clearLocalData();
+      core.issues.resetFieldCache();
+      return NO_CONTENT;
+    }
     return NOT_FOUND;
   }
 
@@ -635,9 +664,17 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
       }
       if (method === 'DELETE') {
         service.disconnect();
+        service.clearCache();
+        service.setPeople({});
         const saved = core.credentials.load();
         if (saved) {
-          core.credentials.save({ ...saved, testRailBaseUrl: '', testRailEmail: '', testRailApiKey: '' });
+          core.credentials.save({
+            ...saved,
+            testRailBaseUrl: '',
+            testRailEmail: '',
+            testRailApiKey: '',
+            authMode: saved.jiraBaseUrl && saved.authMode === 'sso' ? 'sso' : undefined,
+          });
         }
         return NO_CONTENT;
       }

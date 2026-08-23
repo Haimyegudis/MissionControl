@@ -19,9 +19,10 @@ import {
   KvSavedFilterRepo,
   KvTeamRepo,
 } from './storage/lists.js';
-import type { KvStore, PeopleStore } from './storage/kv.js';
+import { KV_TABLES, type KvStore, type PeopleStore } from './storage/kv.js';
 import { ConfluenceService } from './confluence/service.js';
 import { TestRailService } from './testrail/service.js';
+import { KvWatchRepo, WatchService } from './watch/service.js';
 import type { Credentials, JiraUser } from './types.js';
 
 export interface CredentialsPort {
@@ -59,6 +60,7 @@ export interface Core {
   dashboards: JiraDashboardService;
   createIssues: JiraCreateIssueService;
   aggregator: DashboardAggregator;
+  watch: WatchService;
   savedFilters: KvSavedFilterRepo;
   createDefaults: KvCreateDefaultsRepo;
   teams: KvTeamRepo;
@@ -73,6 +75,8 @@ export interface Core {
   getDistinct(projectKey: string, fieldName: string, maxIssues: number): Promise<string[]>;
   /** Verify a profile without touching the live session. */
   testConnection(credentials: Credentials, probe?: ConnectionProbe): Promise<JiraUser>;
+  /** Erase every locally persisted table plus the TestRail people directory. */
+  clearLocalData(): void;
 }
 
 export function createCore(ports: CorePorts): Core {
@@ -89,6 +93,21 @@ export function createCore(ports: CorePorts): Core {
   const dashboards = new JiraDashboardService(session);
   const createIssues = new JiraCreateIssueService(session);
   const aggregator = new DashboardAggregator(session, issues, timeLogged);
+  const settings = new AppSettingsRepo(ports.kv);
+
+  // Project resolution mirrors the dispatcher's: the signed-in profile wins,
+  // then the saved settings, then the single-project deployment default.
+  const watch = new WatchService(session, new KvWatchRepo(ports.kv), () => {
+    const fromSession = session.profile?.defaultProjectKey?.trim();
+    if (fromSession) return fromSession;
+    try {
+      const fromSettings = settings.get().defaultProjectKey?.trim();
+      if (fromSettings) return fromSettings;
+    } catch {
+      // settings failures must not break project resolution
+    }
+    return 'ISW';
+  });
 
   return {
     session,
@@ -102,12 +121,13 @@ export function createCore(ports: CorePorts): Core {
     dashboards,
     createIssues,
     aggregator,
+    watch,
     savedFilters: new KvSavedFilterRepo(ports.kv),
     createDefaults: new KvCreateDefaultsRepo(ports.kv),
     teams: new KvTeamRepo(ports.kv),
     pinnedBoards: new KvPinnedBoardRepo(ports.kv),
     boardWorkspaces: new KvBoardWorkspaceRepo(ports.kv),
-    settings: new AppSettingsRepo(ports.kv),
+    settings,
     issueCache: new IssueCacheRepo(ports.kv, now),
     metadataCache,
     credentials: ports.credentials,
@@ -120,6 +140,10 @@ export function createCore(ports: CorePorts): Core {
       const throwaway = new JiraSession();
       throwaway.activate(credentials, null);
       return probe(throwaway);
+    },
+    clearLocalData: () => {
+      for (const table of KV_TABLES) ports.kv.clear(table);
+      ports.people.clear();
     },
   };
 }
