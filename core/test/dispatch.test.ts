@@ -246,6 +246,40 @@ describe('cached-search (MyWork delta)', () => {
     expect((res.body as { fromCache: boolean }).fromCache).toBe(false);
   });
 
+  it('re-runs the full query on schedule however often it is polled', async () => {
+    // The scheduler hits this route every couple of minutes. Each hit used to
+    // restamp the cache row, so "younger than an hour" stayed true forever, the
+    // full query never ran again, and a row that left the JQL scope could never
+    // be dropped — the board looked frozen.
+    let clock = 1_700_000_000_000;
+    const core = createCore({
+      kv: new MemoryKvStore(),
+      people: new MemoryPeopleStore(),
+      credentials: { load: () => null, save: () => {}, clear: () => {} },
+      now: () => clock,
+    });
+    const search = vi.spyOn(core.issues, 'searchIssues');
+    search.mockResolvedValue({ items: [{ key: 'A-1' }, { key: 'A-2' }], total: 2 } as never);
+    const d = createDispatcher(core, { probe: async () => USER });
+
+    await d('POST', '/api/issues/cached-search', { cacheKey: 'mywork', jql: 'project = X' });
+
+    // 40 polls at 2 min = 80 min of ticking, all on the delta path.
+    search.mockResolvedValue({ items: [], total: 0 } as never);
+    for (let i = 0; i < 40; i += 1) {
+      clock += 2 * 60 * 1000;
+      await d('POST', '/api/issues/cached-search', { cacheKey: 'mywork', jql: 'project = X' });
+    }
+
+    // A-2 has since left the query. The next call past the window must be a
+    // full search, and must drop it.
+    search.mockResolvedValue({ items: [{ key: 'A-1' }], total: 1 } as never);
+    const res = await d('POST', '/api/issues/cached-search', { cacheKey: 'mywork', jql: 'project = X' });
+    const body = res.body as { issues: Array<{ key: string }>; fromCache: boolean };
+    expect(body.fromCache).toBe(false);
+    expect(body.issues.map((i) => i.key)).toEqual(['A-1']);
+  });
+
   it('a cache inside the freshness window uses the delta path', async () => {
     let clock = 1_700_000_000_000;
     const core = createCore({

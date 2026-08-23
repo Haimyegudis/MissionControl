@@ -421,7 +421,11 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
 
     const cached = core.issueCache.getCached(cacheKey);
     const lastRefresh = core.issueCache.getLastRefresh(cacheKey);
-    const fresh = lastRefresh !== null && now().getTime() - lastRefresh.getTime() < CACHE_FRESH_MS;
+    // Freshness is measured from the last FULL query, not the last write:
+    // deltas only add and replace rows, so without a periodic full re-run an
+    // issue that leaves the JQL scope would stay on screen forever.
+    const lastFull = core.issueCache.getLastFullRefresh(cacheKey);
+    const fresh = lastFull !== null && now().getTime() - lastFull.getTime() < CACHE_FRESH_MS;
 
     let issues: JiraIssue[];
     let totalCount: number;
@@ -444,7 +448,7 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
       fromCache = false;
     }
 
-    core.issueCache.saveCache(cacheKey, issues);
+    core.issueCache.saveCache(cacheKey, issues, !fromCache);
     const refreshed = core.issueCache.getLastRefresh(cacheKey);
     return ok({ issues, totalCount, fromCache, lastRefresh: (refreshed ?? now()).toISOString() });
   }

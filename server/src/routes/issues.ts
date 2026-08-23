@@ -38,8 +38,11 @@ export function issueRoutes(deps: AppDeps): Router {
 
       const cached = deps.repos.issueCache.getCached(cacheKey);
       const lastRefresh = deps.repos.issueCache.getLastRefresh(cacheKey);
-      const fresh =
-        lastRefresh !== null && now().getTime() - lastRefresh.getTime() < CACHE_FRESH_MS;
+      // Freshness is measured from the last FULL query, not the last write:
+      // deltas only add and replace rows, so without a periodic full re-run an
+      // issue that leaves the JQL scope would stay on screen forever.
+      const lastFull = deps.repos.issueCache.getLastFullRefresh(cacheKey);
+      const fresh = lastFull !== null && now().getTime() - lastFull.getTime() < CACHE_FRESH_MS;
 
       let issues: JiraIssue[];
       let totalCount: number;
@@ -65,7 +68,7 @@ export function issueRoutes(deps: AppDeps): Router {
         fromCache = false;
       }
 
-      deps.repos.issueCache.saveCache(cacheKey, issues);
+      deps.repos.issueCache.saveCache(cacheKey, issues, !fromCache);
       const refreshed = deps.repos.issueCache.getLastRefresh(cacheKey);
       res.json({
         issues,

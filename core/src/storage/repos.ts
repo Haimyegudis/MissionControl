@@ -80,6 +80,16 @@ export class AppSettingsRepo {
   }
 }
 
+/**
+ * Marker row recording when a cache key was last populated by a FULL query.
+ * `saveCache` runs on every request including delta merges, so the data row's
+ * own timestamp can never age out — using it as the freshness clock meant the
+ * full query ran exactly once and the list could only ever grow.
+ */
+function fullRefreshKey(cacheKey: string): string {
+  return `full:${cacheKey}`;
+}
+
 export class IssueCacheRepo {
   constructor(
     private readonly kv: KvStore,
@@ -98,12 +108,22 @@ export class IssueCacheRepo {
     }
   }
 
-  saveCache(cacheKey: string, issues: JiraIssue[]): void {
-    this.kv.set('issueCache', cacheKey, JSON.stringify(toPascalKeys(issues)), this.now());
+  /** `full` marks a result that came from re-running the whole query. */
+  saveCache(cacheKey: string, issues: JiraIssue[], full = false): void {
+    const now = this.now();
+    this.kv.set('issueCache', cacheKey, JSON.stringify(toPascalKeys(issues)), now);
+    if (full) this.kv.set('issueCache', fullRefreshKey(cacheKey), '1', now);
   }
 
+  /** When this key last saw any write — the base for the next delta window. */
   getLastRefresh(cacheKey: string): Date | null {
     const row = this.kv.get('issueCache', cacheKey);
+    return row ? new Date(row.updatedAt) : null;
+  }
+
+  /** When this key last came from a full query, or null if it never has. */
+  getLastFullRefresh(cacheKey: string): Date | null {
+    const row = this.kv.get('issueCache', fullRefreshKey(cacheKey));
     return row ? new Date(row.updatedAt) : null;
   }
 

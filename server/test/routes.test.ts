@@ -167,6 +167,7 @@ function makeDeps(): AppDeps {
         getCached: vi.fn(() => [] as JiraIssue[]),
         saveCache: vi.fn(),
         getLastRefresh: vi.fn(() => null as Date | null),
+        getLastFullRefresh: vi.fn(() => null as Date | null),
         clearAll: vi.fn(),
       },
       metadataCache: {
@@ -350,6 +351,8 @@ describe('POST /issues/cached-search', () => {
       issue('ISW-2'),
     ]);
     (deps.repos.issueCache.getLastRefresh as ReturnType<typeof vi.fn>).mockReturnValue(lastRefresh);
+    // Freshness is judged from the last FULL query, not the last write.
+    (deps.repos.issueCache.getLastFullRefresh as ReturnType<typeof vi.fn>).mockReturnValue(lastRefresh);
     (deps.issues.searchIssues as ReturnType<typeof vi.fn>).mockResolvedValue(
       paged([issue('isw-1', { summary: 'new summary' }), issue('ISW-3')], 2),
     );
@@ -381,6 +384,7 @@ describe('POST /issues/cached-search', () => {
     expect(deps.repos.issueCache.saveCache).toHaveBeenCalledWith(
       'mywork:test',
       expect.arrayContaining([expect.objectContaining({ key: 'ISW-3' })]),
+      false, // a delta merge must not restamp the full-refresh clock
     );
   });
 
@@ -400,6 +404,8 @@ describe('POST /issues/cached-search', () => {
     expect(body.fromCache).toBe(false);
     expect(body.totalCount).toBe(42);
     expect(body.issues).toHaveLength(1);
+    // Only a full fetch may stamp the full-refresh clock.
+    expect(deps.repos.issueCache.saveCache).toHaveBeenCalledWith('mywork:test', expect.any(Array), true);
   });
 });
 

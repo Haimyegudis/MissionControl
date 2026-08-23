@@ -124,8 +124,10 @@ export interface AppSettingsRepoDep {
 
 export interface IssueCacheRepoDep {
   getCached(cacheKey: string): JiraIssue[];
-  saveCache(cacheKey: string, issues: JiraIssue[]): void;
+  /** `full` marks a result that came from re-running the whole query. */
+  saveCache(cacheKey: string, issues: JiraIssue[], full?: boolean): void;
   getLastRefresh(cacheKey: string): Date | null;
+  getLastFullRefresh(cacheKey: string): Date | null;
   clearAll(): void;
 }
 
