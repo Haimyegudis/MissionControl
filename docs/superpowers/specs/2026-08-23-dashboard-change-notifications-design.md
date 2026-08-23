@@ -32,7 +32,19 @@ Seven event kinds, all enabled by default, each individually toggleable:
 
 An `unassigned` event carries the reason it left (`reassigned` / `done` /
 `left-sprint`) derived from the delta query's copy of the issue, so the toast
-can say why rather than just "gone".
+can say why rather than just "gone". When the issue is absent from the delta
+results — it changed longer ago than the delta window, after a long gap between
+cycles — `reason` is omitted and the event reads "no longer on your dashboard".
+
+`WatchConfig`:
+
+```ts
+interface WatchConfig {
+  enabled: boolean;
+  intervalMinutes: 5 | 10 | 15 | 30;   // default 5
+  kinds: Record<WatchEventKind, boolean>;  // default: all true
+}
+```
 
 ## Architecture
 
