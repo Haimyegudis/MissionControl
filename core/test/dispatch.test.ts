@@ -32,6 +32,22 @@ function harness() {
 }
 
 describe('routing', () => {
+  it('answers the watch routes natively', async () => {
+    const { dispatch } = harness();
+
+    const feed = await dispatch('GET', '/api/watch/feed');
+    expect(feed.status).toBe(200);
+    expect(feed.body).toMatchObject({ unreadCount: 0, events: [], lastCycle: null });
+
+    const config = await dispatch('PUT', '/api/watch/config', { intervalMinutes: 99 });
+    expect(config.status).toBe(200);
+    expect((config.body as { intervalMinutes: number }).intervalMinutes).toBe(5);
+    expect(((await dispatch('GET', '/api/watch/config')).body as { intervalMinutes: number }).intervalMinutes).toBe(5);
+
+    expect((await dispatch('POST', '/api/watch/ack', {})).status).toBe(200);
+    expect((await dispatch('DELETE', '/api/watch/feed')).status).toBe(404);
+  });
+
   it('404s a route group the mobile build does not serve', async () => {
     const { dispatch } = harness();
     // Lumo is desktop-only: it needs a local model runner.
@@ -57,7 +73,7 @@ describe('auth', () => {
     const { dispatch } = harness();
     expect(await dispatch('GET', '/api/auth/status')).toEqual({
       status: 200,
-      body: { connected: false, user: null, profile: null },
+      body: { connected: false, user: null, profile: null, saved: null },
     });
   });
 
@@ -101,11 +117,13 @@ describe('auth', () => {
     await dispatch('POST', '/api/auth/login', { email: 'me@hp.com', pat: 'pat' });
     await dispatch('POST', '/api/testrail/session', { email: 'me@hp.com', apiKey: 'trkey' });
     expect(saved()?.testRailApiKey).toBe('trkey');
+    core.issueCache.saveCache('mywork', [{ key: 'A-1' } as never]);
 
     expect(await dispatch('POST', '/api/auth/logout')).toEqual({ status: 204, body: undefined });
     expect(saved()?.jiraPat).toBe('');
     expect(saved()?.email).toBe('');
     expect(saved()?.testRailApiKey).toBe('trkey');
+    expect(core.issueCache.getCached('mywork')).toEqual([]);
   });
 });
 
@@ -274,6 +292,23 @@ describe('settings', () => {
     core.issueCache.saveCache('mywork', [{ key: 'A-1' } as never]);
     expect(await dispatch('POST', '/api/settings/clear-issue-cache')).toEqual({ status: 204, body: undefined });
     expect(core.issueCache.getCached('mywork')).toEqual([]);
+  });
+
+  it('erase-local-data removes credentials, caches, settings and people', async () => {
+    const { core, dispatch, saved } = harness();
+    await dispatch('POST', '/api/auth/login', { email: 'me@hp.com', pat: 'pat' });
+    core.issueCache.saveCache('mywork', [{ key: 'A-1' } as never]);
+    core.settings.save({ ...core.settings.get(), theme: 'Light' });
+    core.testrail.setPeople({ '4': 'Dana' });
+
+    expect(await dispatch('POST', '/api/settings/erase-local-data', { confirmation: 'ERASE' })).toEqual({
+      status: 204,
+      body: undefined,
+    });
+    expect(saved()).toBeNull();
+    expect(core.issueCache.getCached('mywork')).toEqual([]);
+    expect(core.settings.get().theme).toBe('Dark');
+    expect(core.testrail.getPeople()).toEqual({});
   });
 });
 

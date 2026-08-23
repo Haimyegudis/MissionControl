@@ -94,10 +94,10 @@ describe('TestRail case mapping', () => {
     expect(getJson).toHaveBeenCalledWith('get_cases/9&limit=250&offset=0');
   });
 
-  it('getUsers scopes to a project via get_users&project_id', async () => {
+  it('getUsers scopes to a project via the required path segment', async () => {
     const { client, getJson } = makeClient(() => []);
     await client.getUsers(12);
-    expect(getJson).toHaveBeenCalledWith('get_users&project_id=12&limit=250&offset=0');
+    expect(getJson).toHaveBeenCalledWith('get_users/12&limit=250&offset=0');
     await client.getUsers();
     expect(getJson).toHaveBeenCalledWith('get_users&limit=250&offset=0');
   });

@@ -1201,6 +1201,27 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
     return NOT_FOUND;
   }
 
+  /** /api/watch — dashboard change feed, mirroring server/src/routes/watch.ts. */
+  async function watchRoute(
+    method: string,
+    rest: string[],
+    body: Record<string, unknown>,
+  ): Promise<DispatchResponse> {
+    const [sub] = rest;
+    if (method === 'GET' && sub === 'feed') return ok(core.watch.feed());
+    if (method === 'GET' && sub === 'config') return ok(core.watch.getConfig());
+    if (method === 'PUT' && sub === 'config') return ok(core.watch.setConfig(body));
+    if (method === 'POST' && sub === 'ack') {
+      core.watch.ack();
+      return ok(core.watch.feed());
+    }
+    if (method === 'POST' && sub === 'run') {
+      const events = await core.watch.runCycle();
+      return ok({ count: events.length, ...core.watch.feed() });
+    }
+    return NOT_FOUND;
+  }
+
   async function route(
     method: string,
     segments: string[],
@@ -1240,6 +1261,8 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
         return method === 'GET' && rest[0] === 'snapshot'
           ? ok(await snapshot(isFresh(query)))
           : NOT_FOUND;
+      case 'watch':
+        return watchRoute(method, rest, b);
       case 'dashboards':
         if (method !== 'GET') return NOT_FOUND;
         return rest.length === 0
