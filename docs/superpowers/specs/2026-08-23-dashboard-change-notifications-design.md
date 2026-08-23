@@ -128,6 +128,26 @@ never a per-issue fetch.
 and emits zero events. Installing the feature must not produce forty
 notifications for work that was already there.
 
+**Catch-up on start:** because the snapshot is persisted rather than held in
+memory, the first cycle after launch diffs against whatever was stored when the
+app last ran. Everything that changed while Mission Control was closed is
+reported then, however long the gap. The desktop timer therefore fires one cycle
+immediately on server start rather than waiting a full interval.
+
+This is a state diff, not a changelog replay, and two consequences follow:
+
+- Intermediate steps collapse. `To Do -> In Progress -> Done` during downtime
+  produces a single `status` event reading `To Do -> Done`. The user sees where
+  the issue landed, not the path it took.
+- Several comments collapse into one `comment` event carrying the count
+  ("3 new comments"), since only the total is compared.
+
+Detection coverage itself does not degrade with downtime: the membership query
+returns the current state of every sprint issue, so status / sprint / priority /
+due-date / comment diffs are found regardless of the gap. Only the `unassigned`
+reason depends on the delta window, and after long downtime it is simply
+omitted.
+
 ### 4. Desktop delivery
 
 `server/src/watch.ts` — a `setInterval` at the configured interval (default 5
@@ -237,6 +257,9 @@ negative count.
 - `core/test/watchService.test.ts` — cycle orchestration against a stubbed
   fetch: both queries issued, comment totals read, state written, and a failed
   query leaving state untouched.
+- Catch-up: a stored snapshot days old still yields events on the first cycle;
+  a status that moved twice yields one event naming the final status; several
+  new comments yield one event carrying the count.
 - `server/test/watchRoutes.test.ts` — feed/ack/config/run routes, config
   sanitization, 503 when not connected.
 - `core/test/dispatch.test.ts` — the four `/api/watch/*` paths answered natively.
