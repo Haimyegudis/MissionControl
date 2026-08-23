@@ -118,6 +118,71 @@ export function dashboardSprintJql(project: string, userFilter: string): string 
   );
 }
 
+export interface ActiveSprint {
+  name: string;
+  endDate: string | null;
+  /** Whole days from now to endDate, floored at 0. Null when open-ended. */
+  daysLeft: number | null;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The sprint the loaded issues belong to. Derived from the issues rather than
+ * a hardcoded board so it stays correct for whatever board the user works on;
+ * the caller falls back to the board API when this returns null.
+ */
+export function resolveActiveSprint(
+  issues: readonly Pick<JiraIssue, 'sprint' | 'allSprints'>[],
+  now: Date = new Date(),
+): ActiveSprint | null {
+  const counts = new Map<string, number>();
+  for (const issue of issues) {
+    const name = issue.sprint?.trim();
+    if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  if (counts.size === 0) return null;
+
+  let name = '';
+  let best = -1;
+  for (const [candidate, count] of counts) {
+    if (count > best) {
+      best = count;
+      name = candidate;
+    }
+  }
+
+  const info = issues
+    .flatMap((issue) => issue.allSprints ?? [])
+    .find((sprint) => sprint.name === name && sprint.state.toLowerCase() === 'active');
+  const parsed = info?.endDate ? Date.parse(info.endDate) : Number.NaN;
+  if (Number.isNaN(parsed)) return { name, endDate: null, daysLeft: null };
+
+  return {
+    name,
+    endDate: info?.endDate ?? null,
+    daysLeft: Math.max(0, Math.ceil((parsed - now.getTime()) / DAY_MS)),
+  };
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** Sprint name plus countdown, with no card title — the phone shows this bare. */
+export function formatSprintLine(sprint: ActiveSprint | null): string | null {
+  if (!sprint) return null;
+  if (sprint.daysLeft === null || sprint.endDate === null) return sprint.name;
+  if (sprint.daysLeft === 0) return `${sprint.name} · ends today`;
+  const end = new Date(sprint.endDate);
+  const ends = `${end.getUTCDate()} ${MONTHS[end.getUTCMonth()]}`;
+  return `${sprint.name} · ${sprint.daysLeft} day${sprint.daysLeft === 1 ? '' : 's'} left (ends ${ends})`;
+}
+
+/** Card title line: name, countdown and end date when they are known. */
+export function formatSprintHeader(sprint: ActiveSprint | null): string {
+  const line = formatSprintLine(sprint);
+  return line === null ? 'My Current Sprint' : `My Current Sprint — ${line}`;
+}
+
 /** Sort: IsStarred DESC, then OriginalOrder (stable float-to-top). */
 export function sortSprintIssues<T extends Pick<JiraIssue, 'isStarred' | 'originalOrder'>>(issues: readonly T[]): T[] {
   return [...issues].sort(

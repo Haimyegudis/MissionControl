@@ -7,7 +7,14 @@
 // values commit only after a load succeeds — no clear-then-load flash.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api, dashboard as dashboardApi, issues as issuesApi, metadata } from '../api/client';
+import {
+  api,
+  boards as boardsApi,
+  dashboard as dashboardApi,
+  issues as issuesApi,
+  metadata,
+  pinnedBoards as pinnedBoardsApi,
+} from '../api/client';
 import type { GridColumn } from '../components/DataGrid';
 import { ResponsiveGrid } from '../components/ResponsiveGrid';
 import { Kanban } from '../components/Kanban';
@@ -22,12 +29,15 @@ import { formatDateTime } from '../lib/format';
 import {
   countOnHold,
   dashboardSprintJql,
+  formatSprintHeader,
+  resolveActiveSprint,
   formatHoursMinutes,
   needsCloseDialog,
   pickTransition,
   resolveDashboardWidgets,
   sortSprintIssues,
   stampOriginalOrder,
+  type ActiveSprint,
 } from '../lib/viewDashboard';
 import { onTick } from '../stores/scheduler';
 import { sessionStore } from '../stores/session';
@@ -74,6 +84,8 @@ export function DashboardView() {
   const [roster, setRoster] = useState<string[]>([]);
   const [wipColumn, setWipColumn] = useState<string | null>(null);
   const [drillKpi, setDrillKpi] = useState<{ id: string; title: string } | null>(null);
+  // Only used when the loaded issues carry no sprint of their own.
+  const [boardSprint, setBoardSprint] = useState<ActiveSprint | null>(null);
 
   const userFilterRef = useRef(userFilter);
   userFilterRef.current = userFilter;
@@ -124,6 +136,10 @@ export function DashboardView() {
         const issues = sortSprintIssues(applyStarred(stampOriginalOrder(result.issues)));
         setSprintIssues(issues);
         rebuildRoster(issues);
+        // An empty sprint, or one whose issues carry no sprint field, leaves
+        // the header with nothing to name. Ask the pinned board instead.
+        if (resolveActiveSprint(issues) === null) void loadBoardSprint(seq);
+        else setBoardSprint(null);
       });
 
     const snapshotPromise = dashboardApi.snapshot().then((snap) => {
@@ -142,6 +158,27 @@ export function DashboardView() {
       }
     }
   }, [rebuildRoster]);
+
+  /** Fallback sprint name from the first pinned board's active sprint. */
+  const loadBoardSprint = useCallback(async (seq: number): Promise<void> => {
+    try {
+      const pinned = await pinnedBoardsApi.list();
+      const boardId = pinned[0]?.boardId;
+      if (boardId === undefined || seq !== loadSeq.current) return;
+      const sprints = await boardsApi.sprints(boardId);
+      const active = sprints.find((s) => s.state.toLowerCase() === 'active');
+      if (seq !== loadSeq.current) return;
+      setBoardSprint(
+        active
+          ? resolveActiveSprint([
+              { sprint: active.name, allSprints: [{ ...active, state: 'active' }] },
+            ])
+          : null,
+      );
+    } catch {
+      // No board, no permission, no network — the header just stays generic.
+    }
+  }, []);
 
   // Initial load + scheduler tick + session change + starred re-sort.
   useEffect(() => {
@@ -331,7 +368,9 @@ export function DashboardView() {
           }}
         >
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>My Current Sprint</div>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>
+              {formatSprintHeader(resolveActiveSprint(sprintIssues) ?? boardSprint)}
+            </div>
             <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
               {SUBTITLE}
             </div>

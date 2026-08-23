@@ -10,6 +10,7 @@ import { dashboard as dashboardApi, issues as issuesApi } from '../../api/client
 import { dialogs } from '../../dialogs/DialogHost';
 import { priorityColor, statusColor } from '../../lib/colors';
 import { formatTimeSpan } from '../../lib/format';
+import { formatSprintLine, resolveActiveSprint } from '../../lib/viewDashboard';
 import type { DashboardSnapshot, JiraIssue, PagedResult } from '../../types';
 import { useCached } from '../cache';
 import { groupByStatus, StatusSection } from '../statusGroups';
@@ -41,6 +42,7 @@ export function MobileDashboard() {
   const busy = snap.refreshing || mine.refreshing;
   // To Do is sprint-only: the backlog would otherwise bury the planned work.
   const groups = groupByStatus(mine.data?.items ?? [], { toDoSprintOnly: true });
+  const sprintLine = formatSprintLine(resolveActiveSprint(mine.data?.items ?? []));
 
   return (
     <Screen
@@ -62,6 +64,12 @@ export function MobileDashboard() {
       }
     >
       {snap.error ? <ErrorNote onRetry={refresh}>{snap.error}</ErrorNote> : null}
+
+      {sprintLine ? (
+        <div style={{ margin: '0 2px 10px' }}>
+          <Muted>{sprintLine}</Muted>
+        </div>
+      ) : null}
 
       {snap.data ? (
         <StatGrid>
