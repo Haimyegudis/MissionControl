@@ -14,6 +14,7 @@ import { pushToast } from '../../stores/toasts';
 import { JIRA_URL, TESTRAIL_URL } from '../../lib/serviceUrls';
 import { Screen, tapReset } from '../ui';
 import type { WatchConfig, WatchEventKind } from '../../types';
+import { syncWatchConfigToNative } from '../../stores/watch';
 import { signInWithSso } from '../../native/sso';
 import { clearAllServiceSessions, clearServiceSession } from '../../native/ssoSession';
 import { nativeRuntime } from '../../native/bootstrap';
@@ -198,13 +199,21 @@ function WatchBlock() {
 
   const save = (next: WatchConfig): void => {
     setConfig(next);
-    watchApi.setConfig(next).then(setConfig).catch((e: unknown) => {
-      pushToast({
-        title: 'Alerts',
-        body: e instanceof Error ? e.message : String(e),
-        severity: 'error',
+    watchApi
+      .setConfig(next)
+      .then((saved) => {
+        setConfig(saved);
+        // The worker reads its own copy of the on/off flag, so it has to be
+        // told; otherwise background checks keep running after a switch-off.
+        void syncWatchConfigToNative();
+      })
+      .catch((e: unknown) => {
+        pushToast({
+          title: 'Alerts',
+          body: e instanceof Error ? e.message : String(e),
+          severity: 'error',
+        });
       });
-    });
   };
 
   return (

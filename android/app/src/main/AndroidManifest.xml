@@ -43,6 +43,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Unlock gate for the Keystore-held session. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Dashboard change alerts raised by WatchWorker. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!--
         The in-app browser library used for HP OneUID sign-in declares camera,

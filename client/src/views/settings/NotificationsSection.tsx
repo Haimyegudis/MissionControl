@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { watch as watchApi } from '../../api/client';
 import { formatDateTime } from '../../lib/format';
 import { pushToast } from '../../stores/toasts';
-import { refreshWatchFeed, runWatchCycleNow, watchStore } from '../../stores/watch';
+import { refreshWatchFeed, runWatchCycleNow, syncWatchConfigToNative, watchStore } from '../../stores/watch';
 import { useStore } from '../../stores/useStore';
 import type { WatchConfig, WatchEventKind } from '../../types';
 import { Field, Section } from './common';
@@ -51,12 +51,18 @@ function WatchControls() {
   // always complete — no partial merge to get wrong on either platform.
   const save = (next: WatchConfig): void => {
     setConfig(next);
-    watchApi.setConfig(next).then(setConfig).catch((err: unknown) => {
-      pushToast({
-        title: 'Notification settings not saved',
-        body: err instanceof Error ? err.message : String(err),
+    watchApi
+      .setConfig(next)
+      .then((saved) => {
+        setConfig(saved);
+        void syncWatchConfigToNative();
+      })
+      .catch((err: unknown) => {
+        pushToast({
+          title: 'Notification settings not saved',
+          body: err instanceof Error ? err.message : String(err),
+        });
       });
-    });
   };
 
   const checkNow = async (): Promise<void> => {
