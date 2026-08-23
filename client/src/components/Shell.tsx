@@ -16,7 +16,7 @@ import { pinBoard, pinnedBoardsStore, refreshPinnedBoards, unpinBoard } from '..
 import { errText } from '../lib/errors';
 import { NotificationBell } from './NotificationBell';
 import { pausePomodoro, pomodoroStore, resumePomodoro, statusText, stopPomodoro } from '../stores/pomodoro';
-import { lastRefreshStore, triggerNow } from '../stores/scheduler';
+import { lastRefreshStore, schedulerStateStore, triggerNow, type SchedulerState } from '../stores/scheduler';
 import { sessionStore } from '../stores/session';
 import { resolveTheme, settingsStore, updateSettings } from '../stores/settings';
 import { pushToast } from '../stores/toasts';
@@ -30,6 +30,21 @@ export interface ShellProps {
   /** Open command palette; mode 'pomodoro' = "Pick issue for Pomodoro". */
   onOpenPalette?: (mode?: 'default' | 'pomodoro') => void;
 }
+
+/**
+ * The dot used to be a hardcoded green "Live" no matter what the scheduler was
+ * doing, which is how a silently paused refresh went unnoticed. It now reports
+ * the real state.
+ */
+const LIVE_INDICATOR: Record<SchedulerState, { label: string; color: string; hint: string }> = {
+  running: { label: 'Live', color: 'var(--accent-green)', hint: 'Auto-refresh is running' },
+  paused: {
+    label: 'Paused',
+    color: 'var(--accent-yellow)',
+    hint: 'Auto-refresh pauses while this tab is in the background (Settings → Pause when minimized). It refreshes as soon as you come back.',
+  },
+  off: { label: 'Manual', color: 'var(--muted)', hint: 'Auto-refresh is off (Settings → Preferences)' },
+};
 
 const topBarStyle: CSSProperties = {
   display: 'flex',
@@ -216,6 +231,7 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
   const session = useStore(sessionStore);
   const appSettings = useStore(settingsStore);
   const lastRefresh = useStore(lastRefreshStore);
+  const schedulerState = useStore(schedulerStateStore);
   const [refreshRunning, setRefreshRunning] = useState(false);
   const pinned = useStore(pinnedBoardsStore);
   const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem('mc.sidebar') !== '0');
@@ -336,19 +352,23 @@ export function Shell({ children, onCreateIncident, onOpenPalette }: ShellProps)
 
         {!narrow && (
         <>
-        <div className="mc-live" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)' }}>
+        <div
+          className="mc-live"
+          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)' }}
+          title={LIVE_INDICATOR[schedulerState].hint}
+        >
           <span
             aria-hidden
             style={{
               width: 8,
               height: 8,
               borderRadius: '50%',
-              background: 'var(--accent-green)',
-              boxShadow: '0 0 6px var(--accent-green)',
+              background: LIVE_INDICATOR[schedulerState].color,
+              boxShadow: `0 0 6px ${LIVE_INDICATOR[schedulerState].color}`,
               display: 'inline-block',
             }}
           />
-          <span>Live</span>
+          <span>{LIVE_INDICATOR[schedulerState].label}</span>
         </div>
 
         <div className="mc-refresh-stamp" style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
