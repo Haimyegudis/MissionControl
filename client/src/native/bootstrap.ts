@@ -23,9 +23,9 @@ import { persistenceFor } from './persistence';
 type Hydratable<T> = T & { hydrate(): Promise<void> };
 
 export interface RuntimeDeps {
-  kv: Hydratable<KvStore>;
-  people: Hydratable<PeopleStore>;
-  credentials: Hydratable<CredentialsPort>;
+  kv: Hydratable<KvStore> & { flush?(): Promise<void> };
+  people: Hydratable<PeopleStore> & { flush?(): Promise<void> };
+  credentials: Hydratable<CredentialsPort> & { flush?(): Promise<void> };
   installDispatch: (dispatch: Dispatch) => void;
 }
 
@@ -33,6 +33,8 @@ export interface NativeRuntime {
   core: Core;
   /** Re-establish the TestRail session from stored credentials. */
   reconnectTestRail(): Promise<void>;
+  /** Wait until destructive storage changes have reached disk/Keystore. */
+  flushStorage(): Promise<void>;
 }
 
 /** Testable seam: no plugin imports, no globals, no side effects on module load. */
@@ -53,7 +55,9 @@ export async function buildNativeRuntime(deps: RuntimeDeps): Promise<NativeRunti
   // session exists. Testing for one here meant every reload after an HP OneUID
   // sign-in landed back on the login screen with the sign-in silently discarded.
   const hasCredential =
-    saved !== null && (saved.authMode === 'sso' || saved.jiraPat.trim().length > 0);
+    saved !== null &&
+    saved.jiraBaseUrl.trim().length > 0 &&
+    (saved.authMode === 'sso' || saved.jiraPat.trim().length > 0);
   if (saved && hasCredential) {
     // Activate immediately so the UI is usable, then resolve who we are.
     //
@@ -88,6 +92,11 @@ export async function buildNativeRuntime(deps: RuntimeDeps): Promise<NativeRunti
       } catch {
         // A failed TestRail reconnect must not block the Jira side of the app.
       }
+    },
+    async flushStorage() {
+      await deps.kv.flush?.();
+      await deps.people.flush?.();
+      await deps.credentials.flush?.();
     },
   };
 }

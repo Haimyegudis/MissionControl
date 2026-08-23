@@ -20,7 +20,8 @@ import {
 } from '../../stores/testrail';
 import { useStore } from '../../stores/useStore';
 import { pushToast } from '../../stores/toasts';
-import { filterCases, sectionPath } from '../../lib/testrail';
+import { filterCases, richText, sectionPath } from '../../lib/testrail';
+import { MdView } from '../../components/MdView';
 import type { TrAddCasePayload, TrCase, TrSection, TrSuite } from '../../testrailTypes';
 import { invalidate, useCached } from '../cache';
 import { Empty, ErrorNote, Loading, Muted, Screen, Sheet, tapReset } from '../ui';
@@ -103,10 +104,13 @@ function matchesDeep(node: SectionNode, needle: string): boolean {
  */
 function stepsOf(c: TrCase): StepRow[] {
   if (Array.isArray(c.stepsSeparated) && c.stepsSeparated.length > 0) {
-    return c.stepsSeparated.map((r) => ({ content: r.action ?? '', expected: r.expected ?? '' }));
+    return c.stepsSeparated.map((r) => ({
+      content: richText(r.action),
+      expected: richText(r.expected),
+    }));
   }
   // Older cases carry a single free-text steps field instead of rows.
-  if (c.steps) return [{ content: c.steps, expected: c.expected ?? '' }];
+  if (c.steps) return [{ content: richText(c.steps), expected: richText(c.expected) }];
   return [];
 }
 
@@ -876,7 +880,7 @@ function CaseCard({
           {tcase.preconds ? (
             <div style={{ marginBottom: 8 }}>
               <Muted>Preconditions</Muted>
-              <div style={{ fontSize: 13, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{tcase.preconds}</div>
+              <MdView text={tcase.preconds} />
             </div>
           ) : null}
           {steps.length === 0 ? (
@@ -901,13 +905,14 @@ function CaseCard({
                   >
                     {i + 1}
                   </span>
-                  <div style={{ fontSize: 13, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', flex: 1 }}>
-                    {s.content}
+                  <div style={{ fontSize: 13, overflowWrap: 'anywhere', flex: 1 }}>
+                    <MdView text={s.content} />
                   </div>
                 </div>
                 {s.expected ? (
-                  <div style={{ marginLeft: 30, marginTop: 4, fontSize: 12.5, color: 'var(--accent-green)', whiteSpace: 'pre-wrap' }}>
-                    ✓ {s.expected}
+                  <div style={{ marginLeft: 30, marginTop: 4, fontSize: 12.5, color: 'var(--accent-green)', display: 'flex', gap: 5 }}>
+                    <span aria-hidden="true">✓</span>
+                    <MdView text={s.expected} />
                   </div>
                 ) : null}
               </div>

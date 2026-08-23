@@ -2,7 +2,7 @@
 // the app stays locked and the Keystore is never read.
 
 /** Background time after which returning to the app re-triggers the prompt. */
-export const LOCK_TIMEOUT_MS = 5 * 60 * 1000;
+export const LOCK_TIMEOUT_MS = 60 * 1000;
 
 /**
  * How long to wait for the prompt before giving up on it.
@@ -25,14 +25,14 @@ export async function requireUnlock(reason: string): Promise<boolean> {
   try {
     const info = await api.BiometricAuth.checkBiometry();
     if (!info.isAvailable && !info.deviceIsSecure) {
-      // No biometry and no device credential — there is no gate to apply, and
-      // refusing here would make the app unusable on such a device.
-      return true;
+      // Corporate data must not open on an unsecured device.
+      return false;
     }
     const prompt = api.BiometricAuth.authenticate({
       reason,
       androidTitle: 'MissionControl',
       allowDeviceCredential: true,
+      androidBiometryStrength: api.AndroidBiometryStrength.strong,
     }).then(() => true);
     const timeout = new Promise<boolean>((resolve) => {
       setTimeout(() => resolve(false), PROMPT_TIMEOUT_MS);

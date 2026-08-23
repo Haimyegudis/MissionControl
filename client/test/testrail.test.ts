@@ -61,6 +61,13 @@ describe('richText', () => {
     );
   });
 
+  it('removes ordered-list markup instead of exposing raw tags', () => {
+    const text = richText('<p>Prepare</p><ol><li>Open cover</li><li>Remove media</li></ol>');
+    expect(text).not.toMatch(/<\/?(?:p|ol|li)>/);
+    expect(text).toContain('Open cover');
+    expect(text).toContain('Remove media');
+  });
+
   it('renders table cells with pipe separators', () => {
     expect(richText('<table><tr><td>a</td><td>b</td></tr></table>')).toBe('| a | b');
   });

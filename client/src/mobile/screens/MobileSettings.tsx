@@ -9,11 +9,15 @@ import { useEffect, useState } from 'react';
 import { connectTestRail, disconnectTestRail, initTestRail, trStore } from '../../stores/testrail';
 import { sessionStore } from '../../stores/session';
 import { useStore } from '../../stores/useStore';
-import { auth } from '../../api/client';
+import { auth, settings } from '../../api/client';
 import { pushToast } from '../../stores/toasts';
 import { JIRA_URL, TESTRAIL_URL } from '../../lib/serviceUrls';
 import { Screen, tapReset } from '../ui';
 import { signInWithSso } from '../../native/sso';
+import { clearAllServiceSessions, clearServiceSession } from '../../native/ssoSession';
+import { nativeRuntime } from '../../native/bootstrap';
+import { clearEncryptedPersistence } from '../../native/persistence';
+import { secureClearAll, secureRemove } from '../../native/secureStorage';
 
 export function MobileSettings() {
   const session = useStore(sessionStore);
@@ -65,12 +69,16 @@ export function MobileSettings() {
         action={
           session.phase === 'connected' ? (
             <Action
-              label="Sign out"
+              label="Sign out & erase data"
               busy={busy === 'jira'}
               onClick={async () => {
                 setBusy('jira');
                 try {
-                  await auth.logout();
+                  await settings.eraseLocalData();
+                  await nativeRuntime()?.flushStorage();
+                  await clearEncryptedPersistence();
+                  await secureClearAll();
+                  await clearAllServiceSessions([JIRA_URL, TESTRAIL_URL]);
                   window.location.reload();
                 } finally {
                   setBusy(null);
@@ -102,9 +110,12 @@ export function MobileSettings() {
             busy={busy === 'tr'}
             onClick={async () => {
               setBusy('tr');
-              try {
-                await disconnectTestRail();
-              } finally {
+                try {
+                  await disconnectTestRail();
+                  await nativeRuntime()?.flushStorage();
+                  await secureRemove('mc.testrail.people');
+                  await clearServiceSession(TESTRAIL_URL);
+                } finally {
                 setBusy(null);
               }
             }}

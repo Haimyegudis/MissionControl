@@ -16,6 +16,7 @@ import { UserSearchPicker } from '../components/UserSearchPicker';
 import { dialogs } from '../dialogs/DialogHost';
 import { KpiDrilldown } from '../dialogs/KpiDrilldown';
 import { PageHeader } from '../components/PageHeader';
+import { WatchBell } from '../components/WatchBell';
 import { priorityColor, starColor, statusColor } from '../lib/colors';
 import { formatDateTime } from '../lib/format';
 import {
@@ -280,6 +281,7 @@ export function DashboardView() {
         kicker="Jira · Sprint"
         title="Dashboard"
         subtitle="Click any KPI card to see the issues behind the number."
+        right={<WatchBell onOpenIssue={(key) => dialogs.openIssueDetails(key)} />}
       />
       {/* KPI widget row */}
       {widgets.length > 0 ? (

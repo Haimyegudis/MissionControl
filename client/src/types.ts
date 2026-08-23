@@ -431,10 +431,22 @@ export interface AuthProfile {
   authMode?: 'pat' | 'sso';
 }
 
+/**
+ * Non-secret identity still on disk while disconnected. Lets the login form
+ * come back filled in, so re-authenticating only ever costs a token — never
+ * the whole profile again. The PAT itself never leaves the server.
+ */
+export interface SavedIdentity {
+  email: string;
+  jiraBaseUrl: string;
+  instanceType: InstanceType;
+}
+
 export interface AuthStatus {
   connected: boolean;
   user: JiraUser | null;
   profile: AuthProfile | null;
+  saved?: SavedIdentity | null;
 }
 
 export interface LoginRequest {
@@ -530,4 +542,42 @@ export interface LumoResult {
 export interface LumoTurn {
   role: 'user' | 'assistant';
   content: string;
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard watch (change notifications)
+// ---------------------------------------------------------------------------
+// Mirrors core/src/watch/types.ts. The client never builds these itself; it
+// only renders what /api/watch returns.
+
+export type WatchEventKind =
+  | 'assigned'
+  | 'unassigned'
+  | 'status'
+  | 'sprint'
+  | 'priority'
+  | 'dueDate'
+  | 'comment';
+
+export interface WatchEvent {
+  id: string;
+  kind: WatchEventKind;
+  key: string;
+  summary: string;
+  from: string | null;
+  to: string | null;
+  at: string;
+  reason?: 'reassigned' | 'done' | 'left-sprint';
+}
+
+export interface WatchConfig {
+  enabled: boolean;
+  intervalMinutes: number;
+  kinds: Record<WatchEventKind, boolean>;
+}
+
+export interface WatchFeed {
+  events: WatchEvent[];
+  unreadCount: number;
+  lastCycle: string | null;
 }

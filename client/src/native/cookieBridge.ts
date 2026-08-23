@@ -8,6 +8,8 @@ import { registerPlugin } from '@capacitor/core';
 
 interface CookieBridgePlugin {
   get(options: { url: string }): Promise<{ cookie: string }>;
+  clear(options: { url: string }): Promise<void>;
+  clearAll(): Promise<void>;
   flush(): Promise<void>;
 }
 
@@ -30,4 +32,32 @@ export async function flushCookies(): Promise<void> {
   } catch {
     // Nothing to flush outside the native shell.
   }
+}
+
+/** Remove cookies for one configured corporate service. */
+export async function clearCookies(url: string): Promise<void> {
+  try {
+    await CookieBridge.clear({ url });
+  } catch {
+    // Already absent, unsupported host, or not running in the native shell.
+  }
+}
+
+/** Strict variant used by security-sensitive disconnect flows. */
+export async function clearCookiesStrict(url: string): Promise<void> {
+  await CookieBridge.clear({ url });
+}
+
+/** Remove the entire WebView cookie jar during full app sign-out. */
+export async function clearAllCookies(): Promise<void> {
+  try {
+    await CookieBridge.clearAll();
+  } catch {
+    // Already absent or not running in the native shell.
+  }
+}
+
+/** Strict variant used by full app sign-out. */
+export async function clearAllCookiesStrict(): Promise<void> {
+  await CookieBridge.clearAll();
 }

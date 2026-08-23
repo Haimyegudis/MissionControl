@@ -11,12 +11,15 @@ export interface SessionState {
   phase: SessionPhase;
   user: JiraUser | null;
   profile: AuthStatus['profile'];
+  /** Who was signed in last, secrets excluded; survives a lost session. */
+  saved: AuthStatus['saved'];
 }
 
 export const sessionStore = createStore<SessionState>({
   phase: 'loading',
   user: null,
   profile: null,
+  saved: null,
 });
 
 function apply(status: AuthStatus): void {
@@ -24,6 +27,17 @@ function apply(status: AuthStatus): void {
     phase: status.connected ? 'connected' : 'disconnected',
     user: status.user,
     profile: status.profile,
+    saved: status.saved ?? null,
+  });
+}
+
+/** Losing a session must not lose the identity the login form prefills from. */
+function disconnect(keepSaved = true): void {
+  sessionStore.set({
+    phase: 'disconnected',
+    user: null,
+    profile: null,
+    saved: keepSaved ? sessionStore.get().saved : null,
   });
 }
 
@@ -32,7 +46,7 @@ export async function initSession(): Promise<void> {
   try {
     apply(await auth.status());
   } catch {
-    sessionStore.set({ phase: 'disconnected', user: null, profile: null });
+    disconnect(false);
   }
 }
 
@@ -45,12 +59,11 @@ export async function logout(): Promise<void> {
   try {
     await auth.logout();
   } finally {
-    sessionStore.set({ phase: 'disconnected', user: null, profile: null });
+    // Signing out clears the token but not who you are: the form stays filled.
+    disconnect();
   }
 }
 
 onSessionLost(() => {
-  if (sessionStore.get().phase === 'connected') {
-    sessionStore.set({ phase: 'disconnected', user: null, profile: null });
-  }
+  if (sessionStore.get().phase === 'connected') disconnect();
 });

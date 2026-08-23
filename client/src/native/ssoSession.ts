@@ -10,7 +10,8 @@
 // the server expires the session after a few hours — which is the difference
 // between this and storing a permanent API token.
 
-import { readCookies } from './cookieBridge';
+import { clearAllCookiesStrict, clearCookiesStrict, readCookies } from './cookieBridge';
+import { secureGet, secureRemove, secureSet } from './secureStorage';
 
 const KEY_PREFIX = 'mc.sso.cookie.';
 
@@ -22,22 +23,12 @@ function keyFor(baseUrl: string): string {
   }
 }
 
-async function secureStore(): Promise<typeof import('capacitor-secure-storage-plugin') | null> {
-  try {
-    return await import('capacitor-secure-storage-plugin');
-  } catch {
-    return null;
-  }
-}
-
 /** Copy the jar's current cookies for a host into the Keystore. */
 export async function rememberSession(baseUrl: string): Promise<void> {
   const cookie = await readCookies(baseUrl);
   if (!cookie) return;
-  const mod = await secureStore();
-  if (!mod) return;
   try {
-    await mod.SecureStoragePlugin.set({ key: keyFor(baseUrl), value: cookie });
+    await secureSet(keyFor(baseUrl), cookie);
   } catch {
     // Nothing to do: the live jar still serves this session.
   }
@@ -45,11 +36,8 @@ export async function rememberSession(baseUrl: string): Promise<void> {
 
 /** The remembered cookie for a host, or '' when there is none. */
 export async function recallSession(baseUrl: string): Promise<string> {
-  const mod = await secureStore();
-  if (!mod) return '';
   try {
-    const { value } = await mod.SecureStoragePlugin.get({ key: keyFor(baseUrl) });
-    return value ?? '';
+    return (await secureGet<string>(keyFor(baseUrl))) ?? '';
   } catch {
     return '';
   }
@@ -57,13 +45,23 @@ export async function recallSession(baseUrl: string): Promise<string> {
 
 /** Drop a remembered session once the server has rejected it. */
 export async function forgetSession(baseUrl: string): Promise<void> {
-  const mod = await secureStore();
-  if (!mod) return;
   try {
-    await mod.SecureStoragePlugin.remove({ key: keyFor(baseUrl) });
+    await secureRemove(keyFor(baseUrl));
   } catch {
     // already absent
   }
+}
+
+/** Disconnect one service without leaving a replayable cookie behind. */
+export async function clearServiceSession(baseUrl: string): Promise<void> {
+  await secureRemove(keyFor(baseUrl));
+  await clearCookiesStrict(baseUrl);
+}
+
+/** Full app sign-out: erase remembered cookies and the live WebView jar. */
+export async function clearAllServiceSessions(baseUrls: string[]): Promise<void> {
+  await Promise.all(baseUrls.map((url) => secureRemove(keyFor(url))));
+  await clearAllCookiesStrict();
 }
 
 /**

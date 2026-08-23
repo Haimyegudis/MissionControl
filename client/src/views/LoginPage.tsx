@@ -1,12 +1,12 @@
-// Login page — base URL, email, PAT, instance type (Data Center default).
+// Login page — base URL (prefilled with the HP instance), email, PAT,
+// instance type (Data Center default).
 // [Test] → POST /api/auth/test with inline ✓/error; Sign in enabled only
 // after a passing test → POST /api/auth/login.
 
 import { useState, type CSSProperties, type FormEvent } from 'react';
-import { isNativeApp } from '../native/platform';
 import { JIRA_URL } from '../lib/serviceUrls';
 import { auth } from '../api/client';
-import { login } from '../stores/session';
+import { login, sessionStore } from '../stores/session';
 import type { InstanceType, JiraUser } from '../types';
 
 const fieldStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4 };
@@ -18,12 +18,16 @@ type TestState =
   | { kind: 'error'; message: string };
 
 export function LoginPage() {
-  // Prefilled on the phone only: typing a long URL on a touch keyboard is
-  // painful, and both backends default to this host when the field is blank.
-  const [baseUrl, setBaseUrl] = useState(() => (isNativeApp() ? JIRA_URL : ''));
-  const [email, setEmail] = useState('');
+  // Everything except the token is remembered. The URL is prefilled because
+  // this is the only Jira anyone here signs in to (still editable, so an
+  // unusual instance stays reachable without a rebuild); the email and
+  // instance type come back from the profile last saved on this machine. A
+  // second sign-in therefore costs one field: the token.
+  const saved = sessionStore.get().saved;
+  const [baseUrl, setBaseUrl] = useState(saved?.jiraBaseUrl?.trim() || JIRA_URL);
+  const [email, setEmail] = useState(saved?.email ?? '');
   const [pat, setPat] = useState('');
-  const [instanceType, setInstanceType] = useState<InstanceType>('datacenter');
+  const [instanceType, setInstanceType] = useState<InstanceType>(saved?.instanceType ?? 'datacenter');
   const [test, setTest] = useState<TestState>({ kind: 'idle' });
   const [signingIn, setSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
@@ -86,7 +90,6 @@ export function LoginPage() {
               setBaseUrl(e.target.value);
               invalidate();
             }}
-            autoFocus
           />
         </div>
 
@@ -101,6 +104,7 @@ export function LoginPage() {
               setEmail(e.target.value);
               invalidate();
             }}
+            autoFocus={!saved?.email}
           />
         </div>
 
@@ -115,6 +119,7 @@ export function LoginPage() {
               setPat(e.target.value);
               invalidate();
             }}
+            autoFocus={Boolean(saved?.email)}
           />
         </div>
 

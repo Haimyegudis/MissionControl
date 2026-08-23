@@ -171,24 +171,6 @@ async function afterConnect(session: TrSessionStatus): Promise<void> {
       people[String(session.user.id)] = session.user.name;
       void trApi.setPeople(people).catch(() => {});
     }
-    // The desktop imports %APPDATA%\TestRailWeb\people.json once; the phone
-    // carries the same map, embedded at build time, because TestRail will not
-    // list users for a non-admin account. Server-side names still win.
-    const seed = typeof __MC_PEOPLE__ === 'object' ? __MC_PEOPLE__ : {};
-    let seeded = 0;
-    for (const [id, personName] of Object.entries(seed)) {
-      // Overwrites placeholders as well as gaps: earlier builds persisted
-      // "User 16903" for ids TestRail would not name, and those must give way
-      // to the curated name.
-      if (isPlaceholderName(people[id])) {
-        people[id] = personName;
-        seeded += 1;
-      }
-    }
-    // Persist the merged map so it survives a restart and is the same list
-    // every screen reads, rather than living only in this session's memory.
-    if (seeded > 0) void trApi.setPeople(people).catch(() => undefined);
-
     const projects = filterIndigoProjects(allProjects);
     const remembered = Number(localStorage.getItem(LS_PROJECT));
     const start = projects.find((p) => p.id === remembered) ?? projects[0] ?? null;
@@ -215,10 +197,9 @@ async function afterConnect(session: TrSessionStatus): Promise<void> {
 /**
  * Fill in display names for user ids we have never seen.
  *
- * get_users is admin-only on this TestRail and returns an empty list, so the
- * people map only ever contained the signed-in user. The ids are on the cases,
- * so unknown ones are fetched individually, merged into the store for every
- * screen at once, and persisted so the cost is paid once per device.
+ * Some TestRail roles cannot list every user. Project-scoped metadata supplies
+ * the visible roster; ids encountered in cases/runs are fetched individually.
+ * This preserves names without shipping an employee directory in the APK.
  */
 /** "User 16903" — a stand-in written when TestRail refused to name an id. */
 function isPlaceholderName(name: string | undefined): boolean {
@@ -247,10 +228,8 @@ export async function resolvePeople(ids: Iterable<number>): Promise<void> {
   const merged = { ...trStore.get().people, ...Object.fromEntries(pairs) };
   patch({ people: merged });
 
-  // Persist only names TestRail actually gave us. Writing placeholders was the
-  // bug behind "Twito is not in the list, there are numbers": they were stored
-  // as though they were real, and the build-time seed then refused to replace
-  // them because the id already had a value.
+  // Persist only names TestRail actually gave us. A placeholder remains
+  // eligible for another authenticated lookup on the next refresh.
   const real = Object.fromEntries(Object.entries(merged).filter(([, name]) => !isPlaceholderName(name)));
   void trApi.setPeople(real).catch(() => undefined);
 }
@@ -308,9 +287,14 @@ export async function selectProject(projectId: number): Promise<void> {
       ? 'all'
       : (suites.find((s) => s.id === Number(rememberedSuite))?.id ?? suites[0]?.id ?? null);
   if (selSuiteId == null && suites.length) selSuiteId = suites[0].id;
+  const people = {
+    ...trStore.get().people,
+    ...Object.fromEntries((meta?.users ?? []).map((user) => [String(user.id), user.name])),
+  };
   patch({
     projectId,
     meta,
+    people,
     suites,
     sections: {},
     cases: {},
@@ -324,6 +308,9 @@ export async function selectProject(projectId: number): Promise<void> {
     coverage: {},
     filters: { ...trStore.get().filters, showNeverRan: false },
   });
+  // The project roster is returned only after authenticated TestRail access.
+  // Persist it through the native PeopleStore, which is AES-GCM encrypted.
+  if (meta?.users.length) void trApi.setPeople(people).catch(() => undefined);
 }
 
 export function selectSuite(sel: SuiteSel): void {

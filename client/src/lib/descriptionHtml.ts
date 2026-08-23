@@ -57,7 +57,9 @@ export function prepareDescriptionHtml(html: string, browseUrl: string | null | 
     a.setAttribute('rel', 'noopener noreferrer');
   }
 
-  // Images: absolutize relative srcs; Jira-host images go through the proxy.
+  // Images: Jira-host images go through the authenticated proxy. Any external
+  // network image is removed so opening an issue cannot notify a third party
+  // of the user's IP, device, timestamp, or an identifier encoded in the URL.
   for (const img of doc.body.querySelectorAll('img')) {
     const src = img.getAttribute('src') ?? '';
     if (!src) continue;
@@ -71,13 +73,15 @@ export function prepareDescriptionHtml(html: string, browseUrl: string | null | 
     }
     try {
       const u = new URL(abs);
-      if (host && u.host === host) {
+      if (u.protocol === 'data:') {
+        continue;
+      } else if (u.protocol === 'https:' && host && u.host === host) {
         img.setAttribute('src', misc.attachmentProxyUrl(abs));
-      } else if (abs !== src) {
-        img.setAttribute('src', abs);
+      } else {
+        img.remove();
       }
     } catch {
-      /* leave as-is */
+      img.remove();
     }
   }
 

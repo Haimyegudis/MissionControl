@@ -12,15 +12,16 @@ const FULL: Credentials = {
   testRailEmail: 'a@hp.com',
   testRailApiKey: 'TR-SECRET',
   confluenceBaseUrl: '',
-  confluencePat: '',
+  confluencePat: 'CONF-SECRET',
 };
 
 describe('credential splitting', () => {
-  it('keeps the PAT and API key out of the non-secret half', () => {
+  it('keeps every token out of the non-secret half', () => {
     const { profile } = splitSecrets(FULL);
     const serialized = JSON.stringify(profile);
     expect(serialized).not.toContain('JIRA-SECRET');
     expect(serialized).not.toContain('TR-SECRET');
+    expect(serialized).not.toContain('CONF-SECRET');
   });
 
   it('keeps the profile fields the login screen pre-fills from', () => {
@@ -41,6 +42,7 @@ describe('credential splitting', () => {
     const merged = mergeSecrets(profile, null);
     expect(merged.jiraPat).toBe('');
     expect(merged.testRailApiKey).toBe('');
+    expect(merged.confluencePat).toBe('');
   });
 });
 

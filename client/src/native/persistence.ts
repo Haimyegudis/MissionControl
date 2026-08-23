@@ -1,49 +1,33 @@
-// Two persistence backends, chosen by expected size. Preferences maps to
-// Android SharedPreferences, which is right for small structured state and
-// wrong for megabyte caches; those go to an app-private JSON file instead.
+// AES-GCM persistence for every native core table. Ciphertext lives in
+// app-private files; the non-exportable key lives in Android Keystore.
 
+import { registerPlugin } from '@capacitor/core';
 import type { KvRecord, KvTable } from '@mc/core';
 import type { KvPersistence } from './kvStore';
 
-const SMALL_TABLES: ReadonlySet<KvTable> = new Set<KvTable>(['appSettings', 'metadataCache']);
+interface EncryptedStorePlugin {
+  read(options: { table: KvTable }): Promise<{ value: string | null }>;
+  write(options: { table: KvTable; value: string }): Promise<void>;
+  clearAll(): Promise<void>;
+}
 
-export const PreferencesPersistence: KvPersistence = {
+const EncryptedStore = registerPlugin<EncryptedStorePlugin>('EncryptedStore');
+
+export const EncryptedPersistence: KvPersistence = {
   async read(table) {
-    const { Preferences } = await import('@capacitor/preferences');
-    const { value } = await Preferences.get({ key: `mc.kv.${table}` });
+    const { value } = await EncryptedStore.read({ table });
     return value ? (JSON.parse(value) as Array<[string, KvRecord]>) : null;
   },
   async write(table, entries) {
-    const { Preferences } = await import('@capacitor/preferences');
-    await Preferences.set({ key: `mc.kv.${table}`, value: JSON.stringify(entries) });
+    await EncryptedStore.write({ table, value: JSON.stringify(entries) });
   },
 };
 
-export const FilesystemPersistence: KvPersistence = {
-  async read(table) {
-    const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
-    try {
-      const { data } = await Filesystem.readFile({
-        path: `kv-${table}.json`,
-        directory: Directory.Data,
-        encoding: Encoding.UTF8,
-      });
-      return JSON.parse(String(data)) as Array<[string, KvRecord]>;
-    } catch {
-      return null; // absent on first run
-    }
-  },
-  async write(table, entries) {
-    const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
-    await Filesystem.writeFile({
-      path: `kv-${table}.json`,
-      directory: Directory.Data,
-      data: JSON.stringify(entries),
-      encoding: Encoding.UTF8,
-    });
-  },
-};
+export function persistenceFor(_table: KvTable): KvPersistence {
+  return EncryptedPersistence;
+}
 
-export function persistenceFor(table: KvTable): KvPersistence {
-  return SMALL_TABLES.has(table) ? PreferencesPersistence : FilesystemPersistence;
+/** Strict full-sign-out erasure; rejects if native deletion fails. */
+export async function clearEncryptedPersistence(): Promise<void> {
+  await EncryptedStore.clearAll();
 }

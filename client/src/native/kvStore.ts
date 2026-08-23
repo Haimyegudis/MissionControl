@@ -3,6 +3,7 @@
 // memory at boot and written back on a debounced flush.
 
 import { KV_TABLES, MemoryKvStore, type KvRecord, type KvTable, type PeopleStore, type TestRailPerson } from '@mc/core';
+import { secureGet, secureRemove, secureSet } from './secureStorage';
 
 /**
  * Ceiling on a single persisted table.
@@ -97,20 +98,19 @@ export class HydratedKvStore extends MemoryKvStore {
 }
 
 /**
- * TestRail's people list, held in memory and mirrored to Preferences. Small
- * enough that a whole-list rewrite per change is cheaper than any diffing.
+ * TestRail's people list, held in memory and mirrored to AES-GCM Keystore
+ * storage. Names are fetched only after authentication and never bundled in
+ * the APK or written to plaintext Preferences.
  */
 export class PreferencesPeopleStore implements PeopleStore {
   private people: TestRailPerson[] = [];
+  private pending: Promise<void> = Promise.resolve();
 
   constructor(private readonly key = 'mc.testrail.people') {}
 
   async hydrate(): Promise<void> {
     try {
-      const { Preferences } = await import('@capacitor/preferences');
-      const { value } = await Preferences.get({ key: this.key });
-      if (!value) return;
-      const parsed: unknown = JSON.parse(value);
+      const parsed = await secureGet<unknown>(this.key);
       if (Array.isArray(parsed)) this.people = parsed as TestRailPerson[];
     } catch {
       this.people = [];
@@ -125,18 +125,27 @@ export class PreferencesPeopleStore implements PeopleStore {
     const byId = new Map(this.people.map((p) => [p.id, p.name]));
     for (const p of people) byId.set(p.id, p.name);
     this.people = [...byId.entries()].map(([id, name]) => ({ id, name }));
-    void this.persist();
+    this.queuePersist();
   }
 
   clear(): void {
     this.people = [];
-    void this.persist();
+    this.queuePersist();
   }
 
-  private async persist(): Promise<void> {
+  async flush(): Promise<void> {
+    await this.pending;
+  }
+
+  private queuePersist(): void {
+    const snapshot = [...this.people];
+    this.pending = this.pending.then(() => this.persist(snapshot));
+  }
+
+  private async persist(people: TestRailPerson[]): Promise<void> {
     try {
-      const { Preferences } = await import('@capacitor/preferences');
-      await Preferences.set({ key: this.key, value: JSON.stringify(this.people) });
+      if (people.length === 0) await secureRemove(this.key);
+      else await secureSet(this.key, people);
     } catch {
       // Same reasoning as the KV flush: a lost write must not crash the app.
     }

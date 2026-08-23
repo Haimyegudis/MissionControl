@@ -11,6 +11,7 @@ import { isRouteAvailable, navigate, routeStore } from './router';
 import { useSplashDismiss, useThemeSync } from './lib/appChrome';
 import { isNativeApp } from './native/platform';
 import { initScheduler } from './stores/scheduler';
+import { initWatchFeed } from './stores/watch';
 import { sessionStore } from './stores/session';
 import { loadSettings } from './stores/settings';
 import { pushToast } from './stores/toasts';
@@ -132,9 +133,13 @@ export default function App() {
   useEffect(() => {
     if (session.phase !== 'connected') return;
     loadSettings()
-      .then(() => initScheduler())
+      .then(() => {
+        initScheduler();
+        initWatchFeed();
+      })
       .catch((err) => {
         initScheduler();
+        initWatchFeed();
         pushToast({ title: 'Settings failed to load', body: err instanceof Error ? err.message : String(err) });
       });
   }, [session.phase]);

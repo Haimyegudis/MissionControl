@@ -62,7 +62,7 @@ describe('buildNativeRuntime', () => {
     const dispatch = installDispatch.mock.calls[0][0] as (m: string, p: string) => Promise<unknown>;
     await expect(dispatch('GET', '/api/auth/status')).resolves.toEqual({
       status: 200,
-      body: { connected: false, user: null, profile: null },
+      body: { connected: false, user: null, profile: null, saved: null },
     });
   });
 
@@ -137,6 +137,20 @@ describe('buildNativeRuntime', () => {
       }),
     );
     expect(runtime.core.session.isConnected).toBe(true);
+  });
+
+  it('does not resurrect a logged-out SSO profile with no Jira URL', async () => {
+    const runtime = await buildNativeRuntime(
+      deps({
+        credentials: {
+          hydrate: async () => {},
+          load: () => ({ ...CREDS, jiraBaseUrl: '', jiraPat: '', authMode: 'sso' as const }),
+          save: () => {},
+          clear: () => {},
+        } as RuntimeDeps['credentials'],
+      }),
+    );
+    expect(runtime.core.session.isConnected).toBe(false);
   });
 
   it('reconnects TestRail under SSO even with no stored API key', async () => {

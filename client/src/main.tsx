@@ -4,6 +4,7 @@ import App from './App';
 import { MobileApp } from './mobile/MobileApp';
 import { initRouter } from './router';
 import { initSession } from './stores/session';
+import { bootstrapSession, setBootstrapToken } from './api/client';
 import { isNativeApp } from './native/platform';
 import './theme.css';
 
@@ -26,11 +27,16 @@ function takeBootstrapToken(): string | null {
   return token;
 }
 
-async function bootstrap(): Promise<void> {
-  const token = takeBootstrapToken();
-  // In Vite development the proxy injects the token for this endpoint.
-  const headers = token ? { 'x-mc-token': token } : undefined;
-  await fetch('/api/bootstrap', { method: 'POST', headers }).catch(() => undefined);
+/**
+ * Trade the launcher token for a session cookie. In Vite development the proxy
+ * injects the token for this endpoint, and an already-valid cookie is accepted
+ * on its own, so a plain reload still succeeds. False means every later /api
+ * call would 401 — the caller says so rather than letting it look like a
+ * rejected Jira PAT on the login form.
+ */
+async function bootstrap(): Promise<boolean> {
+  setBootstrapToken(takeBootstrapToken());
+  return bootstrapSession();
 }
 
 /**
@@ -50,6 +56,21 @@ function showLocked(): void {
     '<div style="opacity:.7;font-size:13px">Unlock to reach your Jira and TestRail credentials.</div></div>' +
     '<button id="mc-unlock" class="btn btn-primary" style="padding:10px 20px">Unlock</button></div>';
   document.getElementById('mc-unlock')?.addEventListener('click', () => window.location.reload());
+}
+
+/**
+ * The local API refused this browser. Nothing in the app can work, and the
+ * login form would only report a token error against the PAT the user just
+ * typed, so say what actually happened and how to get back in.
+ */
+function showBootstrapFailed(): void {
+  document.body.innerHTML =
+    '<div id="mc-no-token" style="height:100%;display:grid;place-items:center;padding:24px;text-align:center;gap:16px">' +
+    '<div style="max-width:420px"><div style="font-size:15px;font-weight:600;margin-bottom:6px">Mission Control could not authorise this tab</div>' +
+    '<div style="opacity:.7;font-size:13px;line-height:1.5">The local API needs the token this page is opened with. ' +
+    'Start the app from the Mission Control shortcut instead of a bookmark or a typed address, and make sure the server is running.</div></div>' +
+    '<button id="mc-retry" class="btn btn-primary" style="padding:10px 20px">Retry</button></div>';
+  document.getElementById('mc-retry')?.addEventListener('click', () => window.location.reload());
 }
 
 /** Take the boot splash down now, whatever happens next. */
@@ -85,8 +106,10 @@ async function startNative(): Promise<boolean> {
 async function start(): Promise<void> {
   if (isNativeApp()) {
     if (!(await startNative())) return;
-  } else {
-    await bootstrap();
+  } else if (!(await bootstrap())) {
+    clearSplash();
+    showBootstrapFailed();
+    return;
   }
   initRouter();
   void initSession();

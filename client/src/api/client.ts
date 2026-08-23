@@ -33,6 +33,8 @@ import type {
   ConfluenceSpace,
   ConfluenceStatus,
   ConfluenceUser,
+  WatchConfig,
+  WatchFeed,
 } from '../types';
 
 export class ApiError extends Error {
@@ -88,6 +90,36 @@ export function getNativeDispatch(): Dispatch | null {
   return nativeDispatch;
 }
 
+// ---------------------------------------------------------------------------
+// Local API token
+// ---------------------------------------------------------------------------
+// The server gates /api on a per-install token, handed to the browser in the
+// launcher's URL fragment and exchanged for an HttpOnly cookie. Holding the
+// token in memory lets a later token 401 — a dropped or rotated cookie — redo
+// that exchange and replay, instead of dumping the user on the login page with
+// an error that has nothing to do with their Jira PAT.
+
+/** Server's wording for a request that failed the local API gate. */
+const API_TOKEN_MESSAGE = 'Missing or invalid API token';
+
+let bootstrapToken: string | null = null;
+
+/** Remember the launcher token for the lifetime of the page. */
+export function setBootstrapToken(token: string | null): void {
+  bootstrapToken = token;
+}
+
+/** Exchange the token (or an existing cookie) for a fresh session cookie. */
+export async function bootstrapSession(): Promise<boolean> {
+  const headers = bootstrapToken ? { 'x-mc-token': bootstrapToken } : undefined;
+  try {
+    const res = await fetch('/api/bootstrap', { method: 'POST', headers });
+    return res.status === 204;
+  } catch {
+    return false; // server not up yet; the caller reports it
+  }
+}
+
 type Query = Record<string, string | number | boolean | null | undefined>;
 
 function withQuery(path: string, query?: Query): string {
@@ -101,7 +133,7 @@ function withQuery(path: string, query?: Query): string {
   return qs ? `${path}?${qs}` : path;
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, retried = false): Promise<T> {
   if (nativeDispatch) {
     const res = await nativeDispatch(method, path, body);
     if (res.status === 401) emitSessionLost();
@@ -122,10 +154,6 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 
-  if (res.status === 401) {
-    emitSessionLost();
-  }
-
   if (!res.ok) {
     let message = `${res.status} ${res.statusText}`;
     try {
@@ -133,6 +161,14 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       if (data && typeof data.message === 'string' && data.message) message = data.message;
     } catch {
       /* non-JSON error body */
+    }
+    if (res.status === 401) {
+      // The local API gate, not Jira: re-run the token exchange once and
+      // replay before treating this as a lost Jira session.
+      if (message === API_TOKEN_MESSAGE && !retried && (await bootstrapSession())) {
+        return request<T>(method, path, body, true);
+      }
+      emitSessionLost();
     }
     throw new ApiError(res.status, message);
   }
@@ -217,6 +253,14 @@ export const dashboard = {
   snapshot: () => api.get<DashboardSnapshot>('/api/dashboard/snapshot'),
 };
 
+export const watch = {
+  feed: () => api.get<WatchFeed>('/api/watch/feed'),
+  ack: () => api.post<WatchFeed>('/api/watch/ack', {}),
+  run: () => api.post<WatchFeed & { count: number }>('/api/watch/run', {}),
+  getConfig: () => api.get<WatchConfig>('/api/watch/config'),
+  setConfig: (config: WatchConfig) => api.put<WatchConfig>('/api/watch/config', config),
+};
+
 export const dashboards = {
   list: () => api.get<JiraDashboardSummary[]>('/api/dashboards'),
   details: (id: string) => api.get<JiraDashboardDetails>(`/api/dashboards/${encodeURIComponent(id)}`),
@@ -251,6 +295,7 @@ export const settings = {
   hardRefresh: () => api.post<void>('/api/settings/hard-refresh'),
   clearCaches: () => api.post<void>('/api/settings/clear-caches'),
   disconnectAll: () => api.post<void>('/api/settings/disconnect-all', { confirmation: 'DISCONNECT' }),
+  eraseLocalData: () => api.post<void>('/api/settings/erase-local-data', { confirmation: 'ERASE' }),
 };
 
 export const filters = {
