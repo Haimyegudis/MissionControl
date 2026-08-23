@@ -9,10 +9,11 @@ import { useEffect, useState } from 'react';
 import { connectTestRail, disconnectTestRail, initTestRail, trStore } from '../../stores/testrail';
 import { sessionStore } from '../../stores/session';
 import { useStore } from '../../stores/useStore';
-import { auth, settings } from '../../api/client';
+import { auth, settings, watch as watchApi } from '../../api/client';
 import { pushToast } from '../../stores/toasts';
 import { JIRA_URL, TESTRAIL_URL } from '../../lib/serviceUrls';
 import { Screen, tapReset } from '../ui';
+import type { WatchConfig, WatchEventKind } from '../../types';
 import { signInWithSso } from '../../native/sso';
 import { clearAllServiceSessions, clearServiceSession } from '../../native/ssoSession';
 import { nativeRuntime } from '../../native/bootstrap';
@@ -162,7 +163,81 @@ export function MobileSettings() {
         )}
       </Block>
 
+      <WatchBlock />
+
     </Screen>
+  );
+}
+
+const WATCH_KINDS: Array<[WatchEventKind, string]> = [
+  ['assigned', 'Assigned to me'],
+  ['unassigned', 'No longer mine'],
+  ['status', 'Status changed'],
+  ['sprint', 'Sprint changed'],
+  ['priority', 'Priority changed'],
+  ['dueDate', 'Due date changed'],
+  ['comment', 'New comments'],
+];
+
+/**
+ * Dashboard change alerts. Background checks are driven by WorkManager, whose
+ * floor is 15 minutes — the interval below governs the in-app cadence and the
+ * delta window, which is why the copy says "about".
+ */
+function WatchBlock() {
+  const [config, setConfig] = useState<WatchConfig | null>(null);
+
+  useEffect(() => {
+    watchApi
+      .getConfig()
+      .then(setConfig)
+      .catch(() => setConfig(null));
+  }, []);
+
+  if (config === null) return null;
+
+  const save = (next: WatchConfig): void => {
+    setConfig(next);
+    watchApi.setConfig(next).then(setConfig).catch((e: unknown) => {
+      pushToast({
+        title: 'Alerts',
+        body: e instanceof Error ? e.message : String(e),
+        severity: 'error',
+      });
+    });
+  };
+
+  return (
+    <div className="card" style={{ padding: 14, marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontWeight: 650, fontSize: 15, flex: 1 }}>Dashboard alerts</span>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+          <input
+            type="checkbox"
+            checked={config.enabled}
+            onChange={(e) => save({ ...config, enabled: e.target.checked })}
+          />
+          On
+        </label>
+      </div>
+      <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+        Checked about every 15 minutes in the background, and every {config.intervalMinutes} minutes while the
+        app is open.
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {WATCH_KINDS.map(([kind, label]) => (
+          <label key={kind} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, minHeight: 32 }}>
+            <input
+              type="checkbox"
+              checked={config.kinds[kind]}
+              disabled={!config.enabled}
+              onChange={(e) => save({ ...config, kinds: { ...config.kinds, [kind]: e.target.checked } })}
+            />
+            {label}
+          </label>
+        ))}
+      </div>
+    </div>
   );
 }
 
