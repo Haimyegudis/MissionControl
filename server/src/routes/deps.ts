@@ -37,6 +37,8 @@ import type {
   SavedFilter,
   Team,
   TimeLoggedReport,
+  WatchConfig,
+  WatchEvent,
 } from '@mc/core';
 
 // ---------------------------------------------------------------------------
@@ -101,6 +103,14 @@ export interface TimeLoggedDep {
   ): Promise<TimeLoggedReport>;
   buildReportForSprint(sprintName: string): Promise<TimeLoggedReport>;
   buildReportForRange(fromLocal: Date, toLocalExclusive: Date): Promise<TimeLoggedReport>;
+}
+
+export interface WatchDep {
+  runCycle(): Promise<WatchEvent[]>;
+  feed(): { events: WatchEvent[]; unreadCount: number; lastCycle: string | null };
+  ack(): void;
+  getConfig(): WatchConfig;
+  setConfig(raw: unknown): WatchConfig;
 }
 
 export interface AggregatorDep {
@@ -201,6 +211,7 @@ export interface AppDeps {
   createIssues: CreateIssuesDep;
   timeLogged: TimeLoggedDep;
   aggregator: AggregatorDep;
+  watch: WatchDep;
   repos: {
     appSettings: AppSettingsRepoDep;
     issueCache: IssueCacheRepoDep;

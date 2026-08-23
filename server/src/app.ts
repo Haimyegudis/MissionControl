@@ -21,6 +21,7 @@ import { testrailRoutes } from './routes/testrail.js';
 import { timeloggedRoutes } from './routes/timelogged.js';
 import { confluenceRoutes } from './routes/confluence.js';
 import { reminderRoutes } from './routes/reminders.js';
+import { watchRoutes } from './routes/watch.js';
 import { copilotAuthRoutes } from './routes/copilotAuth.js';
 import { securityMiddleware } from './security.js';
 
@@ -80,6 +81,7 @@ export function createApp(deps: AppDeps): Express {
   api.use('/testrail', testrailRoutes(deps));
   api.use('/confluence', confluenceRoutes(deps));
   api.use('/reminders', reminderRoutes(deps));
+  api.use('/watch', watchRoutes(deps));
   api.use('/copilot', copilotAuthRoutes());
   api.use((req: Request, res: Response) => {
     res.status(404).json({ status: 404, message: `Not found: ${req.method} /api${req.path}` });
@@ -89,15 +91,37 @@ export function createApp(deps: AppDeps): Express {
   // Static SPA (client/dist) + fallback: any non-/api GET serves index.html.
   const staticDir = deps.staticDir;
   if (staticDir && fs.existsSync(staticDir)) {
-    app.use(express.static(staticDir));
+    app.use(
+      express.static(staticDir, {
+        // '/' goes through the fallback below so the shell gets one set of
+        // headers wherever it is served from.
+        index: false,
+        setHeaders(res: Response, filePath: string) {
+          // Bundle names carry a content hash, so they can be cached forever.
+          // Everything else stays revalidated.
+          const hashed = filePath.includes(`${path.sep}assets${path.sep}`);
+          res.setHeader('Cache-Control', hashed ? 'public, max-age=31536000, immutable' : 'public, max-age=0');
+        },
+      }),
+    );
     const indexHtml = path.join(staticDir, 'index.html');
     app.get('*', (req: Request, res: Response, next: NextFunction) => {
       if (req.path.startsWith('/api')) {
         next();
         return;
       }
+      // A missing path that looks like a file is a stale or wrong asset
+      // request, not a client route. Serving the shell for it would answer a
+      // <script> tag with HTML, which kills the whole page — and it is exactly
+      // what happens after a rebuild renames the chunks. Fail it loudly.
+      if (path.extname(req.path) !== '') {
+        next();
+        return;
+      }
       if (fs.existsSync(indexHtml)) {
-        res.sendFile(indexHtml);
+        // Never cache the shell: it names the hashed chunks, and a cached copy
+        // outlives the build that produced them.
+        res.sendFile(indexHtml, { cacheControl: false, headers: { 'Cache-Control': 'no-store' } });
       } else {
         next();
       }

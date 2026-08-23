@@ -11,10 +11,31 @@ interface AuthProfile {
   defaultProjectKey: string;
 }
 
+interface SavedIdentity {
+  email: string;
+  jiraBaseUrl: string;
+  instanceType: 'cloud' | 'datacenter';
+}
+
 interface AuthStatus {
   connected: boolean;
   user: unknown;
   profile: AuthProfile | null;
+  saved: SavedIdentity | null;
+}
+
+/**
+ * The identity on disk, minus every secret. Sent even while disconnected so
+ * the login form knows who was signed in and only has to ask for a token.
+ */
+function savedIdentity(deps: AppDeps): SavedIdentity | null {
+  const saved = deps.credentials.load();
+  if (!saved || saved.email.trim().length === 0) return null;
+  return {
+    email: saved.email,
+    jiraBaseUrl: saved.jiraBaseUrl,
+    instanceType: saved.instanceType,
+  };
 }
 
 /** AuthStatus payload — the PAT never leaves the server. */
@@ -31,6 +52,7 @@ export function authStatus(deps: AppDeps): AuthStatus {
           defaultProjectKey: profile.defaultProjectKey,
         }
       : null,
+    saved: savedIdentity(deps),
   };
 }
 

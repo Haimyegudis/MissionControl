@@ -22,6 +22,7 @@ import {
   JiraDashboardService,
   JiraIssueService,
   JiraMetadataService,
+  JiraError,
   JiraSession,
   JiraWorklogService,
   MetadataCacheRepo,
@@ -37,7 +38,8 @@ import { openDb } from './storage/db.js';
 import { CreateDefaultsStore, CreateMetaCache } from './storage/fileStores.js';
 import { PinnedBoardRepo, SavedFilterRepo, TeamRepo } from './storage/repositories.js';
 import { SqliteKvStore, SqlitePeopleStore } from './storage/sqliteKv.js';
-import { ConfluenceService, setIndigoSpaceOverride } from '@mc/core';
+import { ConfluenceService, KvWatchRepo, WatchService, setIndigoSpaceOverride } from '@mc/core';
+import { startWatchTimer } from './watch.js';
 
 /** %APPDATA%\TestRailWeb\people.json — the standalone app's people store. */
 function legacyPeople(): TestRailPerson[] | null {
@@ -79,6 +81,21 @@ const dashboards = new JiraDashboardService(session);
 const createIssues = new JiraCreateIssueService(session);
 const timeLogged = new TimeLoggedService(session, issueService, worklogService);
 const aggregator = new DashboardAggregator(session, issueService, timeLogged);
+
+/** Watched project: the signed-in profile wins, then settings, then ISW. */
+function watchProjectKey(): string {
+  const fromSession = session.profile?.defaultProjectKey?.trim();
+  if (fromSession) return fromSession;
+  try {
+    const fromSettings = appSettings.get().defaultProjectKey?.trim();
+    if (fromSettings) return fromSettings;
+  } catch {
+    // settings failures must not break project resolution
+  }
+  return 'ISW';
+}
+
+const watch = new WatchService(session, new KvWatchRepo(kv), watchProjectKey);
 const createDefaults = new CreateDefaultsStore();
 const createMetaCache = new CreateMetaCache();
 const testRail = new TestRailService(kv, people, undefined, legacyPeople);
@@ -132,6 +149,7 @@ const app = createApp({
   createIssues,
   timeLogged,
   aggregator,
+  watch,
   repos: { appSettings, issueCache, metadataCache, savedFilters, teams, pinnedBoards },
   createDefaults,
   createMetaCache,
@@ -142,7 +160,15 @@ const app = createApp({
   staticDir: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist'),
 });
 
-/** Auto-activate from saved credentials; a failed ping stays disconnected. */
+/**
+ * Auto-activate from saved credentials.
+ *
+ * Only Jira rejecting the token (401/403) means the stored profile is no good
+ * and the user has to type a new one. Anything else — VPN not up yet, DNS,
+ * a timeout, the instance restarting — says nothing about the token, so the
+ * session is activated anyway and the next call retries. Booting off-network
+ * must not send a user back to the login form for a token that is still valid.
+ */
 async function autoActivate(): Promise<void> {
   const saved = credentials.load();
   if (!saved || saved.jiraPat.trim().length === 0) return;
@@ -152,7 +178,13 @@ async function autoActivate(): Promise<void> {
     console.log(`Session restored: ${saved.jiraBaseUrl} as ${user.displayName}`);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.log(`Saved credentials found but the Jira ping failed (${message}); staying disconnected.`);
+    const rejected = err instanceof JiraError && (err.status === 401 || err.status === 403);
+    if (rejected) {
+      console.log(`Saved credentials were rejected by Jira (${message}); sign in again.`);
+      return;
+    }
+    session.activate(saved, null);
+    console.log(`Jira is unreachable (${message}); keeping the saved session and retrying on demand.`);
   }
 }
 
@@ -188,7 +220,10 @@ async function autoConnectConfluence(): Promise<void> {
 
 app.listen(port, '127.0.0.1', () => {
   console.log(`JiraWeb server listening on http://127.0.0.1:${port} (data: ${dataDir})`);
-  void autoActivate();
+  // The watcher only starts once the saved session is back: its first cycle is
+  // the catch-up for everything that changed while the app was closed, and a
+  // cycle run before activation would just no-op against a dead session.
+  void autoActivate().then(() => startWatchTimer({ watch }));
   void autoConnectTestRail();
   void autoConnectConfluence();
 });

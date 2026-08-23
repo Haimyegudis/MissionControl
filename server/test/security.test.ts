@@ -86,4 +86,37 @@ describe('local API security middleware', () => {
     });
     expect(badHost).toBe(403);
   });
+
+  it('renews the cookie on every authenticated call so an active session cannot lapse', async () => {
+    const base = await start();
+    const response = await fetch(`${base}/api/ping`, {
+      headers: localHeaders({ Cookie: `mc_token=${TOKEN}` }),
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get('set-cookie') ?? '').toContain(`mc_token=${TOKEN}`);
+  });
+
+  it('does not hand a cookie to a header-only caller', async () => {
+    const base = await start();
+    const response = await fetch(`${base}/api/ping`, { headers: localHeaders({ 'x-mc-token': TOKEN }) });
+    expect(response.status).toBe(200);
+    expect(response.headers.get('set-cookie')).toBeNull();
+  });
+
+  it('re-bootstraps from a live cookie, so a reload without the fragment still works', async () => {
+    const base = await start();
+    const response = await fetch(`${base}/api/bootstrap`, {
+      method: 'POST',
+      headers: localHeaders({ Cookie: `mc_token=${TOKEN}` }),
+    });
+    expect(response.status).toBe(204);
+    expect(response.headers.get('set-cookie') ?? '').toContain(`mc_token=${TOKEN}`);
+  });
+
+  it('rejects a bootstrap carrying neither a token nor a cookie', async () => {
+    const base = await start();
+    const response = await fetch(`${base}/api/bootstrap`, { method: 'POST', headers: localHeaders() });
+    expect(response.status).toBe(401);
+    expect(response.headers.get('set-cookie')).toBeNull();
+  });
 });

@@ -1,7 +1,10 @@
 // Route tests (Task A7): createApp with plain mocked service deps, exercised
 // over real HTTP against an ephemeral port.
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { createApp, translateError, type AppDeps } from '../src/app.js';
@@ -228,7 +231,7 @@ describe('auth routes', () => {
     const base = await start(deps);
     const res = await fetch(`${base}/api/auth/status`);
     expect(res.status).toBe(200);
-    expect(await json(res)).toEqual({ connected: false, user: null, profile: null });
+    expect(await json(res)).toEqual({ connected: false, user: null, profile: null, saved: null });
   });
 
   it('login tests the connection, saves credentials, activates and warms up — PAT never returned', async () => {
@@ -669,5 +672,89 @@ describe('lumo SSE route', () => {
         model: 'claude-sonnet-5',
       }),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Saved identity + static shell
+// ---------------------------------------------------------------------------
+
+const SAVED_CREDENTIALS = {
+  email: 'me@example.com',
+  jiraBaseUrl: 'https://jira.example.com/',
+  jiraPat: 'secret-pat',
+  instanceType: 'datacenter' as const,
+  defaultProjectKey: 'ISW',
+  testRailBaseUrl: '',
+  testRailEmail: '',
+  testRailApiKey: '',
+  confluenceBaseUrl: '',
+  confluencePat: '',
+};
+
+describe('saved identity', () => {
+  it('returns the stored profile while disconnected so a re-login only needs the token', async () => {
+    const deps = makeDeps();
+    deps.credentials.load = vi.fn(() => SAVED_CREDENTIALS);
+    const base = await start(deps);
+
+    const body = await json(await fetch(`${base}/api/auth/status`));
+    expect(body.connected).toBe(false);
+    expect(body.saved).toEqual({
+      email: 'me@example.com',
+      jiraBaseUrl: 'https://jira.example.com/',
+      instanceType: 'datacenter',
+    });
+    expect(JSON.stringify(body)).not.toContain('secret-pat');
+  });
+
+  it('reports no saved identity when the stored profile has no email', async () => {
+    const deps = makeDeps();
+    deps.credentials.load = vi.fn(() => ({ ...SAVED_CREDENTIALS, email: '' }));
+    const base = await start(deps);
+    expect((await json(await fetch(`${base}/api/auth/status`))).saved).toBeNull();
+  });
+});
+
+describe('static SPA shell', () => {
+  const staticDir = path.join(os.tmpdir(), `mc-static-${process.pid}`);
+
+  beforeAll(() => {
+    fs.mkdirSync(path.join(staticDir, 'assets'), { recursive: true });
+    fs.writeFileSync(path.join(staticDir, 'index.html'), '<!doctype html><title>shell</title>');
+    fs.writeFileSync(path.join(staticDir, 'assets', 'index-abc123.js'), 'export const ok = 1;');
+  });
+
+  afterAll(() => {
+    fs.rmSync(staticDir, { recursive: true, force: true });
+  });
+
+  it('serves the shell uncached, so a rebuild is never masked by a stale copy', async () => {
+    const base = await start({ ...makeDeps(), staticDir });
+    const res = await fetch(`${base}/`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(await res.text()).toContain('shell');
+  });
+
+  it('serves a client route with the shell', async () => {
+    const base = await start({ ...makeDeps(), staticDir });
+    const res = await fetch(`${base}/incidents`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('shell');
+  });
+
+  it('404s a missing asset instead of answering a script tag with HTML', async () => {
+    const base = await start({ ...makeDeps(), staticDir });
+    const res = await fetch(`${base}/assets/index-STALE.js`);
+    expect(res.status).toBe(404);
+    expect(await res.text()).not.toContain('shell');
+  });
+
+  it('caches hashed bundles immutably', async () => {
+    const base = await start({ ...makeDeps(), staticDir });
+    const res = await fetch(`${base}/assets/index-abc123.js`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).toContain('immutable');
   });
 });

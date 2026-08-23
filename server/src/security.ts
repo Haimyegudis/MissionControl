@@ -7,9 +7,10 @@
 //      /api even with simple no-preflight requests.
 //   3. Bearer token on /api — random per-install token stored owner-only in
 //      the data dir. The native launcher passes it in the URL fragment (which
-//      is never sent to the server); the client exchanges it once for an
-//      HttpOnly SameSite cookie at /api/bootstrap. Native callers read the
-//      owner-only file and use the header directly.
+//      is never sent to the server); the client exchanges it for an HttpOnly
+//      SameSite cookie at /api/bootstrap, renewed on every authenticated call
+//      so an in-use session never lapses. Native callers read the owner-only
+//      file and use the header directly.
 
 import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -19,6 +20,8 @@ import type { NextFunction, Request, Response } from 'express';
 
 const COOKIE_NAME = 'mc_token';
 const HEADER_NAME = 'x-mc-token';
+/** Idle lifetime of the session cookie; every authenticated call restarts it. */
+const COOKIE_MAX_AGE_SECONDS = 86_400;
 
 const HOST_RE = /^(127\.0\.0\.1|localhost|\[::1\])(?::(\d+))?$/i;
 const ORIGIN_RE = /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(?::(\d+))?$/i;
@@ -69,6 +72,11 @@ export function loadOrCreateApiToken(dataDir: string): string {
     throw new Error('Could not create a secure local API token.', { cause: error });
   }
   return token;
+}
+
+/** Session cookie carrying the API token; renewed on every authenticated call. */
+function tokenCookie(token: string): string {
+  return `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${COOKIE_MAX_AGE_SECONDS}`;
 }
 
 function cookieValue(req: Request, name: string): string | null {
@@ -130,28 +138,35 @@ export function securityMiddleware(token: string, options: SecurityOptions = {})
       }
     }
 
-    // One-time browser bootstrap. Unlike the former static-GET bootstrap, an
-    // arbitrary local process cannot obtain the token merely by requesting /.
-    if (token && req.path === '/api/bootstrap') {
-      const presented = req.headers[HEADER_NAME];
+    // Browser bootstrap. Unlike the former static-GET bootstrap, an arbitrary
+    // local process cannot obtain the token merely by requesting /. A live
+    // cookie is accepted alongside the launcher header so a plain reload can
+    // confirm its session instead of failing on the fragment it no longer has.
+    if (req.path === '/api/bootstrap') {
+      if (!token) {
+        res.status(204).end(); // auth disabled (unit tests): nothing to exchange
+        return;
+      }
+      const presented = req.headers[HEADER_NAME] ?? cookieValue(req, COOKIE_NAME);
       if (req.method !== 'POST' || presented !== token) {
         res.status(401).json({ status: 401, message: 'Missing or invalid bootstrap token' });
         return;
       }
-      res.setHeader(
-        'Set-Cookie',
-        `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400`,
-      );
+      res.setHeader('Set-Cookie', tokenCookie(token));
       res.status(204).end();
       return;
     }
 
     if (token && req.path.startsWith('/api')) {
-      const presented = req.headers[HEADER_NAME] ?? cookieValue(req, COOKIE_NAME);
+      const cookie = cookieValue(req, COOKIE_NAME);
+      const presented = req.headers[HEADER_NAME] ?? cookie;
       if (presented !== token) {
         res.status(401).json({ status: 401, message: 'Missing or invalid API token' });
         return;
       }
+      // Slide the window on every authenticated call: a session in active use
+      // must not expire mid-work and strand the user behind a token error.
+      if (cookie === token) res.setHeader('Set-Cookie', tokenCookie(token));
     }
     next();
   };
