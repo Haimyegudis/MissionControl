@@ -1625,6 +1625,14 @@ git commit -m "feat(dashboard): show the active sprint and its countdown"
 
 ### Task 8: Android background worker
 
+> **Implemented differently — see the spec's §5.** The headless-WebView design
+> below could not be built: `Bridge.Builder` accepts only an `AppCompatActivity`
+> or `Fragment`, so a worker gets no Capacitor bridge, and without it
+> `CapacitorHttp` cannot patch `fetch` past Jira's missing CORS headers. What
+> shipped is a pure-Java `WatchWorker` that hashes the same snapshot fields and
+> reports how many issues changed, leaving the event semantics to the
+> TypeScript differ. The steps below are kept as the record of what was tried.
+
 **Files:**
 - Create: `client/src/native/watchEntry.ts`, `android/app/src/main/java/com/hp/missioncontrol/WatchBridgePlugin.java`, `android/app/src/main/java/com/hp/missioncontrol/WatchWorker.java`
 - Modify: `client/src/main.tsx` (route `#/__watch` to the headless entry before React mounts), `android/app/src/main/java/com/hp/missioncontrol/MainActivity.java` (register the plugin, schedule the work, request the permission), `android/app/src/main/AndroidManifest.xml`, `android/app/build.gradle` (WorkManager dependency)

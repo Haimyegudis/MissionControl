@@ -121,8 +121,11 @@ never a per-issue fetch.
 `WatchState = { snapshot: Record<key, IssueSnapshot>; lastCycle: string; feed: WatchEvent[]; ackedAt: string | null }`.
 `feed` is capped at the 200 most recent events.
 
-- Desktop: `%APPDATA%\JiraWeb\watch-state.json` (path via `server/src/config/appPaths.ts`)
-- Android: the same JSON through the existing `kvStore` / `secureStorage` path
+- Both platforms: the `lists` KV table under `watch.state` (desktop maps it to
+  `KvLists` in SQLite, Android to the encrypted store), so one repo serves both
+  and `EncryptedStorePlugin`'s table whitelist needs no change. This replaces
+  the `watch-state.json` file the first draft of this spec proposed.
+- The Android background worker keeps its own separate, hashed state — see §5.
 
 **Baseline rule:** when no prior snapshot exists, the cycle stores the snapshot
 and emits zero events. Installing the feature must not produce forty
@@ -177,24 +180,42 @@ dispatcher answers them identically.
 
 ### 5. Android delivery
 
-- `WatchWorker` — a `CoroutineWorker` scheduled as a `PeriodicWorkRequest`
-  (15 min, `NetworkType.CONNECTED`, `ExistingPeriodicWorkPolicy.KEEP`).
-  15 minutes is the WorkManager floor and Doze can stretch it further. This is
-  accepted rather than worked around with a foreground service.
-- The worker creates an offscreen `WebView` on the main looper loading
-  `file:///android_asset/public/index.html#/__watch`. That hash boots a minimal
-  watch entry point in `client/src/native/watchEntry.ts`: session bootstrap
-  (the existing `CookieBridgePlugin` / `EncryptedStorePlugin` / `ssoSession`
-  path) then `WatchService.runCycle`. No React, no UI.
-- `WatchBridgePlugin` (new Capacitor plugin) carries the resulting events back
-  to the worker, which raises one `NotificationCompat` notification per batch on
-  a `mc_jira_changes` channel. Tapping it opens `MainActivity` deep-linked to
-  `#/dashboard`.
-- A 60-second watchdog destroys the WebView and returns `Result.retry()` if the
-  cycle has not reported back.
-- `POST_NOTIFICATIONS` runtime permission is requested on first launch (API 33+).
-- While the app is in the foreground, `client/src/stores/scheduler.ts` drives a
-  5-minute cycle, so active use gets the requested cadence.
+**Superseded during implementation.** The original design had a `CoroutineWorker`
+host an offscreen WebView loading the app at `#/__watch`, reusing the TypeScript
+cycle. That is not buildable: `Bridge.Builder` in Capacitor 8 accepts only an
+`AppCompatActivity` or a `Fragment`
+(`node_modules/@capacitor/android/.../Bridge.java:1509`), so a worker cannot
+create a bridge — and without the bridge `CapacitorHttp` never patches `fetch`,
+which `capacitor.config.ts` records as load-bearing because "Jira and TestRail
+REST send no CORS headers".
+
+What ships instead:
+
+- `WatchWorker` (a plain `Worker`, `PeriodicWorkRequest`, 15 min,
+  `NetworkType.CONNECTED`, `ExistingPeriodicWorkPolicy.KEEP`) calls Jira
+  directly over `HttpURLConnection`, authenticating with the shared WebView
+  cookie jar (`CookieManager.getInstance().getCookie`). HP OneUID is the only
+  credential on this build, so no token decryption is involved.
+- The worker does **not** reimplement the differ. It hashes the same snapshot
+  fields the differ compares and reports how many issues were affected:
+  "3 issues on your dashboard changed". The detailed feed — which field, from
+  what, to what — is still produced by `core/src/watch/differ.ts` when the app
+  next runs, so event kinds and wording live in exactly one place.
+- Stored state is `sha256(issue key) -> sha256(field tuple)` in app-private
+  preferences. No issue key, summary or status is written in readable form.
+- The notification channel and the notification are both
+  `VISIBILITY_PRIVATE`, so nothing is legible from a locked screen.
+- `POST_NOTIFICATIONS` is requested on first launch (API 33+).
+- `WatchBridgePlugin.sync({enabled, project, baseUrl})` mirrors the three
+  non-secret values the worker needs into preferences; the web app calls it on
+  boot and whenever the config changes. No credential crosses that bridge.
+- While the app is in the foreground, `client/src/stores/scheduler.ts` drives
+  the full TypeScript cycle at the configured interval.
+
+**Accepted security relaxation:** the background worker reads the session
+without the biometric gate `bootstrapNative()` applies, because a worker cannot
+prompt. It reads only the cookie jar — no Keystore secret is decrypted — and
+the redaction above bounds what a locked phone can reveal.
 
 ### 6. In-app feed
 
