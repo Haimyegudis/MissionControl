@@ -550,6 +550,13 @@ describe('SqliteKvStore', () => {
     expect(kv.get('trCache', 'runs')).toBeNull();
     expect(kv.get('issueCache', 'mywork')).not.toBeNull();
   });
+
+  it('round-trips the lists table the watch state depends on', () => {
+    const db = openDb(':memory:');
+    const kv = new SqliteKvStore(db);
+    kv.set('lists', 'watch:config', '{"enabled":true}', FIXED);
+    expect(kv.get('lists', 'watch:config')).toEqual({ json: '{"enabled":true}', updatedAt: FIXED });
+  });
 });
 
 describe('SqlitePeopleStore', () => {

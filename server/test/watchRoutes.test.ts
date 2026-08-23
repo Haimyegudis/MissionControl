@@ -159,4 +159,16 @@ describe('startWatchTimer', () => {
     expect(runCycle).not.toHaveBeenCalled();
     stop();
   });
+
+  it('survives a config read that throws instead of taking the process down', async () => {
+    const runCycle = vi.fn(async () => [EVENT]);
+    const getConfig = vi.fn(() => {
+      throw new Error('no such table: KvLists');
+    });
+    const stop = startWatchTimer({ watch: { runCycle, getConfig }, notify: vi.fn() });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(getConfig).toHaveBeenCalled();
+    expect(runCycle).not.toHaveBeenCalled();
+    stop();
+  });
 });

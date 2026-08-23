@@ -91,7 +91,15 @@ export function startWatchTimer(deps: WatchTimerDeps): () => void {
   let stopped = false;
 
   const tick = async (): Promise<void> => {
-    const config = deps.watch.getConfig();
+    // A config read can fail (unreadable or half-migrated store). Fall back to
+    // a disabled cycle and retry later — the poll loop must never take the
+    // whole server down with an unhandled rejection.
+    let config: { enabled: boolean; intervalMinutes: number };
+    try {
+      config = deps.watch.getConfig();
+    } catch {
+      config = { enabled: false, intervalMinutes: 5 };
+    }
     if (config.enabled) {
       try {
         const events = await deps.watch.runCycle();
