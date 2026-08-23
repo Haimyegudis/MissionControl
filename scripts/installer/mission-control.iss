@@ -10,7 +10,7 @@
 #endif
 
 #define AppName "Mission Control"
-#define AppVersion "1.1"
+#define AppVersion "1.2"
 
 [Setup]
 AppId={{B7C1E4D2-55A0-4F0E-9B7A-MC2026UNIF01}}
