@@ -24,6 +24,7 @@ import {
   dailyCsvRows,
   issuesCsvRow,
   loggedOnlyIssues,
+  periodRange,
   timesheetHeaders,
 } from '../src/lib/viewTimeLogged';
 import type { DailyLogEntry, JiraBoard, JiraIssue, TimeLoggedReport } from '../src/types';
@@ -261,5 +262,29 @@ describe('viewBoards (§4)', () => {
         indigoCount: 7,
       }),
     ).toBe('All: 40  |  Indigo only: 7');
+  });
+});
+
+describe('periodRange', () => {
+  // Wed Aug 26 2026.
+  const now = new Date(2026, 7, 26, 14, 30);
+  const pr = (p: Parameters<typeof periodRange>[0]) => periodRange(p, now, '2026-08-01', '2026-08-10');
+
+  it('today / yesterday are single-day exclusive windows', () => {
+    expect(pr('today')).toEqual({ from: '2026-08-26', to: '2026-08-27' });
+    expect(pr('yesterday')).toEqual({ from: '2026-08-25', to: '2026-08-26' });
+  });
+
+  it('weeks start Sunday; previous week ends where this week starts', () => {
+    expect(pr('thisWeek')).toEqual({ from: '2026-08-23', to: '2026-08-30' });
+    expect(pr('previousWeek')).toEqual({ from: '2026-08-16', to: '2026-08-23' });
+  });
+
+  it('this month spans the calendar month', () => {
+    expect(pr('thisMonth')).toEqual({ from: '2026-08-01', to: '2026-09-01' });
+  });
+
+  it('custom range treats the to-date as inclusive', () => {
+    expect(pr('customRange')).toEqual({ from: '2026-08-01', to: '2026-08-11' });
   });
 });

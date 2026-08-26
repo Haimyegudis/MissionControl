@@ -30,6 +30,7 @@ import {
   dailyCsvRows,
   issuesCsvRow,
   loggedOnlyIssues,
+  periodRange,
   timesheetHeaders,
 } from '../lib/viewTimeLogged';
 import { sessionStore } from '../stores/session';
@@ -166,13 +167,11 @@ export function TimeLoggedView() {
       if (sprintMode) {
         r = await timeloggedApi.sprint(sprintName, userFilter.trim() || undefined);
       } else {
-        const opts: { from?: string; to?: string; user?: string } = {};
-        if (period === 'customRange') {
-          opts.from = customFrom;
-          opts.to = customTo;
-        }
-        if (userFilter.trim()) opts.user = userFilter;
-        r = await timeloggedApi.report(period, opts);
+        // worklogAuthor range query: every issue the user logged in the
+        // window, regardless of sprint — the period JQL only covered the
+        // current open sprint.
+        const { from, to } = periodRange(period, new Date(), customFrom, customTo);
+        r = await timeloggedApi.range(from, to, userFilter.trim() || undefined);
       }
       if (seq !== loadSeq.current) return;
       setReport(r);
