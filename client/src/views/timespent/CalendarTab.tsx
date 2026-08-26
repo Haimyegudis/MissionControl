@@ -9,7 +9,7 @@ import { activeSprintRange, buildCalendarMonth } from '../../lib/viewTimeSpentTa
 import type { TimeLoggedReport } from '../../types';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MAX_LINES = 3;
+const MAX_LINES = 2;
 
 export function CalendarTab({ user }: { user: string }) {
   const now = new Date();
@@ -18,6 +18,7 @@ export function CalendarTab({ user }: { user: string }) {
   const [report, setReport] = useState<TimeLoggedReport | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,8 +32,9 @@ export function CalendarTab({ user }: { user: string }) {
       .catch((e) => { if (!cancelled) setError(errText(e)); })
       .finally(() => { if (!cancelled) setBusy(false); });
     return () => { cancelled = true; };
-  }, [year, month, user]);
+  }, [year, month, user, refreshTick]);
 
+  const summaryByKey = useMemo(() => new Map((report?.issues ?? []).map((i) => [i.key, i.summary])), [report]);
   const sprint = useMemo(() => activeSprintRange(report?.issues ?? []), [report]);
   const cal = useMemo(
     () => buildCalendarMonth(year, month, report?.dailyByIssue ?? [], sprint, new Date()),
@@ -72,7 +74,7 @@ export function CalendarTab({ user }: { user: string }) {
             <div
               key={cell.day}
               style={{
-                minHeight: 86,
+                minHeight: 100,
                 borderRadius: 6,
                 padding: '4px 6px',
                 border: cell.isToday ? '2px solid var(--accent-green)' : '1px solid var(--border-soft)',
@@ -85,10 +87,20 @@ export function CalendarTab({ user }: { user: string }) {
                 <button
                   key={e.issueKey}
                   type="button"
-                  onClick={() => dialogs.openIssueDetails(e.issueKey)}
-                  style={{ display: 'block', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 11, color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)' }}
+                  onClick={() => dialogs.openLogWork(e.issueKey, { onLogged: () => setRefreshTick((t) => t + 1) })}
+                  title={`${e.issueKey} — ${summaryByKey.get(e.issueKey) ?? ''}`}
+                  style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '2px 0', cursor: 'pointer' }}
                 >
-                  {e.issueKey}: {e.hours.toFixed(1)}h
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 4 }}>
+                    <span style={{ fontSize: 11, color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)' }}>{e.issueKey}</span>
+                    <span style={{ fontSize: 11, color: 'var(--accent-green)', fontWeight: 600 }}>{e.hours.toFixed(1)}h</span>
+                  </div>
+                  <div
+                    className="muted"
+                    style={{ fontSize: 10.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  >
+                    {summaryByKey.get(e.issueKey) ?? ''}
+                  </div>
                 </button>
               ))}
               {cell.entries.length > MAX_LINES ? (
