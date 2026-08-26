@@ -156,7 +156,7 @@ export function buildSprintDailyChart(daily: readonly DailyLogEntry[]): SprintDa
 }
 
 // ---------------------------------------------------------------------------
-// Heatmap + daily CSV aggregation
+// Daily CSV aggregation
 // ---------------------------------------------------------------------------
 
 /** Aggregate per-issue daily entries into hours per `yyyy-MM-dd` day. */

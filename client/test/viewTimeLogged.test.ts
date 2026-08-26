@@ -171,7 +171,7 @@ describe('buildSprintDailyChart (§7 chart)', () => {
   });
 });
 
-describe('CSV + heatmap aggregation (§7 exports)', () => {
+describe('CSV aggregation (§7 exports)', () => {
   it('issues CSV row: verbatim headers, hours 0.##', () => {
     expect([...ISSUES_CSV_HEADERS]).toEqual([
       'Key',
