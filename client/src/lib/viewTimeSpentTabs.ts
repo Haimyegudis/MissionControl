@@ -2,7 +2,7 @@
 // epic grouping, sprint bars, and the To Do → In Progress transition pick.
 
 import type { DailyLogEntry, JiraIssue, JiraTransition } from '../types';
-import { parseYmd, ymd } from './viewFormat';
+import { ymd } from './viewFormat';
 
 export interface CalendarDayCell {
   day: string;
