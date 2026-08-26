@@ -35,6 +35,7 @@ import { pushToast } from '../stores/toasts';
 import { useStore } from '../stores/useStore';
 import type { JiraIssue, TimeLoggedReport } from '../types';
 import { CalendarTab } from './timespent/CalendarTab';
+import { EpicsTab } from './timespent/EpicsTab';
 
 const PERIODS = [
   { id: 'today', label: 'Today' },
@@ -338,14 +339,14 @@ export function TimeLoggedView() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <h2 style={{ fontSize: 18, fontFamily: 'var(--font-display)' }}>Time Spent</h2>
         <div style={{ display: 'flex', gap: 4 }}>
-          {(['report', 'calendar'] as const).map((t) => (
+          {(['report', 'calendar', 'epics'] as const).map((t) => (
             <button
               key={t}
               className="btn"
               onClick={() => setTab(t)}
               style={tab === t ? { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)', fontWeight: 700 } : undefined}
             >
-              {t === 'report' ? 'Report' : 'Calendar'}
+              {t === 'report' ? 'Report' : t === 'calendar' ? 'Calendar' : 'Epics'}
             </button>
           ))}
         </div>
@@ -575,6 +576,8 @@ export function TimeLoggedView() {
       ) : null}
 
       {tab === 'calendar' ? <CalendarTab user={userFilter} /> : null}
+
+      {tab === 'epics' ? <EpicsTab user={userFilter} /> : null}
     </div>
   );
 }

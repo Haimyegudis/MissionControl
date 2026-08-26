@@ -38,6 +38,7 @@ vi.mock('../src/api/client', () => {
 });
 
 import { CalendarTab } from '../src/views/timespent/CalendarTab';
+import { EpicsTab } from '../src/views/timespent/EpicsTab';
 
 describe('CalendarTab', () => {
   it('renders month title, weekday headers and nav buttons', () => {
@@ -47,5 +48,13 @@ describe('CalendarTab', () => {
     expect(html).toContain('Today');
     expect(html).toContain('Sun');
     expect(html).toContain('Sat');
+  });
+});
+
+describe('EpicsTab', () => {
+  it('renders the days-back control and empty state', () => {
+    const html = renderToString(<EpicsTab user="" />);
+    expect(html).toContain('Days to look back');
+    expect(html).toContain('value="30"');
   });
 });
