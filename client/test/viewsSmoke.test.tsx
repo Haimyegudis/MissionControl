@@ -85,13 +85,16 @@ describe('RecentUpdatesView (§6)', () => {
 });
 
 describe('TimeLoggedView (redesigned)', () => {
-  it('renders toolbar chips, hero summary and timesheet', () => {
+  it('renders toolbar chips, KPI strip, timesheet and issues header', () => {
     const html = renderToString(<TimeLoggedView />);
     expect(html).toContain('Time Spent');
     expect(html).toContain('⬇ CSV');
     expect(html).toContain('⬇ PDF');
-    expect(html).toContain('Total logged');
-    expect(html).toContain('Weekly timesheet');
+    expect(html).toContain('logged'); // KPI strip total
+    expect(html).toContain('0 tasks');
+    expect(html).toContain('Weekly Timesheet');
+    expect(html).toContain('type hours to log');
+    expect(html).toContain('Issues (0)'); // collapsible issues header (collapsed by default)
     expect(html).toContain('This week');
     // All six periods offered as chips.
     for (const p of ['Today', 'Yesterday', 'This week', 'Last week', 'This month', 'Custom…']) {

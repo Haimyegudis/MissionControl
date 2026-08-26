@@ -1,12 +1,11 @@
 // Time Spent view — redesigned for at-a-glance clarity, zero duplication:
 //   · period chips + user picker + ONE export menu (CSV / PDF)
-//   · hero strip: total logged for the period + logged-hours-per-STATUS chips
-//     (every task's state visible instantly)
-//   · one issues panel: status pill, bold logged-this-period, and an inline
-//     Estimated↔Logged progress bar per row (replaces the old separate
-//     "Logged vs Estimated" chart) + per-row Log work button (replaces the
-//     old select-then-expander flow)
-//   · weekly timesheet (unique per-day × per-issue)
+//   · slim KPI strip: total logged + task count + compact per-status pills
+//   · weekly timesheet (unique per-day × per-issue) — first, it's the
+//     primary interaction
+//   · collapsible issues panel (collapsed by default): status pill, bold
+//     logged-this-period, inline Estimated↔Logged progress bar per row +
+//     per-row Log work button
 //   · Report / Calendar tabs (Epics, Sprint tabs land in later tasks)
 // The old sprint-per-day chart and 13-week heatmap are gone.
 // Refresh: session change ONLY — no scheduler tick.
@@ -146,6 +145,7 @@ export function TimeLoggedView() {
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeekSunday(new Date()));
   const [weekReport, setWeekReport] = useState<TimeLoggedReport | null>(null);
   const [sprintIssues, setSprintIssues] = useState<JiraIssue[]>([]);
+  const [issuesOpen, setIssuesOpen] = useState(false);
 
   const loadSeq = useRef(0);
   const sprintIssuesSeq = useRef(0);
@@ -461,77 +461,58 @@ export function TimeLoggedView() {
 
       {error ? <div style={{ color: 'var(--accent-red)', fontSize: 12.5 }}>{error}</div> : null}
 
-      {/* ------------------------------------------- hero summary ---------- */}
+      {/* ------------------------------------------- KPI strip ------------- */}
       <div
         className="card"
+        title={`Total logged · ${sprintMode ? sprintLabel : PERIODS.find((p) => p.id === period)?.label}`}
         style={{
-          padding: '16px 20px',
+          padding: '10px 16px',
           display: 'flex',
           alignItems: 'center',
-          gap: 24,
+          gap: 10,
           flexWrap: 'wrap',
+          minHeight: 48,
         }}
       >
-        <div>
-          <div className="muted" style={{ fontSize: 10.5, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            Total logged · {sprintMode ? sprintLabel : PERIODS.find((p) => p.id === period)?.label}
-          </div>
-          <div style={{ fontSize: 30, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--accent-green)', lineHeight: 1.15 }}>
-            {formatTimeSpan(report?.total ?? 0)}
-          </div>
-          <div className="muted" style={{ fontSize: 11.5 }}>
-            across {loggedIssues} issue{loggedIssues === 1 ? '' : 's'}
-          </div>
-        </div>
-        <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--border-soft)' }} />
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flex: 1 }}>
-          {statusChips.length === 0 ? (
-            <span className="muted" style={{ fontSize: 12.5 }}>
-              Nothing logged in this period yet.
+        <span style={{ fontSize: 19, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--accent-green)', whiteSpace: 'nowrap' }}>
+          {formatTimeSpan(report?.total ?? 0)} logged
+        </span>
+        <span className="muted" style={{ fontSize: 13 }}>
+          {`· ${loggedIssues} task${loggedIssues === 1 ? '' : 's'}`}
+        </span>
+        {statusChips.length === 0 ? (
+          <span className="muted" style={{ fontSize: 12.5 }}>
+            Nothing logged in this period yet.
+          </span>
+        ) : (
+          statusChips.map((c) => (
+            <span
+              key={c.status}
+              className="tl-chip"
+              title={`${c.count} issue(s) in "${c.status}" — ${formatTimeSpan(c.seconds)} logged in this period`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'baseline',
+                gap: 5,
+                padding: '3px 10px',
+                borderRadius: 999,
+                border: `1px solid ${statusColor(c.status)}`,
+                background: `color-mix(in srgb, ${statusColor(c.status)} 8%, transparent)`,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span style={{ fontSize: 11, fontWeight: 700, color: statusColor(c.status) }}>{c.status}</span>
+              <span style={{ fontSize: 12, fontWeight: 700 }}>{formatTimeSpan(c.seconds)}</span>
             </span>
-          ) : (
-            statusChips.map((c) => (
-              <div
-                key={c.status}
-                className="tl-chip"
-                title={`${c.count} issue(s) in "${c.status}" — ${formatTimeSpan(c.seconds)} logged in this period`}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 2,
-                  padding: '8px 14px',
-                  borderRadius: 10,
-                  border: `1px solid ${statusColor(c.status)}`,
-                  background: `color-mix(in srgb, ${statusColor(c.status)} 8%, transparent)`,
-                  minWidth: 110,
-                }}
-              >
-                <span style={{ fontSize: 11, fontWeight: 700, color: statusColor(c.status) }}>{c.status}</span>
-                <span style={{ fontSize: 15, fontWeight: 700 }}>{formatTimeSpan(c.seconds)}</span>
-                <span className="muted" style={{ fontSize: 10.5 }}>
-                  {c.count} issue{c.count === 1 ? '' : 's'}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
+          ))
+        )}
       </div>
-
-      {/* ------------------------------------------- issues panel ---------- */}
-      <ResponsiveGrid<JiraIssue>
-        stateKey="TimeLogged.Issues"
-        columns={columns}
-        rows={loggedRows}
-        rowKey={(i) => i.key}
-        multiSelect
-        onRowDoubleClick={(i) => dialogs.openIssueDetails(i.key)}
-        emptyText="No work logged in this period."
-      />
 
       {/* -------------------------------------------- timesheet ------------ */}
       <div className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 700, fontSize: 13.5 }}>Weekly timesheet</span>
+          <span style={{ fontWeight: 700, fontSize: 13.5 }}>Weekly Timesheet</span>
+          <span className="muted" style={{ fontSize: 11.5 }}>type hours to log</span>
           <button className="btn btn-icon" onClick={() => changeWeek(addDays(weekStart, -7))} title="Previous week">
             ◀
           </button>
@@ -559,6 +540,40 @@ export function TimeLoggedView() {
             onLogged={() => void loadTimesheet(weekStart)}
           />
         </div>
+      </div>
+
+      {/* ------------------------------------------- issues panel ---------- */}
+      <div className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <button
+          onClick={() => setIssuesOpen((v) => !v)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            color: 'inherit',
+            font: 'inherit',
+            textAlign: 'left',
+          }}
+          title={issuesOpen ? 'Collapse issues' : 'Expand issues'}
+        >
+          <span style={{ fontSize: 12 }}>{issuesOpen ? '▾' : '▸'}</span>
+          <span style={{ fontWeight: 700, fontSize: 13.5 }}>{`Issues (${loggedIssues})`}</span>
+        </button>
+        {issuesOpen ? (
+          <ResponsiveGrid<JiraIssue>
+            stateKey="TimeLogged.Issues"
+            columns={columns}
+            rows={loggedRows}
+            rowKey={(i) => i.key}
+            multiSelect
+            onRowDoubleClick={(i) => dialogs.openIssueDetails(i.key)}
+            emptyText="No work logged in this period."
+          />
+        ) : null}
       </div>
 
       {/* Print-only section for the PDF export (window.print). */}
