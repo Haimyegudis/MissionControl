@@ -1,7 +1,7 @@
 # Time Spent Scope-First Redesign + Editable Timesheet — Design
 
 **Date:** 2026-08-26
-**Status:** Approved (layout, cell behavior, and row policy chosen by the user)
+**Status:** REVERTED 2026-08-26 — the user rejected the scope-first layout after trying it. The original tab layout was restored; only the editable weekly timesheet (inside the Report tab) survives, per the follow-up request.
 
 ## Problem
 

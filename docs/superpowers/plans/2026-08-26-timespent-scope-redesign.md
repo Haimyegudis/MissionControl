@@ -1,5 +1,7 @@
 # Time Spent Scope-First Redesign Implementation Plan
 
+> **REVERTED 2026-08-26** — implemented, deployed, rejected by the user; commits reverted. Kept for history.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the Time Spent period chips + four tabs with one scope bar (Day/Week/Month/Sprint/Custom + arrows + user) and presentation views (Timesheet/Summary/Epics/Calendar/Board), and make the timesheet cells directly log work (add-only).
