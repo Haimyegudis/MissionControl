@@ -105,6 +105,8 @@ export function EditableTimesheet({
     });
 
   const commit = async (key: string, day: string, raw: string, close: () => void) => {
+    const id = cellId(key, day);
+    if (busyCells.has(id)) return;
     const trimmed = raw.trim();
     if (!trimmed) {
       close();
@@ -121,7 +123,11 @@ export function EditableTimesheet({
       close();
       return;
     }
-    const id = cellId(key, day);
+    if (seconds < 60) {
+      pushToast({ title: 'Minimum 1 minute per entry.', body: '', severity: 'error' });
+      // keep the draft — don't call close(), let the user fix the value.
+      return;
+    }
     setBusy(id, true);
     try {
       await issuesApi.addWorklog(key, { seconds, started: new Date(`${day}T12:00:00`).toISOString() });
