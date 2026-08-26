@@ -36,6 +36,7 @@ import { useStore } from '../stores/useStore';
 import type { JiraIssue, TimeLoggedReport } from '../types';
 import { CalendarTab } from './timespent/CalendarTab';
 import { EpicsTab } from './timespent/EpicsTab';
+import { SprintTab } from './timespent/SprintTab';
 
 const PERIODS = [
   { id: 'today', label: 'Today' },
@@ -339,14 +340,14 @@ export function TimeLoggedView() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <h2 style={{ fontSize: 18, fontFamily: 'var(--font-display)' }}>Time Spent</h2>
         <div style={{ display: 'flex', gap: 4 }}>
-          {(['report', 'calendar', 'epics'] as const).map((t) => (
+          {(['report', 'calendar', 'epics', 'sprint'] as const).map((t) => (
             <button
               key={t}
               className="btn"
               onClick={() => setTab(t)}
               style={tab === t ? { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)', fontWeight: 700 } : undefined}
             >
-              {t === 'report' ? 'Report' : t === 'calendar' ? 'Calendar' : 'Epics'}
+              {t === 'report' ? 'Report' : t === 'calendar' ? 'Calendar' : t === 'epics' ? 'Epics' : 'Sprint'}
             </button>
           ))}
         </div>
@@ -578,6 +579,8 @@ export function TimeLoggedView() {
       {tab === 'calendar' ? <CalendarTab user={userFilter} /> : null}
 
       {tab === 'epics' ? <EpicsTab user={userFilter} /> : null}
+
+      {tab === 'sprint' ? <SprintTab user={userFilter} /> : null}
     </div>
   );
 }

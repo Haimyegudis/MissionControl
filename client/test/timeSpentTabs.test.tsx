@@ -34,11 +34,13 @@ vi.mock('../src/api/client', () => {
     timelogged: { report: vi.fn(async () => ({ issues: [], total: 0, fromUtc: '', toUtc: '', dailyByIssue: [], availableSprints: [] })) },
     issues: { search: vi.fn(async () => ({ items: [], total: 0 })), transitions: vi.fn(async () => []), transitionScreen: vi.fn(async () => []), performTransition: vi.fn(async () => undefined) },
     metadata: { searchableUsers: vi.fn(async () => []) },
+    metadataExtra: { resolveUser: vi.fn(async () => ({ username: null })) },
   };
 });
 
 import { CalendarTab } from '../src/views/timespent/CalendarTab';
 import { EpicsTab } from '../src/views/timespent/EpicsTab';
+import { SprintTab } from '../src/views/timespent/SprintTab';
 
 describe('CalendarTab', () => {
   it('renders month title, weekday headers and nav buttons', () => {
@@ -56,5 +58,12 @@ describe('EpicsTab', () => {
     const html = renderToString(<EpicsTab user="" />);
     expect(html).toContain('Days to look back');
     expect(html).toContain('value="30"');
+  });
+});
+
+describe('SprintTab', () => {
+  it('renders the empty state scaffold', () => {
+    const html = renderToString(<SprintTab user="" />);
+    expect(html).toContain('Current sprint');
   });
 });
