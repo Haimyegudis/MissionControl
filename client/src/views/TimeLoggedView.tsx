@@ -9,7 +9,7 @@
 // Refresh: session change ONLY — no scheduler tick.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { metadata as metadataApi, timelogged as timeloggedApi } from '../api/client';
+import { issues as issuesApi, metadata as metadataApi, timelogged as timeloggedApi } from '../api/client';
 import { ResponsiveGrid } from '../components/ResponsiveGrid';
 import type { GridColumn } from '../components/DataGrid';
 import { UserSearchPicker } from '../components/UserSearchPicker';
@@ -18,9 +18,8 @@ import { statusColor } from '../lib/colors';
 import { buildCsv, downloadCsv } from '../lib/csv';
 import { errText } from '../lib/errors';
 import { formatTimeSpan } from '../lib/format';
-import { addDays, hoursDisplay, parseYmd, ymd } from '../lib/viewFormat';
+import { addDays, parseYmd, ymd } from '../lib/viewFormat';
 import {
-  buildEditableRows,
   scopeWindow,
   stepAnchor,
   viewsForScope,
@@ -28,20 +27,20 @@ import {
   type ScopeId,
   type ViewId,
 } from '../lib/viewTimeSpentScope';
+import { sprintJql } from '../lib/viewTimeSpentTabs';
 import {
   ISSUES_CSV_HEADERS,
   aggregateDailyHours,
-  buildTimesheet,
   dailyCsvRows,
   issuesCsvRow,
   loggedOnlyIssues,
-  timesheetHeaders,
 } from '../lib/viewTimeLogged';
 import { sessionStore } from '../stores/session';
 import { pushToast } from '../stores/toasts';
 import { useStore } from '../stores/useStore';
 import type { JiraIssue, TimeLoggedReport } from '../types';
 import { CalendarTab } from './timespent/CalendarTab';
+import { EditableTimesheet } from './timespent/EditableTimesheet';
 import { EpicsTab } from './timespent/EpicsTab';
 import { SprintTab } from './timespent/SprintTab';
 
@@ -346,25 +345,29 @@ export function TimeLoggedView() {
   const days = useMemo(() => (dataWin ? windowDays(dataWin) : []), [dataWin]);
   const loggedRows = useMemo(() => loggedOnlyIssues(report?.issues ?? []), [report]);
 
-  // Week scope keeps the classic 7-day grid; other scopes get a minimal
-  // issues × days table (Task 3 replaces both with the editable grid).
-  const weekStart = useMemo(
-    () => (scope === 'week' && win ? parseYmd(win.from) : null),
-    [scope, win],
-  );
-  const timesheet = useMemo(
-    () => (weekStart && report ? buildTimesheet(weekStart, report) : null),
-    [weekStart, report],
-  );
-  const weekHeaders = useMemo(() => (weekStart ? timesheetHeaders(weekStart) : []), [weekStart]);
-  const sheetRows = useMemo(
-    () => (scope !== 'week' && report ? buildEditableRows(days, report, [], []) : []),
-    [scope, report, days],
-  );
-  const sheetTotals = useMemo(
-    () => days.map((_, i) => sheetRows.reduce((sum, r) => sum + r.hours[i], 0)),
-    [days, sheetRows],
-  );
+  // Sprint issues for the signed-in user, feeding empty (not-yet-logged)
+  // timesheet rows. Only fetched when the user picker is self — logging on
+  // behalf of someone else is out of scope, and their sprint isn't ours to show.
+  const [sprintIssues, setSprintIssues] = useState<JiraIssue[]>([]);
+  useEffect(() => {
+    if (!connected || userFilter.trim()) {
+      setSprintIssues([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const project = sessionStore.get().profile?.defaultProjectKey || 'ISW';
+        const page = await issuesApi.search(sprintJql(project, null), 0, 100);
+        if (!cancelled) setSprintIssues(page.items ?? []);
+      } catch {
+        if (!cancelled) setSprintIssues([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [connected, userFilter]);
 
   const exportCsv = () => {
     if (!report) return;
@@ -465,14 +468,6 @@ export function TimeLoggedView() {
     ],
     [],
   );
-
-  const dayCell: React.CSSProperties = {
-    width: 48,
-    minWidth: 48,
-    textAlign: 'center',
-    padding: '4px 2px',
-    borderBottom: '1px solid var(--border-soft)',
-  };
 
   const activeChip = { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)', fontWeight: 700 } as const;
 
@@ -576,134 +571,17 @@ export function TimeLoggedView() {
             <span className="muted" style={{ fontSize: 12.5 }}>{scopeLabel}</span>
             <div style={{ flex: 1 }} />
             <span>
-              Total:{' '}
-              <b style={{ color: 'var(--accent-green)' }}>
-                {formatTimeSpan(
-                  Math.round(
-                    (scope === 'week'
-                      ? timesheet?.weeklyTotalHours ?? 0
-                      : sheetTotals.reduce((a, b) => a + b, 0)) * 3600,
-                  ),
-                )}
-              </b>
+              Total: <b style={{ color: 'var(--accent-green)' }}>{formatTimeSpan(report?.total ?? 0)}</b>
             </span>
           </div>
           <div style={{ overflowX: 'auto' }}>
-            {scope === 'week' ? (
-              <table style={{ borderCollapse: 'collapse', fontSize: 12.5, minWidth: 420 + 7 * 48 }}>
-                <thead>
-                  <tr>
-                    <th style={{ ...dayCell, width: 240, minWidth: 240, textAlign: 'left' }} className="muted">
-                      Issue
-                    </th>
-                    <th style={{ ...dayCell, width: 100, minWidth: 100, textAlign: 'left' }} className="muted">
-                      Key
-                    </th>
-                    <th style={{ ...dayCell, width: 80, minWidth: 80 }} className="muted">
-                      Logged
-                    </th>
-                    {weekHeaders.map((h, i) => (
-                      <th key={i} style={dayCell}>
-                        <div style={{ fontWeight: 700 }}>{h.dayNumber}</div>
-                        <div className="muted" style={{ fontSize: 10, opacity: 0.7 }}>
-                          {h.dayLabel}
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {(timesheet?.rows ?? []).map((r) => (
-                    <tr key={r.issueKey}>
-                      <td style={{ ...dayCell, textAlign: 'left', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {r.summary}
-                      </td>
-                      <td style={{ ...dayCell, textAlign: 'left', color: 'var(--accent-cyan)', fontWeight: 600 }}>
-                        {r.issueKey}
-                      </td>
-                      <td style={dayCell}>{hoursDisplay(r.loggedHours)}</td>
-                      {r.days.map((h, i) => (
-                        <td key={i} style={dayCell}>
-                          {hoursDisplay(h)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                  {timesheet ? (
-                    <tr style={{ fontWeight: 700 }}>
-                      <td style={{ ...dayCell, textAlign: 'left' }}>Total</td>
-                      <td style={dayCell} />
-                      <td style={dayCell}>{hoursDisplay(timesheet.weeklyTotalHours)}</td>
-                      {timesheet.totals.map((h, i) => (
-                        <td key={i} style={dayCell}>
-                          {hoursDisplay(h)}
-                        </td>
-                      ))}
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            ) : (
-              <table style={{ borderCollapse: 'collapse', fontSize: 12.5, minWidth: 340 + days.length * 48 }}>
-                <thead>
-                  <tr>
-                    <th style={{ ...dayCell, width: 240, minWidth: 240, textAlign: 'left' }} className="muted">
-                      Issue
-                    </th>
-                    <th style={{ ...dayCell, width: 100, minWidth: 100, textAlign: 'left' }} className="muted">
-                      Key
-                    </th>
-                    <th style={{ ...dayCell, width: 80, minWidth: 80 }} className="muted">
-                      Logged
-                    </th>
-                    {days.map((d) => (
-                      <th key={d} style={dayCell}>
-                        <div style={{ fontWeight: 700 }}>{d.slice(8)}</div>
-                        <div className="muted" style={{ fontSize: 10, opacity: 0.7 }}>
-                          {d.slice(5, 7)}
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sheetRows.map((r) => (
-                    <tr key={r.key}>
-                      <td style={{ ...dayCell, textAlign: 'left', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {r.summary}
-                      </td>
-                      <td style={{ ...dayCell, textAlign: 'left', color: 'var(--accent-cyan)', fontWeight: 600 }}>
-                        {r.key}
-                      </td>
-                      <td style={dayCell}>{hoursDisplay(r.totalHours)}</td>
-                      {r.hours.map((h, i) => (
-                        <td key={i} style={dayCell}>
-                          {hoursDisplay(h)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                  {sheetRows.length > 0 ? (
-                    <tr style={{ fontWeight: 700 }}>
-                      <td style={{ ...dayCell, textAlign: 'left' }}>Total</td>
-                      <td style={dayCell} />
-                      <td style={dayCell}>{hoursDisplay(sheetTotals.reduce((a, b) => a + b, 0))}</td>
-                      {sheetTotals.map((h, i) => (
-                        <td key={i} style={dayCell}>
-                          {hoursDisplay(h)}
-                        </td>
-                      ))}
-                    </tr>
-                  ) : (
-                    <tr>
-                      <td colSpan={3 + days.length} className="muted" style={{ ...dayCell, textAlign: 'left' }}>
-                        No work logged in this window.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            )}
+            <EditableTimesheet
+              days={days}
+              report={report}
+              sprintIssues={sprintIssues}
+              user={userFilter}
+              onLogged={() => void loadRef.current()}
+            />
           </div>
         </div>
       ) : null}
