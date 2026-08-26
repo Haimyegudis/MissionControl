@@ -85,21 +85,35 @@ describe('RecentUpdatesView (§6)', () => {
 });
 
 describe('TimeLoggedView (redesigned)', () => {
-  it('renders toolbar chips, KPI strip, timesheet and issues header', () => {
+  it('defaults to the Timesheet tab: week grid, goal bar, Today reset', () => {
     const html = renderToString(<TimeLoggedView />);
     expect(html).toContain('Time Spent');
+    // All five tabs in the strip.
+    for (const t of ['Timesheet', 'Report', 'Calendar', 'Epics', 'Sprint']) {
+      expect(html).toContain(t);
+    }
+    expect(html).toContain('Weekly Timesheet');
+    expect(html).toContain('type hours to log');
+    expect(html).toContain('of 40h'); // week-goal KPI header
+    expect(html).toContain('Today'); // reset-to-current-week button
+    // Report-only content is NOT rendered on the default tab.
+    expect(html).not.toContain('⬇ CSV');
+  });
+
+  it('Report tab renders toolbar chips, KPI strip and an always-open issues panel', () => {
+    const html = renderToString(<TimeLoggedView initialTab="report" />);
     expect(html).toContain('⬇ CSV');
     expect(html).toContain('⬇ PDF');
     expect(html).toContain('logged'); // KPI strip total
     expect(html).toContain('0 tasks');
-    expect(html).toContain('Weekly Timesheet');
-    expect(html).toContain('type hours to log');
-    expect(html).toContain('Issues (0)'); // collapsible issues header (collapsed by default)
-    expect(html).toContain('This week');
+    expect(html).toContain('Issues (0)'); // always visible — no collapse chevron
+    expect(html).not.toContain('▸');
     // All six periods offered as chips.
     for (const p of ['Today', 'Yesterday', 'This week', 'Last week', 'This month', 'Custom…']) {
       expect(html).toContain(p);
     }
+    // The editable timesheet moved to its own tab.
+    expect(html).not.toContain('Weekly Timesheet');
   });
 
   it('formatPrintStamp = yyyy-MM-dd HH:mm', () => {

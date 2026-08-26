@@ -10,7 +10,7 @@ import { issues as issuesApi } from '../../api/client';
 import { dialogs } from '../../dialogs/DialogHost';
 import { errText } from '../../lib/errors';
 import { formatTimeSpan } from '../../lib/format';
-import { buildEditableRows, clampToDayCap, parseCellInput } from '../../lib/editableTimesheet';
+import { buildEditableRows, clampToDayCap, dayDot, parseCellInput, shouldBlurCommit } from '../../lib/editableTimesheet';
 import { hoursDisplay, parseYmd } from '../../lib/viewFormat';
 import { pushToast } from '../../stores/toasts';
 import type { JiraIssue, TimeLoggedReport } from '../../types';
@@ -64,18 +64,23 @@ const cellInputStyle: React.CSSProperties = {
   padding: 0,
 };
 
+/** Israeli weekend tint (Fri/Sat) + today's-column highlight per day index. */
+const TODAY_TINT = 'color-mix(in srgb, var(--accent-cyan) 8%, transparent)';
+
 export function EditableTimesheet({
   days,
   report,
   sprintIssues,
   user,
   onLogged,
+  todayYmd,
 }: {
   days: string[];
   report: TimeLoggedReport | null;
   sprintIssues: JiraIssue[];
   user: string;
   onLogged: () => void;
+  todayYmd?: string;
 }) {
   const self = user.trim() === '';
 
@@ -95,6 +100,21 @@ export function EditableTimesheet({
   // irreversible.
   const cancelledRef = useRef<Set<string>>(new Set());
 
+  // Per-column presentation flags: Fri/Sat are the (dimmed, still editable)
+  // Israeli weekend; today's column gets a subtle cyan tint.
+  const dayMeta = useMemo(
+    () =>
+      days.map((d) => {
+        const dow = parseYmd(d).getDay();
+        return { weekend: dow === 5 || dow === 6, today: d === todayYmd };
+      }),
+    [days, todayYmd],
+  );
+  const colStyle = (i: number): React.CSSProperties => ({
+    ...(dayMeta[i].today ? { background: TODAY_TINT } : null),
+    ...(dayMeta[i].weekend ? { opacity: 0.55 } : null),
+  });
+
   const rows = useMemo(
     () => buildEditableRows(days, report, self ? sprintIssues : [], manual),
     [days, report, sprintIssues, manual, self],
@@ -104,13 +124,20 @@ export function EditableTimesheet({
 
   const cellId = (key: string, day: string) => `${key}|${day}`;
 
-  const setBusy = (id: string, busy: boolean) =>
+  // Synchronous mirror of busyCells: state lags a render, so a fast double
+  // Enter/click could double-POST before React re-renders the disabled input.
+  const busyRef = useRef<Set<string>>(new Set());
+
+  const setBusy = (id: string, busy: boolean) => {
+    if (busy) busyRef.current.add(id);
+    else busyRef.current.delete(id);
     setBusyCells((prev) => {
       const next = new Set(prev);
       if (busy) next.add(id);
       else next.delete(id);
       return next;
     });
+  };
 
   const commit = async (
     key: string,
@@ -120,7 +147,7 @@ export function EditableTimesheet({
     existingDaySeconds = 0,
   ) => {
     const id = cellId(key, day);
-    if (busyCells.has(id)) return;
+    if (busyRef.current.has(id)) return;
     const trimmed = raw.trim();
     if (!trimmed) {
       close();
@@ -197,11 +224,13 @@ export function EditableTimesheet({
           <th style={{ ...stickyCol }} className="muted">
             Issue
           </th>
-          {days.map((d) => {
+          {days.map((d, i) => {
             const h = dayHeader(d);
             return (
-              <th key={d} style={dayCell}>
-                <div style={{ fontWeight: 700 }}>{h.weekday}</div>
+              <th key={d} style={{ ...dayCell, ...colStyle(i) }}>
+                <div style={dayMeta[i].today ? { fontWeight: 700, color: 'var(--accent-cyan)' } : { fontWeight: 700 }}>
+                  {h.weekday}
+                </div>
                 <div className="muted" style={{ fontSize: 10, opacity: 0.7 }}>
                   {h.num}
                 </div>
@@ -228,9 +257,13 @@ export function EditableTimesheet({
               const day = days[i];
               const id = cellId(row.key, day);
               const busy = busyCells.has(id);
+              // Whole-day cap must count EVERY issue's hours that day, not
+              // just this row's — otherwise two 20h cells on different
+              // issues would sail past 24h.
+              const daySeconds = Math.round(totals[i] * 3600);
               if (!self) {
                 return (
-                  <td key={day} style={dayCell}>
+                  <td key={day} style={{ ...dayCell, ...colStyle(i) }}>
                     {hoursDisplay(h)}
                   </td>
                 );
@@ -238,7 +271,7 @@ export function EditableTimesheet({
               if (h > 0) {
                 const open = popoverCell === id;
                 return (
-                  <td key={day} style={{ ...dayCell, position: 'relative' }}>
+                  <td key={day} style={{ ...dayCell, ...colStyle(i), position: 'relative' }}>
                     <span
                       role="button"
                       style={{ cursor: 'pointer' }}
@@ -273,7 +306,7 @@ export function EditableTimesheet({
                           style={{ width: 56, fontSize: 11.5 }}
                           onChange={(e) => setPopoverValue(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') void commit(row.key, day, popoverValue, () => setPopoverCell(null), Math.round(h * 3600));
+                            if (e.key === 'Enter') void commit(row.key, day, popoverValue, () => setPopoverCell(null), daySeconds);
                             else if (e.key === 'Escape') setPopoverCell(null);
                           }}
                         />
@@ -281,7 +314,7 @@ export function EditableTimesheet({
                           className="btn"
                           style={{ padding: '1px 6px', fontSize: 11 }}
                           disabled={busy}
-                          onClick={() => void commit(row.key, day, popoverValue, () => setPopoverCell(null), Math.round(h * 3600))}
+                          onClick={() => void commit(row.key, day, popoverValue, () => setPopoverCell(null), daySeconds)}
                         >
                           Add
                         </button>
@@ -300,7 +333,7 @@ export function EditableTimesheet({
               }
               const draft = drafts[id] ?? '';
               return (
-                <td key={day} style={dayCell}>
+                <td key={day} style={{ ...dayCell, ...colStyle(i) }}>
                   <input
                     value={draft}
                     disabled={busy}
@@ -325,17 +358,20 @@ export function EditableTimesheet({
                       }
                     }}
                     onBlur={() => {
-                      if (cancelledRef.current.has(id)) {
-                        cancelledRef.current.delete(id);
-                        return;
-                      }
+                      const cancelled = cancelledRef.current.delete(id);
+                      if (!shouldBlurCommit(cancelled)) return;
                       const value = drafts[id] ?? '';
-                      void commit(row.key, day, value, () =>
-                        setDrafts((prev) => {
-                          const next = { ...prev };
-                          delete next[id];
-                          return next;
-                        }),
+                      void commit(
+                        row.key,
+                        day,
+                        value,
+                        () =>
+                          setDrafts((prev) => {
+                            const next = { ...prev };
+                            delete next[id];
+                            return next;
+                          }),
+                        daySeconds,
                       );
                     }}
                   />
@@ -354,11 +390,17 @@ export function EditableTimesheet({
         ) : (
           <tr style={{ fontWeight: 700 }}>
             <td style={{ ...stickyCol }}>Total</td>
-            {totals.map((h, i) => (
-              <td key={i} style={dayCell}>
-                {hoursDisplay(h)}
-              </td>
-            ))}
+            {totals.map((h, i) => {
+              const dot = dayDot(h, dayMeta[i].weekend);
+              return (
+                <td key={i} style={{ ...dayCell, ...colStyle(i) }}>
+                  {dot ? (
+                    <span style={{ color: dot.color, fontSize: 9, marginRight: 3, verticalAlign: 1 }}>{dot.symbol}</span>
+                  ) : null}
+                  {hoursDisplay(h)}
+                </td>
+              );
+            })}
             <td style={{ ...dayCell, width: 72, minWidth: 72 }}>{hoursDisplay(grandTotal)}</td>
           </tr>
         )}

@@ -88,7 +88,7 @@ function JiraTab() {
         <Item name="Incidents">sticky quick/dropdown filters, removable active-filter chips, summary search, separate all/verification/rejected grids and Jira dashboard links.</Item>
         <Item name="Boards">search and pin Jira boards; pinned boards open as sprint Kanban with Jira quick filters or the full board backlog.</Item>
         <Item name="JQL search (⚡ in the top bar)">saved JQL filters with an editor and results preview — available from every page.</Item>
-        <Item name="Time Spent">worklog reports by period/sprint/range, weekly timesheet, Calendar/Epics/Sprint tabs, CSV + PDF export.</Item>
+        <Item name="Time Spent">Timesheet tab (type hours to log, 40h week goal), reports by period/sprint/range, Calendar/Epics/Sprint tabs, CSV + PDF export.</Item>
         <Item name="Team">create saved teams, compare workload and logged/remaining hours, and double-click a member for their issue detail.</Item>
       </Section>
       <Section title="Issue dialog">

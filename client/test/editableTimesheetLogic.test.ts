@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildEditableRows, clampToDayCap, parseCellInput, shouldBlurCommit } from '../src/lib/editableTimesheet';
+import { buildEditableRows, clampToDayCap, dayDot, parseCellInput, shouldBlurCommit } from '../src/lib/editableTimesheet';
 import type { DailyLogEntry, JiraIssue } from '../src/types';
 
 const issue = (p: Partial<JiraIssue>): JiraIssue => ({ ...(p as JiraIssue) });
@@ -107,5 +107,31 @@ describe('clampToDayCap', () => {
   it('returns 0 when the day is already at/over the cap', () => {
     expect(clampToDayCap(24 * 3600, 3600)).toBe(0);
     expect(clampToDayCap(25 * 3600, 3600)).toBe(0);
+  });
+});
+
+describe('dayDot', () => {
+  it('filled green dot at/over the 8h goal', () => {
+    expect(dayDot(8, false)).toEqual({ symbol: '●', color: 'var(--accent-green)' });
+    expect(dayDot(10.5, true)).toEqual({ symbol: '●', color: 'var(--accent-green)' });
+  });
+
+  it('filled amber dot for a partial day (0 < h < 8), weekend included', () => {
+    expect(dayDot(0.5, false)).toEqual({ symbol: '●', color: 'var(--accent-orange, #FFA13A)' });
+    expect(dayDot(7.99, true)).toEqual({ symbol: '●', color: 'var(--accent-orange, #FFA13A)' });
+  });
+
+  it('hollow muted dot for an empty workday, nothing for an empty weekend day', () => {
+    expect(dayDot(0, false)).toEqual({ symbol: '○', color: 'var(--muted)' });
+    expect(dayDot(0, true)).toBeNull();
+  });
+});
+
+// Whole-day cap wiring: the grid passes the DAY total across all issues
+// (not the row's own hours) as existingDaySeconds, so a second issue's
+// entry is clamped against everything already logged that day.
+describe('clampToDayCap across issues', () => {
+  it('blocks a 20h add when another issue already logged 20h that day', () => {
+    expect(clampToDayCap(20 * 3600, 20 * 3600)).toBe(4 * 3600);
   });
 });

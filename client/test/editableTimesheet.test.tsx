@@ -89,6 +89,25 @@ describe('EditableTimesheet', () => {
     expect(html).toContain('ISW-1');
   });
 
+  it("tints today's column and renders footer day-status dots", () => {
+    const html = renderToString(
+      <EditableTimesheet days={days} report={report} sprintIssues={[]} user="" todayYmd="2026-08-24" onLogged={() => {}} />,
+    );
+    expect(html).toContain('color-mix(in srgb, var(--accent-cyan) 8%'); // today tint
+    expect(html).toContain('●'); // 2h Sunday → partial (amber) filled dot
+    expect(html).toContain('○'); // empty weekdays → hollow muted dots
+  });
+
+  it('dims Fri/Sat columns and skips their empty-day dot', () => {
+    const wk = ['2026-08-27', '2026-08-28', '2026-08-29']; // Thu, Fri, Sat
+    const html = renderToString(
+      <EditableTimesheet days={wk} report={null} sprintIssues={[makeIssue()]} user="" onLogged={() => {}} />,
+    );
+    expect(html).toContain('opacity:0.55'); // weekend dim
+    // Only Thursday (the lone workday) gets the hollow zero dot.
+    expect((html.match(/○/g) ?? []).length).toBe(1);
+  });
+
   it('includes a sprint-only empty row for an unlogged sprint issue', () => {
     const sprintOnly = makeIssue({ key: 'ISW-2', summary: 'Not logged yet' });
     const html = renderToString(

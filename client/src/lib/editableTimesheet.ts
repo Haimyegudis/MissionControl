@@ -94,6 +94,17 @@ export function shouldBlurCommit(cancelled: boolean): boolean {
   return !cancelled;
 }
 
+/**
+ * Footer status dot for a day-total cell. Green filled dot at/over the 8h
+ * goal, amber filled dot when partially logged, hollow muted dot for an
+ * empty workday. Weekend days show no dot at all when empty.
+ */
+export function dayDot(hours: number, isWeekend: boolean): { symbol: '●' | '○'; color: string } | null {
+  if (hours >= 8) return { symbol: '●', color: 'var(--accent-green)' };
+  if (hours > 0) return { symbol: '●', color: 'var(--accent-orange, #FFA13A)' };
+  return isWeekend ? null : { symbol: '○', color: 'var(--muted)' };
+}
+
 /** Clamp a new cell's seconds so the day's total (existing + new) never exceeds 24h. */
 export function clampToDayCap(existingDaySeconds: number, requestedSeconds: number, capSeconds = 24 * 3600): number {
   return Math.min(requestedSeconds, Math.max(0, capSeconds - existingDaySeconds));

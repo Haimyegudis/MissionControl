@@ -1,12 +1,10 @@
-// Time Spent view — redesigned for at-a-glance clarity, zero duplication:
-//   · period chips + user picker + ONE export menu (CSV / PDF)
-//   · slim KPI strip: total logged + task count + compact per-status pills
-//   · weekly timesheet (unique per-day × per-issue) — first, it's the
-//     primary interaction
-//   · collapsible issues panel (collapsed by default): status pill, bold
-//     logged-this-period, inline Estimated↔Logged progress bar per row +
-//     per-row Log work button
-//   · Report / Calendar tabs (Epics, Sprint tabs land in later tasks)
+// Time Spent view — entry and analysis split across tabs:
+//   · Timesheet (default): week nav + 40h goal bar + the editable weekly
+//     grid (unique per-day × per-issue) — the primary interaction
+//   · Report: period chips + ONE export menu (CSV / PDF), slim KPI strip
+//     (total logged + task count + per-status pills), always-visible issues
+//     panel with inline Estimated↔Logged bars + per-row Log work button
+//   · Calendar / Epics / Sprint tabs
 // The old sprint-per-day chart and 13-week heatmap are gone.
 // Refresh: session change ONLY — no scheduler tick.
 
@@ -20,7 +18,7 @@ import { statusColor } from '../lib/colors';
 import { buildCsv, downloadCsv } from '../lib/csv';
 import { errText } from '../lib/errors';
 import { formatTimeSpan } from '../lib/format';
-import { addDays, formatDMmmYy, startOfWeekSunday, ymd } from '../lib/viewFormat';
+import { addDays, formatDMmmYy, hoursDisplay, startOfWeekSunday, ymd } from '../lib/viewFormat';
 import { activeSprintRange, sprintJql } from '../lib/viewTimeSpentTabs';
 import {
   ISSUES_CSV_HEADERS,
@@ -126,7 +124,20 @@ function StatusPill({ status }: { status: string | null | undefined }) {
   );
 }
 
-export function TimeLoggedView() {
+const TABS = [
+  { id: 'timesheet', label: 'Timesheet' },
+  { id: 'report', label: 'Report' },
+  { id: 'calendar', label: 'Calendar' },
+  { id: 'epics', label: 'Epics' },
+  { id: 'sprint', label: 'Sprint' },
+] as const;
+
+type TabId = (typeof TABS)[number]['id'];
+
+/** Sun–Thu workweek goal: 5 × 8h, in seconds. */
+const WEEK_GOAL_SECONDS = 144000;
+
+export function TimeLoggedView({ initialTab = 'timesheet' }: { initialTab?: TabId } = {}) {
   const session = useStore(sessionStore);
   const connected = session.phase === 'connected';
 
@@ -141,11 +152,10 @@ export function TimeLoggedView() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const [tab, setTab] = useState<'report' | 'calendar' | 'epics' | 'sprint'>('report');
+  const [tab, setTab] = useState<TabId>(initialTab);
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeekSunday(new Date()));
   const [weekReport, setWeekReport] = useState<TimeLoggedReport | null>(null);
   const [sprintIssues, setSprintIssues] = useState<JiraIssue[]>([]);
-  const [issuesOpen, setIssuesOpen] = useState(false);
 
   const loadSeq = useRef(0);
   const sprintIssuesSeq = useRef(0);
@@ -374,19 +384,70 @@ export function TimeLoggedView() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <h2 style={{ fontSize: 18, fontFamily: 'var(--font-display)' }}>Time Spent</h2>
         <div style={{ display: 'flex', gap: 4 }}>
-          {(['report', 'calendar', 'epics', 'sprint'] as const).map((t) => (
+          {TABS.map((t) => (
             <button
-              key={t}
+              key={t.id}
               className="btn"
-              onClick={() => setTab(t)}
-              style={tab === t ? { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)', fontWeight: 700 } : undefined}
+              onClick={() => setTab(t.id)}
+              style={tab === t.id ? { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)', fontWeight: 700 } : undefined}
             >
-              {t === 'report' ? 'Report' : t === 'calendar' ? 'Calendar' : t === 'epics' ? 'Epics' : 'Sprint'}
+              {t.label}
             </button>
           ))}
         </div>
         <UserSearchPicker users={users} value={userFilter} onCommit={setUserFilter} />
       </div>
+
+      {/* --------------------------------------------- timesheet tab ------- */}
+      {tab === 'timesheet' ? (
+        <div className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 700, fontSize: 13.5 }}>Weekly Timesheet</span>
+            <span className="muted" style={{ fontSize: 11.5 }}>type hours to log</span>
+            <button className="btn btn-icon" onClick={() => changeWeek(addDays(weekStart, -7))} title="Previous week">
+              ◀
+            </button>
+            <span style={{ padding: '4px 14px', borderRadius: 999, border: '1px solid var(--border-strong)', fontSize: 12.5 }}>
+              {formatDMmmYy(weekStart)} – {formatDMmmYy(addDays(weekStart, 6))}
+            </span>
+            <button className="btn btn-icon" onClick={() => changeWeek(addDays(weekStart, 7))} title="Next week">
+              ▶
+            </button>
+            <button className="btn" onClick={() => changeWeek(startOfWeekSunday(new Date()))} title="Back to the current week">
+              Today
+            </button>
+          </div>
+          {/* Week-goal KPI: logged vs the 40h (5 × 8h Sun–Thu) target. */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <div style={{ fontSize: 15 }}>
+              <b style={{ color: 'var(--accent-green)', fontFamily: 'var(--font-display)' }}>
+                {hoursDisplay((weekReport?.total ?? 0) / 3600)}h
+              </b>{' '}
+              <span className="muted">of 40h</span>
+            </div>
+            <div style={{ height: 6, borderRadius: 3, background: 'var(--border-soft)', overflow: 'hidden', maxWidth: 420 }}>
+              <div
+                style={{
+                  height: '100%',
+                  borderRadius: 3,
+                  background: 'var(--accent-green)',
+                  width: `${Math.min(100, ((weekReport?.total ?? 0) / WEEK_GOAL_SECONDS) * 100)}%`,
+                }}
+              />
+            </div>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <EditableTimesheet
+              days={timesheetDays}
+              report={weekReport}
+              sprintIssues={sprintIssues}
+              user={userFilter}
+              todayYmd={ymd(new Date())}
+              onLogged={() => void loadTimesheet(weekStart)}
+            />
+          </div>
+        </div>
+      ) : null}
 
       {tab === 'report' ? (
         <>
@@ -503,77 +564,24 @@ export function TimeLoggedView() {
             >
               <span style={{ fontSize: 11, fontWeight: 700, color: statusColor(c.status) }}>{c.status}</span>
               <span style={{ fontSize: 12, fontWeight: 700 }}>{formatTimeSpan(c.seconds)}</span>
+              <span className="muted" style={{ fontSize: 10.5 }}>×{c.count}</span>
             </span>
           ))
         )}
       </div>
 
-      {/* -------------------------------------------- timesheet ------------ */}
-      <div className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 700, fontSize: 13.5 }}>Weekly Timesheet</span>
-          <span className="muted" style={{ fontSize: 11.5 }}>type hours to log</span>
-          <button className="btn btn-icon" onClick={() => changeWeek(addDays(weekStart, -7))} title="Previous week">
-            ◀
-          </button>
-          <span style={{ padding: '4px 14px', borderRadius: 999, border: '1px solid var(--border-strong)', fontSize: 12.5 }}>
-            {formatDMmmYy(weekStart)} – {formatDMmmYy(addDays(weekStart, 6))}
-          </span>
-          <button className="btn btn-icon" onClick={() => changeWeek(addDays(weekStart, 7))} title="Next week">
-            ▶
-          </button>
-          <button className="btn" onClick={() => changeWeek(startOfWeekSunday(new Date()))}>
-            This week
-          </button>
-          <div style={{ flex: 1 }} />
-          <span>
-            Week total:{' '}
-            <b style={{ color: 'var(--accent-green)' }}>{formatTimeSpan(weekReport?.total ?? 0)}</b>
-          </span>
-        </div>
-        <div style={{ overflowX: 'auto' }}>
-          <EditableTimesheet
-            days={timesheetDays}
-            report={weekReport}
-            sprintIssues={sprintIssues}
-            user={userFilter}
-            onLogged={() => void loadTimesheet(weekStart)}
-          />
-        </div>
-      </div>
-
       {/* ------------------------------------------- issues panel ---------- */}
       <div className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <button
-          onClick={() => setIssuesOpen((v) => !v)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            cursor: 'pointer',
-            color: 'inherit',
-            font: 'inherit',
-            textAlign: 'left',
-          }}
-          title={issuesOpen ? 'Collapse issues' : 'Expand issues'}
-        >
-          <span style={{ fontSize: 12 }}>{issuesOpen ? '▾' : '▸'}</span>
-          <span style={{ fontWeight: 700, fontSize: 13.5 }}>{`Issues (${loggedIssues})`}</span>
-        </button>
-        {issuesOpen ? (
-          <ResponsiveGrid<JiraIssue>
-            stateKey="TimeLogged.Issues"
-            columns={columns}
-            rows={loggedRows}
-            rowKey={(i) => i.key}
-            multiSelect
-            onRowDoubleClick={(i) => dialogs.openIssueDetails(i.key)}
-            emptyText="No work logged in this period."
-          />
-        ) : null}
+        <span style={{ fontWeight: 700, fontSize: 13.5 }}>{`Issues (${loggedIssues})`}</span>
+        <ResponsiveGrid<JiraIssue>
+          stateKey="TimeLogged.Issues"
+          columns={columns}
+          rows={loggedRows}
+          rowKey={(i) => i.key}
+          multiSelect
+          onRowDoubleClick={(i) => dialogs.openIssueDetails(i.key)}
+          emptyText="No work logged in this period."
+        />
       </div>
 
       {/* Print-only section for the PDF export (window.print). */}
