@@ -121,6 +121,18 @@ export function SprintTab({ user }: { user: string }) {
                     ▶ Start
                   </button>
                 ) : null}
+                <button
+                  className="btn"
+                  style={{ fontSize: 11.5 }}
+                  onClick={() =>
+                    dialogs.openLogWork(issue.key, {
+                      remainingEstimate: issue.remainingEstimate,
+                      onLogged: () => void loadRef.current(),
+                    })
+                  }
+                >
+                  + Log
+                </button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 8 }}>
                 {BARS.map((b) => (

@@ -23,7 +23,7 @@ export function EpicsTab({ user }: { user: string }) {
     setBusy(true);
     setError(null);
     timelogged
-      .report('customRange', { from: ymd(from), to: ymd(to), ...(user.trim() ? { user } : {}) })
+      .range(ymd(from), ymd(addDays(to, 1)), user.trim() || undefined)
       .then((r) => { if (!cancelled) setReport(r); })
       .catch((e) => { if (!cancelled) setError(errText(e)); })
       .finally(() => { if (!cancelled) setBusy(false); });

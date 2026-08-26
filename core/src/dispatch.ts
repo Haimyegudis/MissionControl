@@ -986,7 +986,7 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
       const from = parseDate(query.get('from'), 'from');
       const to = parseDate(query.get('to'), 'to');
       if (!from || !to) throw new DispatchError(400, 'Both from and to are required.');
-      return ok(await core.timeLogged.buildReportForRange(from, to));
+      return ok(await core.timeLogged.buildReportForRange(from, to, query.get('user')));
     }
     if (rest.length > 0) return NOT_FOUND;
 

@@ -60,7 +60,8 @@ export function timeloggedRoutes(deps: AppDeps): Router {
       const from = parseDate(qstr(req.query.from), 'from');
       const to = parseDate(qstr(req.query.to), 'to');
       if (!from || !to) throw new HttpError(400, 'Both from and to are required.');
-      res.json(await deps.timeLogged.buildReportForRange(from, to));
+      const user = qstr(req.query.user);
+      res.json(await deps.timeLogged.buildReportForRange(from, to, user));
     }),
   );
 

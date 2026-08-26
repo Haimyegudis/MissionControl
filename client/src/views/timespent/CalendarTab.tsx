@@ -23,11 +23,11 @@ export function CalendarTab({ user }: { user: string }) {
   useEffect(() => {
     let cancelled = false;
     const from = ymd(new Date(year, month, 1));
-    const to = ymd(new Date(year, month + 1, 0));
+    const to = ymd(new Date(year, month + 1, 1));
     setBusy(true);
     setError(null);
     timelogged
-      .report('customRange', { from, to, ...(user.trim() ? { user } : {}) })
+      .range(from, to, user.trim() || undefined)
       .then((r) => { if (!cancelled) setReport(r); })
       .catch((e) => { if (!cancelled) setError(errText(e)); })
       .finally(() => { if (!cancelled) setBusy(false); });

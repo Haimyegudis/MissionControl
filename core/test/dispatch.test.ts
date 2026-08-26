@@ -532,6 +532,15 @@ describe('the wider Jira surface', () => {
     expect((await dispatch('GET', '/api/timelogged/range?from=2026-01-01')).status).toBe(400);
   });
 
+  it('forwards the user query param on a time-logged range request', async () => {
+    const { core, dispatch } = harness();
+    const build = vi
+      .spyOn(core.timeLogged, 'buildReportForRange')
+      .mockResolvedValue({ issues: [], total: 0, fromUtc: '', toUtc: '', dailyByIssue: [], availableSprints: [] } as never);
+    await dispatch('GET', '/api/timelogged/range?from=2026-01-01&to=2026-01-02&user=Dana%20Q');
+    expect(build).toHaveBeenCalledWith(expect.any(Date), expect.any(Date), 'Dana Q');
+  });
+
   it('serves the dashboard snapshot from the aggregator', async () => {
     const { core, dispatch } = harness();
     const build = vi.spyOn(core.aggregator, 'buildDashboardSnapshot').mockResolvedValue({ ok: true } as never);

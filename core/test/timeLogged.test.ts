@@ -318,6 +318,39 @@ describe('TimeLoggedService.buildReportForRange', () => {
     expect(report.issues[0].workLoggedForPeriod).toBe(3600);
     expect(report.total).toBe(3600);
   });
+
+  it('when a user is given, builds worklogAuthor JQL for that user and matches only their worklogs (ci)', async () => {
+    const searcher = makeSearcher(() => [makeIssue('ISW-1')]);
+    const worklogs = makeWorklogFetcher({
+      'ISW-1': [
+        makeWorklog('ISW-1', new Date(2026, 7, 11, 9, 0), 3600, 'dana q', null), // ci match
+        makeWorklog('ISW-1', new Date(2026, 7, 11, 9, 0), 900, 'Someone Else', null), // no match
+      ],
+    });
+    const svc = service(searcher, worklogs);
+    const report = await svc.buildReportForRange(new Date(2026, 7, 10), new Date(2026, 7, 13), 'Dana Q');
+
+    expect(searcher.calls[0].jql).toBe(
+      'worklogAuthor = "Dana Q" AND worklogDate >= "2026-08-10" AND worklogDate <= "2026-08-12" ORDER BY updated DESC',
+    );
+    expect(report.issues.map((i) => i.key)).toEqual(['ISW-1']);
+    expect(report.issues[0].workLoggedForPeriod).toBe(3600);
+    expect(report.total).toBe(3600);
+  });
+
+  it('falls back to assignee = user in the catch branch when a user is given', async () => {
+    const calls: string[] = [];
+    const searcher: IssueSearcher = {
+      async searchAll(jql: string): Promise<JiraIssue[]> {
+        calls.push(jql);
+        if (jql.includes('worklogAuthor')) throw new Error('worklogDate unsupported');
+        return [];
+      },
+    };
+    const svc = service(searcher, makeWorklogFetcher({}));
+    await svc.buildReportForRange(new Date(2026, 7, 10), new Date(2026, 7, 13), 'Dana Q');
+    expect(calls[1]).toBe('project = ISW AND assignee = "Dana Q" AND sprint in openSprints()');
+  });
 });
 
 // ---------------------------------------------------------------------------
