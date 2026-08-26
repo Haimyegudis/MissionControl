@@ -1,6 +1,8 @@
 // WatchBell markup: clear-all visibility and the prominent change line.
 import { describe, expect, it } from 'vitest';
-import { describeEventTitle } from '../src/components/WatchBell';
+import { renderToString } from 'react-dom/server';
+import { describeEventTitle, WatchBell } from '../src/components/WatchBell';
+import { watchStore } from '../src/stores/watch';
 import type { WatchEvent } from '../src/types';
 
 function ev(partial: Partial<WatchEvent>): WatchEvent {
@@ -26,5 +28,14 @@ describe('describeEventTitle', () => {
   it('keeps sentence forms for assignment and comments', () => {
     expect(describeEventTitle(ev({ kind: 'assigned' }))).toBe('now assigned to you');
     expect(describeEventTitle(ev({ kind: 'comment', from: '2', to: '4' }))).toBe('2 new comment(s)');
+  });
+});
+
+describe('WatchBell', () => {
+  it('closed bell does not show Clear all button', () => {
+    watchStore.set({ events: [ev({})], unreadCount: 0, lastCycle: new Date().toISOString() });
+    const html = renderToString(<WatchBell />);
+    expect(html).toContain('🔔');
+    expect(html).not.toContain('Clear all');
   });
 });
