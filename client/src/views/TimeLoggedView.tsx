@@ -12,7 +12,7 @@
 // Refresh: session change ONLY — no scheduler tick.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { metadata as metadataApi, timelogged as timeloggedApi } from '../api/client';
+import { issues as issuesApi, metadata as metadataApi, timelogged as timeloggedApi } from '../api/client';
 import { ResponsiveGrid } from '../components/ResponsiveGrid';
 import type { GridColumn } from '../components/DataGrid';
 import { UserSearchPicker } from '../components/UserSearchPicker';
@@ -21,23 +21,23 @@ import { statusColor } from '../lib/colors';
 import { buildCsv, downloadCsv } from '../lib/csv';
 import { errText } from '../lib/errors';
 import { formatTimeSpan } from '../lib/format';
-import { addDays, formatDMmmYy, hoursDisplay, startOfWeekSunday, ymd } from '../lib/viewFormat';
-import { activeSprintRange } from '../lib/viewTimeSpentTabs';
+import { addDays, formatDMmmYy, startOfWeekSunday, ymd } from '../lib/viewFormat';
+import { activeSprintRange, sprintJql } from '../lib/viewTimeSpentTabs';
 import {
   ISSUES_CSV_HEADERS,
   aggregateDailyHours,
-  buildTimesheet,
   dailyCsvRows,
   issuesCsvRow,
   loggedOnlyIssues,
   periodRange,
-  timesheetHeaders,
 } from '../lib/viewTimeLogged';
+import { getSettings } from '../stores/settings';
 import { sessionStore } from '../stores/session';
 import { pushToast } from '../stores/toasts';
 import { useStore } from '../stores/useStore';
 import type { JiraIssue, TimeLoggedReport } from '../types';
 import { CalendarTab } from './timespent/CalendarTab';
+import { EditableTimesheet } from './timespent/EditableTimesheet';
 import { EpicsTab } from './timespent/EpicsTab';
 import { SprintTab } from './timespent/SprintTab';
 
@@ -145,8 +145,31 @@ export function TimeLoggedView() {
   const [tab, setTab] = useState<'report' | 'calendar' | 'epics' | 'sprint'>('report');
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeekSunday(new Date()));
   const [weekReport, setWeekReport] = useState<TimeLoggedReport | null>(null);
+  const [sprintIssues, setSprintIssues] = useState<JiraIssue[]>([]);
 
   const loadSeq = useRef(0);
+  const sprintIssuesSeq = useRef(0);
+
+  // Editable timesheet's "sprint-only, not yet logged" rows — fetched once
+  // per user, only when the picker is self ('') since the server always
+  // logs work as the session user.
+  const loadSprintIssues = async (rawUser: string) => {
+    const seq = ++sprintIssuesSeq.current;
+    if (rawUser.trim()) {
+      setSprintIssues([]);
+      return;
+    }
+    try {
+      const project = getSettings().defaultProjectKey || 'ISW';
+      const jql = sprintJql(project, null);
+      const page = await issuesApi.search(jql, 0, 100);
+      if (seq !== sprintIssuesSeq.current) return;
+      setSprintIssues(page.items ?? []);
+    } catch {
+      if (seq !== sprintIssuesSeq.current) return;
+      setSprintIssues([]);
+    }
+  };
 
   const loadTimesheet = async (start: Date) => {
     try {
@@ -205,6 +228,10 @@ export function TimeLoggedView() {
     if (connected) void loadRef.current();
   }, [connected, period, customFrom, customTo, userFilter, sprintMode, sprintName]);
 
+  useEffect(() => {
+    if (connected) void loadSprintIssues(userFilter);
+  }, [connected, userFilter]);
+
   const changeWeek = (start: Date) => {
     setWeekStart(start);
     void loadTimesheet(start);
@@ -223,11 +250,7 @@ export function TimeLoggedView() {
     setSprintName(list[nextIdx]);
   };
 
-  const timesheet = useMemo(
-    () => (weekReport ? buildTimesheet(weekStart, weekReport) : null),
-    [weekReport, weekStart],
-  );
-  const weekHeaders = useMemo(() => timesheetHeaders(weekStart), [weekStart]);
+  const timesheetDays = useMemo(() => Array.from({ length: 7 }, (_, i) => ymd(addDays(weekStart, i))), [weekStart]);
   const loggedRows = useMemo(() => loggedOnlyIssues(report?.issues ?? []), [report]);
   const statusChips = useMemo(() => loggedByStatus(loggedRows), [loggedRows]);
   const loggedIssues = loggedRows.length;
@@ -331,14 +354,6 @@ export function TimeLoggedView() {
     ],
     [],
   );
-
-  const dayCell: React.CSSProperties = {
-    width: 48,
-    minWidth: 48,
-    textAlign: 'center',
-    padding: '4px 2px',
-    borderBottom: '1px solid var(--border-soft)',
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
@@ -532,65 +547,17 @@ export function TimeLoggedView() {
           <div style={{ flex: 1 }} />
           <span>
             Week total:{' '}
-            <b style={{ color: 'var(--accent-green)' }}>
-              {formatTimeSpan(Math.round((timesheet?.weeklyTotalHours ?? 0) * 3600))}
-            </b>
+            <b style={{ color: 'var(--accent-green)' }}>{formatTimeSpan(weekReport?.total ?? 0)}</b>
           </span>
         </div>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ borderCollapse: 'collapse', fontSize: 12.5, minWidth: 420 + 7 * 48 }}>
-            <thead>
-              <tr>
-                <th style={{ ...dayCell, width: 240, minWidth: 240, textAlign: 'left' }} className="muted">
-                  Issue
-                </th>
-                <th style={{ ...dayCell, width: 100, minWidth: 100, textAlign: 'left' }} className="muted">
-                  Key
-                </th>
-                <th style={{ ...dayCell, width: 80, minWidth: 80 }} className="muted">
-                  Logged
-                </th>
-                {weekHeaders.map((h, i) => (
-                  <th key={i} style={dayCell}>
-                    <div style={{ fontWeight: 700 }}>{h.dayNumber}</div>
-                    <div className="muted" style={{ fontSize: 10, opacity: 0.7 }}>
-                      {h.dayLabel}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {(timesheet?.rows ?? []).map((r) => (
-                <tr key={r.issueKey}>
-                  <td style={{ ...dayCell, textAlign: 'left', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {r.summary}
-                  </td>
-                  <td style={{ ...dayCell, textAlign: 'left', color: 'var(--accent-cyan)', fontWeight: 600 }}>
-                    {r.issueKey}
-                  </td>
-                  <td style={dayCell}>{hoursDisplay(r.loggedHours)}</td>
-                  {r.days.map((h, i) => (
-                    <td key={i} style={dayCell}>
-                      {hoursDisplay(h)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-              {timesheet ? (
-                <tr style={{ fontWeight: 700 }}>
-                  <td style={{ ...dayCell, textAlign: 'left' }}>Total</td>
-                  <td style={dayCell} />
-                  <td style={dayCell}>{hoursDisplay(timesheet.weeklyTotalHours)}</td>
-                  {timesheet.totals.map((h, i) => (
-                    <td key={i} style={dayCell}>
-                      {hoursDisplay(h)}
-                    </td>
-                  ))}
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
+          <EditableTimesheet
+            days={timesheetDays}
+            report={weekReport}
+            sprintIssues={sprintIssues}
+            user={userFilter}
+            onLogged={() => void loadTimesheet(weekStart)}
+          />
         </div>
       </div>
 
