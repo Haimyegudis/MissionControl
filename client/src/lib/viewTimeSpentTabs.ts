@@ -127,14 +127,15 @@ export function sprintBars(issue: JiraIssue): SprintBarRow {
 }
 
 /**
- * Sprint tab JQL. `resolvedUser` null/empty → assignee = currentUser();
- * otherwise the value is quote-escaped to prevent JQL injection.
+ * Sprint board JQL. `resolvedUser` null/empty → assignee = currentUser();
+ * `sprintName` blank → openSprints(), otherwise `sprint = "<name>"`.
+ * Values are quote-escaped to prevent JQL injection.
  */
-export function sprintJql(project: string, resolvedUser: string | null): string {
-  const assignee = resolvedUser && resolvedUser.trim()
-    ? `"${resolvedUser.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
-    : 'currentUser()';
-  return `project = ${project} AND sprint in openSprints() AND assignee = ${assignee} ORDER BY status`;
+export function sprintJql(project: string, resolvedUser: string | null, sprintName?: string): string {
+  const quote = (v: string) => `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+  const assignee = resolvedUser && resolvedUser.trim() ? quote(resolvedUser) : 'currentUser()';
+  const sprint = sprintName && sprintName.trim() ? `sprint = ${quote(sprintName)}` : 'sprint in openSprints()';
+  return `project = ${project} AND ${sprint} AND assignee = ${assignee} ORDER BY status`;
 }
 
 /** Transition that lands the issue in progress: exact toStatus match, then fuzzy. */

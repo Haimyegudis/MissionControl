@@ -11,10 +11,7 @@ import type { TimeLoggedReport } from '../../types';
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MAX_LINES = 2;
 
-export function CalendarTab({ user }: { user: string }) {
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth());
+export function CalendarTab({ year, month, user }: { year: number; month: number; user: string }) {
   const [report, setReport] = useState<TimeLoggedReport | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,21 +38,10 @@ export function CalendarTab({ user }: { user: string }) {
     [year, month, report, sprint],
   );
 
-  const nav = (delta: number) => {
-    const d = new Date(year, month + delta, 1);
-    setYear(d.getFullYear());
-    setMonth(d.getMonth());
-  };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button className="btn" onClick={() => nav(-1)}>◀ Previous</button>
-        <div style={{ fontWeight: 700, fontSize: 15, minWidth: 140, textAlign: 'center' }}>{cal.monthLabel}</div>
-        <button className="btn" onClick={() => nav(1)}>Next ▶</button>
-        <button className="btn" onClick={() => { const d = new Date(); setYear(d.getFullYear()); setMonth(d.getMonth()); }}>
-          Today
-        </button>
+        <div style={{ fontWeight: 700, fontSize: 15 }}>{cal.monthLabel}</div>
         {busy ? <span className="accent-cyan">…</span> : null}
         {sprint ? (
           <span className="muted" style={{ fontSize: 11.5, marginLeft: 'auto' }}>

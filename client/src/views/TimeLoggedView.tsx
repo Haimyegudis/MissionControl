@@ -1,14 +1,11 @@
-// Time Spent view — redesigned for at-a-glance clarity, zero duplication:
-//   · period chips + user picker + ONE export menu (CSV / PDF)
-//   · hero strip: total logged for the period + logged-hours-per-STATUS chips
-//     (every task's state visible instantly)
-//   · one issues panel: status pill, bold logged-this-period, and an inline
-//     Estimated↔Logged progress bar per row (replaces the old separate
-//     "Logged vs Estimated" chart) + per-row Log work button (replaces the
-//     old select-then-expander flow)
-//   · weekly timesheet (unique per-day × per-issue)
-//   · Report / Calendar tabs (Epics, Sprint tabs land in later tasks)
-// The old sprint-per-day chart and 13-week heatmap are gone.
+// Time Spent view — scope-first redesign:
+//   · ONE scope bar selects the data window: [Day] [Week] [Month] [Sprint]
+//     [Custom] + ◀ label ▶ + Today + user picker + CSV/PDF export
+//   · ONE fetch per (scope, anchor, custom range, sprint, user)
+//   · a `view:` row switches PRESENTATION only: Timesheet / Summary / Epics /
+//     Calendar (month scope) / Board (sprint scope)
+// The old period chips, sprint chip + dropdown, tab strip and timesheet week
+// arrows are gone — the scope bar drives everything.
 // Refresh: session change ONLY — no scheduler tick.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -21,8 +18,16 @@ import { statusColor } from '../lib/colors';
 import { buildCsv, downloadCsv } from '../lib/csv';
 import { errText } from '../lib/errors';
 import { formatTimeSpan } from '../lib/format';
-import { addDays, formatDMmmYy, hoursDisplay, startOfWeekSunday, ymd } from '../lib/viewFormat';
-import { activeSprintRange } from '../lib/viewTimeSpentTabs';
+import { addDays, hoursDisplay, parseYmd, ymd } from '../lib/viewFormat';
+import {
+  buildEditableRows,
+  scopeWindow,
+  stepAnchor,
+  viewsForScope,
+  windowDays,
+  type ScopeId,
+  type ViewId,
+} from '../lib/viewTimeSpentScope';
 import {
   ISSUES_CSV_HEADERS,
   aggregateDailyHours,
@@ -30,7 +35,6 @@ import {
   dailyCsvRows,
   issuesCsvRow,
   loggedOnlyIssues,
-  periodRange,
   timesheetHeaders,
 } from '../lib/viewTimeLogged';
 import { sessionStore } from '../stores/session';
@@ -41,18 +45,23 @@ import { CalendarTab } from './timespent/CalendarTab';
 import { EpicsTab } from './timespent/EpicsTab';
 import { SprintTab } from './timespent/SprintTab';
 
-const PERIODS = [
-  { id: 'today', label: 'Today' },
-  { id: 'yesterday', label: 'Yesterday' },
-  { id: 'thisWeek', label: 'This week' },
-  { id: 'previousWeek', label: 'Last week' },
-  { id: 'thisMonth', label: 'This month' },
-  { id: 'customRange', label: 'Custom…' },
-] as const;
+const SCOPES: Array<{ id: ScopeId; label: string }> = [
+  { id: 'day', label: 'Day' },
+  { id: 'week', label: 'Week' },
+  { id: 'month', label: 'Month' },
+  { id: 'sprint', label: 'Sprint' },
+  { id: 'custom', label: 'Custom' },
+];
 
-type PeriodId = (typeof PERIODS)[number]['id'];
+const VIEW_LABELS: Record<ViewId, string> = {
+  timesheet: 'Timesheet',
+  summary: 'Summary',
+  epics: 'Epics',
+  calendar: 'Calendar',
+  board: 'Board',
+};
 
-/** Hours logged per status across the period — the hero strip's chips. */
+/** Hours logged per status across the window — the Summary hero's chips. */
 export function loggedByStatus(issues: JiraIssue[]): Array<{ status: string; seconds: number; count: number }> {
   const map = new Map<string, { seconds: number; count: number }>();
   for (const i of issues) {
@@ -127,51 +136,150 @@ function StatusPill({ status }: { status: string | null | undefined }) {
   );
 }
 
+/** Summary view: hero total + per-status chips + logged-only issues panel. */
+function SummaryView({
+  report,
+  scopeLabel,
+  loggedRows,
+  columns,
+}: {
+  report: TimeLoggedReport | null;
+  scopeLabel: string;
+  loggedRows: JiraIssue[];
+  columns: GridColumn<JiraIssue>[];
+}) {
+  const statusChips = useMemo(() => loggedByStatus(loggedRows), [loggedRows]);
+  const loggedIssues = loggedRows.length;
+  return (
+    <>
+      {/* ------------------------------------------- hero summary ---------- */}
+      <div
+        className="card"
+        style={{
+          padding: '16px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 24,
+          flexWrap: 'wrap',
+        }}
+      >
+        <div>
+          <div className="muted" style={{ fontSize: 10.5, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            Total logged · {scopeLabel}
+          </div>
+          <div style={{ fontSize: 30, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--accent-green)', lineHeight: 1.15 }}>
+            {formatTimeSpan(report?.total ?? 0)}
+          </div>
+          <div className="muted" style={{ fontSize: 11.5 }}>
+            across {loggedIssues} issue{loggedIssues === 1 ? '' : 's'}
+          </div>
+        </div>
+        <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--border-soft)' }} />
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flex: 1 }}>
+          {statusChips.length === 0 ? (
+            <span className="muted" style={{ fontSize: 12.5 }}>
+              Nothing logged in this period yet.
+            </span>
+          ) : (
+            statusChips.map((c) => (
+              <div
+                key={c.status}
+                className="tl-chip"
+                title={`${c.count} issue(s) in "${c.status}" — ${formatTimeSpan(c.seconds)} logged in this period`}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                  padding: '8px 14px',
+                  borderRadius: 10,
+                  border: `1px solid ${statusColor(c.status)}`,
+                  background: `color-mix(in srgb, ${statusColor(c.status)} 8%, transparent)`,
+                  minWidth: 110,
+                }}
+              >
+                <span style={{ fontSize: 11, fontWeight: 700, color: statusColor(c.status) }}>{c.status}</span>
+                <span style={{ fontSize: 15, fontWeight: 700 }}>{formatTimeSpan(c.seconds)}</span>
+                <span className="muted" style={{ fontSize: 10.5 }}>
+                  {c.count} issue{c.count === 1 ? '' : 's'}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* ------------------------------------------- issues panel ---------- */}
+      <ResponsiveGrid<JiraIssue>
+        stateKey="TimeLogged.Issues"
+        columns={columns}
+        rows={loggedRows}
+        rowKey={(i) => i.key}
+        multiSelect
+        onRowDoubleClick={(i) => dialogs.openIssueDetails(i.key)}
+        emptyText="No work logged in this period."
+      />
+    </>
+  );
+}
+
 export function TimeLoggedView() {
   const session = useStore(sessionStore);
   const connected = session.phase === 'connected';
 
-  const [period, setPeriod] = useState<PeriodId>('today');
-  const [customFrom, setCustomFrom] = useState('');
-  const [customTo, setCustomTo] = useState('');
-  const [sprintMode, setSprintMode] = useState(false);
+  const [scope, setScope] = useState<ScopeId>('week');
+  const [anchor, setAnchor] = useState<Date>(() => new Date());
+  const [customFrom, setCustomFrom] = useState(() => ymd(new Date()));
+  const [customTo, setCustomTo] = useState(() => ymd(new Date()));
   const [sprintName, setSprintName] = useState(''); // '' = active sprint
+  const [view, setView] = useState<ViewId>('timesheet');
   const [userFilter, setUserFilter] = useState('');
   const [users, setUsers] = useState<string[]>([]);
   const [report, setReport] = useState<TimeLoggedReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const [tab, setTab] = useState<'report' | 'calendar' | 'epics' | 'sprint'>('report');
-  const [weekStart, setWeekStart] = useState<Date>(() => startOfWeekSunday(new Date()));
-  const [weekReport, setWeekReport] = useState<TimeLoggedReport | null>(null);
-
   const loadSeq = useRef(0);
 
-  const loadTimesheet = async (start: Date) => {
-    try {
-      setWeekReport(await timeloggedApi.range(ymd(start), ymd(addDays(start, 7))));
-    } catch (err) {
-      pushToast({ title: 'Timesheet unavailable', body: errText(err), severity: 'error' });
-    }
-  };
+  const win = useMemo(() => {
+    if (scope === 'sprint') return null;
+    if (scope === 'custom' && (!customFrom || !customTo)) return null; // cleared date input
+    return scopeWindow(scope, anchor, customFrom, customTo);
+  }, [scope, anchor, customFrom, customTo]);
+
+  const availableSprints = report?.availableSprints ?? [];
+  const selectedSprint = sprintName || availableSprints[0] || '';
+
+  // Sprint scope: the data window comes from the report's UTC bounds.
+  const sprintWin = useMemo(() => {
+    if (scope !== 'sprint' || !report?.fromUtc || !report?.toUtc) return null;
+    const from = report.fromUtc.slice(0, 10);
+    const toInclusive = report.toUtc.slice(0, 10);
+    return {
+      from,
+      to: ymd(addDays(parseYmd(toInclusive), 1)),
+      label: `${selectedSprint || 'Active sprint'} · ${from} → ${toInclusive}`,
+    };
+  }, [scope, report, selectedSprint]);
+
+  const dataWin = scope === 'sprint' ? sprintWin : win;
+  const scopeLabel = scope === 'sprint' ? sprintWin?.label ?? (selectedSprint || 'Active sprint') : win?.label ?? '';
 
   const load = async () => {
     if (sessionStore.get().phase !== 'connected') return;
-    if (!sprintMode && period === 'customRange' && (!customFrom || !customTo)) return;
+    if (scope === 'custom' && (!customFrom || !customTo)) return;
     const seq = ++loadSeq.current;
     setBusy(true);
     setError(null);
     try {
+      const user = userFilter.trim() || undefined;
       let r: TimeLoggedReport;
-      if (sprintMode) {
-        r = await timeloggedApi.sprint(sprintName, userFilter.trim() || undefined);
+      if (scope === 'sprint') {
+        r = await timeloggedApi.sprint(sprintName, user);
       } else {
         // worklogAuthor range query: every issue the user logged in the
-        // window, regardless of sprint — the period JQL only covered the
-        // current open sprint.
-        const { from, to } = periodRange(period, new Date(), customFrom, customTo);
-        r = await timeloggedApi.range(from, to, userFilter.trim() || undefined);
+        // window, regardless of sprint.
+        const w = scopeWindow(scope, anchor, customFrom, customTo);
+        r = await timeloggedApi.range(w.from, w.to, user);
       }
       if (seq !== loadSeq.current) return;
       setReport(r);
@@ -188,8 +296,6 @@ export function TimeLoggedView() {
       }
       if (seq !== loadSeq.current) return;
       setUsers([...roster].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })));
-
-      void loadTimesheet(weekStart);
     } catch (err) {
       if (seq !== loadSeq.current) return;
       setError(errText(err));
@@ -203,34 +309,62 @@ export function TimeLoggedView() {
 
   useEffect(() => {
     if (connected) void loadRef.current();
-  }, [connected, period, customFrom, customTo, userFilter, sprintMode, sprintName]);
+  }, [connected, scope, win?.from, win?.to, sprintName, userFilter]);
 
-  const changeWeek = (start: Date) => {
-    setWeekStart(start);
-    void loadTimesheet(start);
+  const legalViews = viewsForScope(scope);
+
+  const changeScope = (s: ScopeId) => {
+    setScope(s);
+    const legal = viewsForScope(s);
+    if (!legal.includes(view)) setView(s === 'month' ? 'calendar' : legal[0]);
   };
-
-  const availableSprints = report?.availableSprints ?? [];
-  const selectedSprint = sprintName || availableSprints[0] || '';
-  const sprintLabel =
-    sprintName || activeSprintRange(report?.issues ?? [])?.name || availableSprints[0] || 'Current sprint';
 
   const stepSprint = (delta: number) => {
-    const list = availableSprints;
-    if (list.length === 0) return;
-    const idx = list.indexOf(selectedSprint);
-    const nextIdx = Math.min(list.length - 1, Math.max(0, (idx < 0 ? 0 : idx) + delta));
-    setSprintName(list[nextIdx]);
+    if (availableSprints.length === 0) return;
+    const idx = availableSprints.indexOf(selectedSprint);
+    const nextIdx = Math.min(availableSprints.length - 1, Math.max(0, (idx < 0 ? 0 : idx) + delta));
+    setSprintName(availableSprints[nextIdx]);
   };
 
-  const timesheet = useMemo(
-    () => (weekReport ? buildTimesheet(weekStart, weekReport) : null),
-    [weekReport, weekStart],
-  );
-  const weekHeaders = useMemo(() => timesheetHeaders(weekStart), [weekStart]);
+  const step = (dir: 1 | -1) => {
+    if (scope === 'sprint') stepSprint(dir);
+    else if (scope !== 'custom') setAnchor(stepAnchor(scope, anchor, dir));
+  };
+
+  const goToday = () => {
+    if (scope === 'sprint') {
+      setSprintName('');
+    } else if (scope === 'custom') {
+      const today = ymd(new Date());
+      setCustomFrom(today);
+      setCustomTo(today);
+    } else {
+      setAnchor(new Date());
+    }
+  };
+
+  const days = useMemo(() => (dataWin ? windowDays(dataWin) : []), [dataWin]);
   const loggedRows = useMemo(() => loggedOnlyIssues(report?.issues ?? []), [report]);
-  const statusChips = useMemo(() => loggedByStatus(loggedRows), [loggedRows]);
-  const loggedIssues = loggedRows.length;
+
+  // Week scope keeps the classic 7-day grid; other scopes get a minimal
+  // issues × days table (Task 3 replaces both with the editable grid).
+  const weekStart = useMemo(
+    () => (scope === 'week' && win ? parseYmd(win.from) : null),
+    [scope, win],
+  );
+  const timesheet = useMemo(
+    () => (weekStart && report ? buildTimesheet(weekStart, report) : null),
+    [weekStart, report],
+  );
+  const weekHeaders = useMemo(() => (weekStart ? timesheetHeaders(weekStart) : []), [weekStart]);
+  const sheetRows = useMemo(
+    () => (scope !== 'week' && report ? buildEditableRows(days, report, [], []) : []),
+    [scope, report, days],
+  );
+  const sheetTotals = useMemo(
+    () => days.map((_, i) => sheetRows.reduce((sum, r) => sum + r.hours[i], 0)),
+    [days, sheetRows],
+  );
 
   const exportCsv = () => {
     if (!report) return;
@@ -340,6 +474,8 @@ export function TimeLoggedView() {
     borderBottom: '1px solid var(--border-soft)',
   };
 
+  const activeChip = { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)', fontWeight: 700 } as const;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
       <style>{`
@@ -355,87 +491,59 @@ export function TimeLoggedView() {
         .tl-chip:hover { transform: translateY(-1px); }
       `}</style>
 
-      {/* ------------------------------------------------ tab strip --------- */}
+      {/* ------------------------------------------------ scope bar -------- */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <h2 style={{ fontSize: 18, fontFamily: 'var(--font-display)' }}>Time Spent</h2>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {(['report', 'calendar', 'epics', 'sprint'] as const).map((t) => (
-            <button
-              key={t}
-              className="btn"
-              onClick={() => setTab(t)}
-              style={tab === t ? { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)', fontWeight: 700 } : undefined}
-            >
-              {t === 'report' ? 'Report' : t === 'calendar' ? 'Calendar' : t === 'epics' ? 'Epics' : 'Sprint'}
-            </button>
-          ))}
-        </div>
-        <UserSearchPicker users={users} value={userFilter} onCommit={setUserFilter} />
-      </div>
-
-      {tab === 'report' ? (
-        <>
-      {/* ------------------------------------------------ toolbar ---------- */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-          {PERIODS.map((p) => (
+          {SCOPES.map((s) => (
             <button
-              key={p.id}
+              key={s.id}
               className="btn"
-              onClick={() => {
-                setSprintMode(false);
-                setPeriod(p.id);
-              }}
-              style={
-                !sprintMode && period === p.id
-                  ? { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)', fontWeight: 700 }
-                  : undefined
-              }
+              onClick={() => changeScope(s.id)}
+              style={scope === s.id ? activeChip : undefined}
             >
-              {p.label}
+              {s.label}
             </button>
           ))}
-          <button
-            className="btn"
-            onClick={() => setSprintMode(true)}
-            style={
-              sprintMode
-                ? { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)', fontWeight: 700 }
-                : undefined
-            }
-          >
-            Sprint
-          </button>
         </div>
-        {!sprintMode && period === 'customRange' ? (
+        {scope === 'custom' ? (
           <>
             <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
             <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
           </>
-        ) : null}
-        {sprintMode ? (
+        ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <button className="btn btn-icon" onClick={() => stepSprint(-1)} title="Older sprint">
+            <button className="btn btn-icon" onClick={() => step(-1)} title={scope === 'sprint' ? 'Older sprint' : 'Previous'}>
               ◀
             </button>
-            <select value={selectedSprint} onChange={(e) => setSprintName(e.target.value)}>
-              {availableSprints.length === 0 ? (
-                <option value="">{sprintLabel}</option>
-              ) : (
-                availableSprints.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))
-              )}
-            </select>
-            <button className="btn btn-icon" onClick={() => stepSprint(1)} title="Newer sprint">
+            {scope === 'sprint' ? (
+              <select value={selectedSprint} onChange={(e) => setSprintName(e.target.value)}>
+                {availableSprints.length === 0 ? (
+                  <option value="">{selectedSprint || 'Active sprint'}</option>
+                ) : (
+                  availableSprints.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))
+                )}
+              </select>
+            ) : (
+              <span style={{ padding: '4px 14px', borderRadius: 999, border: '1px solid var(--border-strong)', fontSize: 12.5, whiteSpace: 'nowrap' }}>
+                {scopeLabel}
+              </span>
+            )}
+            <button className="btn btn-icon" onClick={() => step(1)} title={scope === 'sprint' ? 'Newer sprint' : 'Next'}>
               ▶
             </button>
           </div>
-        ) : null}
+        )}
+        <button className="btn" onClick={goToday}>
+          Today
+        </button>
         {busy ? <span className="accent-cyan">…</span> : null}
         <div style={{ flex: 1 }} />
+        <UserSearchPicker users={users} value={userFilter} onCommit={setUserFilter} />
         <button className="btn" onClick={exportCsv} disabled={!report}>
           ⬇ CSV
         </button>
@@ -444,159 +552,177 @@ export function TimeLoggedView() {
         </button>
       </div>
 
+      {/* ------------------------------------------------ view switch ------ */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <span className="muted" style={{ fontSize: 12 }}>view:</span>
+        {legalViews.map((v) => (
+          <button key={v} className="btn" onClick={() => setView(v)} style={view === v ? activeChip : undefined}>
+            {VIEW_LABELS[v]}
+          </button>
+        ))}
+      </div>
+
       {error ? <div style={{ color: 'var(--accent-red)', fontSize: 12.5 }}>{error}</div> : null}
 
-      {/* ------------------------------------------- hero summary ---------- */}
-      <div
-        className="card"
-        style={{
-          padding: '16px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 24,
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <div className="muted" style={{ fontSize: 10.5, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            Total logged · {sprintMode ? sprintLabel : PERIODS.find((p) => p.id === period)?.label}
-          </div>
-          <div style={{ fontSize: 30, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--accent-green)', lineHeight: 1.15 }}>
-            {formatTimeSpan(report?.total ?? 0)}
-          </div>
-          <div className="muted" style={{ fontSize: 11.5 }}>
-            across {loggedIssues} issue{loggedIssues === 1 ? '' : 's'}
-          </div>
-        </div>
-        <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--border-soft)' }} />
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flex: 1 }}>
-          {statusChips.length === 0 ? (
-            <span className="muted" style={{ fontSize: 12.5 }}>
-              Nothing logged in this period yet.
-            </span>
-          ) : (
-            statusChips.map((c) => (
-              <div
-                key={c.status}
-                className="tl-chip"
-                title={`${c.count} issue(s) in "${c.status}" — ${formatTimeSpan(c.seconds)} logged in this period`}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 2,
-                  padding: '8px 14px',
-                  borderRadius: 10,
-                  border: `1px solid ${statusColor(c.status)}`,
-                  background: `color-mix(in srgb, ${statusColor(c.status)} 8%, transparent)`,
-                  minWidth: 110,
-                }}
-              >
-                <span style={{ fontSize: 11, fontWeight: 700, color: statusColor(c.status) }}>{c.status}</span>
-                <span style={{ fontSize: 15, fontWeight: 700 }}>{formatTimeSpan(c.seconds)}</span>
-                <span className="muted" style={{ fontSize: 10.5 }}>
-                  {c.count} issue{c.count === 1 ? '' : 's'}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* ------------------------------------------- issues panel ---------- */}
-      <ResponsiveGrid<JiraIssue>
-        stateKey="TimeLogged.Issues"
-        columns={columns}
-        rows={loggedRows}
-        rowKey={(i) => i.key}
-        multiSelect
-        onRowDoubleClick={(i) => dialogs.openIssueDetails(i.key)}
-        emptyText="No work logged in this period."
-      />
+      {view === 'summary' ? (
+        <SummaryView report={report} scopeLabel={scopeLabel} loggedRows={loggedRows} columns={columns} />
+      ) : null}
 
       {/* -------------------------------------------- timesheet ------------ */}
-      <div className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 700, fontSize: 13.5 }}>Weekly timesheet</span>
-          <button className="btn btn-icon" onClick={() => changeWeek(addDays(weekStart, -7))} title="Previous week">
-            ◀
-          </button>
-          <span style={{ padding: '4px 14px', borderRadius: 999, border: '1px solid var(--border-strong)', fontSize: 12.5 }}>
-            {formatDMmmYy(weekStart)} – {formatDMmmYy(addDays(weekStart, 6))}
-          </span>
-          <button className="btn btn-icon" onClick={() => changeWeek(addDays(weekStart, 7))} title="Next week">
-            ▶
-          </button>
-          <button className="btn" onClick={() => changeWeek(startOfWeekSunday(new Date()))}>
-            This week
-          </button>
-          <div style={{ flex: 1 }} />
-          <span>
-            Week total:{' '}
-            <b style={{ color: 'var(--accent-green)' }}>
-              {formatTimeSpan(Math.round((timesheet?.weeklyTotalHours ?? 0) * 3600))}
-            </b>
-          </span>
-        </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ borderCollapse: 'collapse', fontSize: 12.5, minWidth: 420 + 7 * 48 }}>
-            <thead>
-              <tr>
-                <th style={{ ...dayCell, width: 240, minWidth: 240, textAlign: 'left' }} className="muted">
-                  Issue
-                </th>
-                <th style={{ ...dayCell, width: 100, minWidth: 100, textAlign: 'left' }} className="muted">
-                  Key
-                </th>
-                <th style={{ ...dayCell, width: 80, minWidth: 80 }} className="muted">
-                  Logged
-                </th>
-                {weekHeaders.map((h, i) => (
-                  <th key={i} style={dayCell}>
-                    <div style={{ fontWeight: 700 }}>{h.dayNumber}</div>
-                    <div className="muted" style={{ fontSize: 10, opacity: 0.7 }}>
-                      {h.dayLabel}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {(timesheet?.rows ?? []).map((r) => (
-                <tr key={r.issueKey}>
-                  <td style={{ ...dayCell, textAlign: 'left', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {r.summary}
-                  </td>
-                  <td style={{ ...dayCell, textAlign: 'left', color: 'var(--accent-cyan)', fontWeight: 600 }}>
-                    {r.issueKey}
-                  </td>
-                  <td style={dayCell}>{hoursDisplay(r.loggedHours)}</td>
-                  {r.days.map((h, i) => (
-                    <td key={i} style={dayCell}>
-                      {hoursDisplay(h)}
-                    </td>
+      {view === 'timesheet' ? (
+        <div className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 700, fontSize: 13.5 }}>Timesheet</span>
+            <span className="muted" style={{ fontSize: 12.5 }}>{scopeLabel}</span>
+            <div style={{ flex: 1 }} />
+            <span>
+              Total:{' '}
+              <b style={{ color: 'var(--accent-green)' }}>
+                {formatTimeSpan(
+                  Math.round(
+                    (scope === 'week'
+                      ? timesheet?.weeklyTotalHours ?? 0
+                      : sheetTotals.reduce((a, b) => a + b, 0)) * 3600,
+                  ),
+                )}
+              </b>
+            </span>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            {scope === 'week' ? (
+              <table style={{ borderCollapse: 'collapse', fontSize: 12.5, minWidth: 420 + 7 * 48 }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...dayCell, width: 240, minWidth: 240, textAlign: 'left' }} className="muted">
+                      Issue
+                    </th>
+                    <th style={{ ...dayCell, width: 100, minWidth: 100, textAlign: 'left' }} className="muted">
+                      Key
+                    </th>
+                    <th style={{ ...dayCell, width: 80, minWidth: 80 }} className="muted">
+                      Logged
+                    </th>
+                    {weekHeaders.map((h, i) => (
+                      <th key={i} style={dayCell}>
+                        <div style={{ fontWeight: 700 }}>{h.dayNumber}</div>
+                        <div className="muted" style={{ fontSize: 10, opacity: 0.7 }}>
+                          {h.dayLabel}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(timesheet?.rows ?? []).map((r) => (
+                    <tr key={r.issueKey}>
+                      <td style={{ ...dayCell, textAlign: 'left', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {r.summary}
+                      </td>
+                      <td style={{ ...dayCell, textAlign: 'left', color: 'var(--accent-cyan)', fontWeight: 600 }}>
+                        {r.issueKey}
+                      </td>
+                      <td style={dayCell}>{hoursDisplay(r.loggedHours)}</td>
+                      {r.days.map((h, i) => (
+                        <td key={i} style={dayCell}>
+                          {hoursDisplay(h)}
+                        </td>
+                      ))}
+                    </tr>
                   ))}
-                </tr>
-              ))}
-              {timesheet ? (
-                <tr style={{ fontWeight: 700 }}>
-                  <td style={{ ...dayCell, textAlign: 'left' }}>Total</td>
-                  <td style={dayCell} />
-                  <td style={dayCell}>{hoursDisplay(timesheet.weeklyTotalHours)}</td>
-                  {timesheet.totals.map((h, i) => (
-                    <td key={i} style={dayCell}>
-                      {hoursDisplay(h)}
-                    </td>
+                  {timesheet ? (
+                    <tr style={{ fontWeight: 700 }}>
+                      <td style={{ ...dayCell, textAlign: 'left' }}>Total</td>
+                      <td style={dayCell} />
+                      <td style={dayCell}>{hoursDisplay(timesheet.weeklyTotalHours)}</td>
+                      {timesheet.totals.map((h, i) => (
+                        <td key={i} style={dayCell}>
+                          {hoursDisplay(h)}
+                        </td>
+                      ))}
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            ) : (
+              <table style={{ borderCollapse: 'collapse', fontSize: 12.5, minWidth: 340 + days.length * 48 }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...dayCell, width: 240, minWidth: 240, textAlign: 'left' }} className="muted">
+                      Issue
+                    </th>
+                    <th style={{ ...dayCell, width: 100, minWidth: 100, textAlign: 'left' }} className="muted">
+                      Key
+                    </th>
+                    <th style={{ ...dayCell, width: 80, minWidth: 80 }} className="muted">
+                      Logged
+                    </th>
+                    {days.map((d) => (
+                      <th key={d} style={dayCell}>
+                        <div style={{ fontWeight: 700 }}>{d.slice(8)}</div>
+                        <div className="muted" style={{ fontSize: 10, opacity: 0.7 }}>
+                          {d.slice(5, 7)}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sheetRows.map((r) => (
+                    <tr key={r.key}>
+                      <td style={{ ...dayCell, textAlign: 'left', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {r.summary}
+                      </td>
+                      <td style={{ ...dayCell, textAlign: 'left', color: 'var(--accent-cyan)', fontWeight: 600 }}>
+                        {r.key}
+                      </td>
+                      <td style={dayCell}>{hoursDisplay(r.totalHours)}</td>
+                      {r.hours.map((h, i) => (
+                        <td key={i} style={dayCell}>
+                          {hoursDisplay(h)}
+                        </td>
+                      ))}
+                    </tr>
                   ))}
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
+                  {sheetRows.length > 0 ? (
+                    <tr style={{ fontWeight: 700 }}>
+                      <td style={{ ...dayCell, textAlign: 'left' }}>Total</td>
+                      <td style={dayCell} />
+                      <td style={dayCell}>{hoursDisplay(sheetTotals.reduce((a, b) => a + b, 0))}</td>
+                      {sheetTotals.map((h, i) => (
+                        <td key={i} style={dayCell}>
+                          {hoursDisplay(h)}
+                        </td>
+                      ))}
+                    </tr>
+                  ) : (
+                    <tr>
+                      <td colSpan={3 + days.length} className="muted" style={{ ...dayCell, textAlign: 'left' }}>
+                        No work logged in this window.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
-      </div>
+      ) : null}
+
+      {view === 'epics' ? (
+        dataWin ? (
+          <EpicsTab from={dataWin.from} to={dataWin.to} user={userFilter} />
+        ) : (
+          <div className="muted" style={{ fontSize: 12.5 }}>Loading sprint window…</div>
+        )
+      ) : null}
+
+      {view === 'calendar' ? <CalendarTab year={anchor.getFullYear()} month={anchor.getMonth()} user={userFilter} /> : null}
+
+      {view === 'board' ? <SprintTab sprintName={selectedSprint} user={userFilter} /> : null}
 
       {/* Print-only section for the PDF export (window.print). */}
       <div className="tl-print" aria-hidden="true">
-        <h2>Time Spent — {formatPrintStamp(new Date())}</h2>
+        <h2>Time Spent — {scopeLabel} — {formatPrintStamp(new Date())}</h2>
         <p>
           <b>Total work logged: {formatTimeSpan(report?.total ?? 0)}</b>
         </p>
@@ -627,14 +753,6 @@ export function TimeLoggedView() {
           </tbody>
         </table>
       </div>
-        </>
-      ) : null}
-
-      {tab === 'calendar' ? <CalendarTab user={userFilter} /> : null}
-
-      {tab === 'epics' ? <EpicsTab user={userFilter} /> : null}
-
-      {tab === 'sprint' ? <SprintTab user={userFilter} /> : null}
     </div>
   );
 }

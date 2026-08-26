@@ -3,7 +3,7 @@
 // rows. Ported from WPF TimeLoggedViewModel.
 
 import type { DailyLogEntry, JiraIssue, TimeLoggedReport } from '../types';
-import { addDays, fmtHours, formatDayLong, formatDayShort, parseYmd, startOfWeekSunday, ymd } from './viewFormat';
+import { addDays, fmtHours, formatDayLong, formatDayShort, parseYmd, ymd } from './viewFormat';
 
 // ---------------------------------------------------------------------------
 // Weekly timesheet
@@ -206,46 +206,4 @@ export function dailyCsvRows(hoursByDay: Record<string, number>): Array<[string,
   return Object.keys(hoursByDay)
     .sort()
     .map((day) => [day, fmtHours(hoursByDay[day])]);
-}
-
-// ---------------------------------------------------------------------------
-// Report periods → worklog date windows
-// ---------------------------------------------------------------------------
-
-export type ReportPeriod = 'today' | 'yesterday' | 'thisWeek' | 'previousWeek' | 'thisMonth' | 'customRange';
-
-/**
- * Local [from, toExclusive) window for a Report period, as yyyy-MM-dd strings
- * for the /api/timelogged/range endpoint (worklogAuthor query — any issue the
- * user logged in the window, regardless of sprint). customTo is INCLUSIVE in
- * the UI, so it maps to customTo + 1 day.
- */
-export function periodRange(
-  period: ReportPeriod,
-  now: Date,
-  customFrom: string,
-  customTo: string,
-): { from: string; to: string } {
-  const day0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  switch (period) {
-    case 'today':
-      return { from: ymd(day0), to: ymd(addDays(day0, 1)) };
-    case 'yesterday':
-      return { from: ymd(addDays(day0, -1)), to: ymd(day0) };
-    case 'thisWeek': {
-      const ws = startOfWeekSunday(day0);
-      return { from: ymd(ws), to: ymd(addDays(ws, 7)) };
-    }
-    case 'previousWeek': {
-      const ws = startOfWeekSunday(day0);
-      return { from: ymd(addDays(ws, -7)), to: ymd(ws) };
-    }
-    case 'thisMonth':
-      return {
-        from: ymd(new Date(day0.getFullYear(), day0.getMonth(), 1)),
-        to: ymd(new Date(day0.getFullYear(), day0.getMonth() + 1, 1)),
-      };
-    case 'customRange':
-      return { from: customFrom, to: ymd(addDays(parseYmd(customTo), 1)) };
-  }
 }

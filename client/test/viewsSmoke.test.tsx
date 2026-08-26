@@ -84,19 +84,24 @@ describe('RecentUpdatesView (§6)', () => {
   });
 });
 
-describe('TimeLoggedView (redesigned)', () => {
-  it('renders toolbar chips, hero summary and timesheet', () => {
+describe('TimeLoggedView (scope-first)', () => {
+  it('renders the scope bar, view switcher and exports', () => {
     const html = renderToString(<TimeLoggedView />);
     expect(html).toContain('Time Spent');
     expect(html).toContain('⬇ CSV');
     expect(html).toContain('⬇ PDF');
-    expect(html).toContain('Total logged');
-    expect(html).toContain('Weekly timesheet');
-    expect(html).toContain('This week');
-    // All six periods offered as chips.
-    for (const p of ['Today', 'Yesterday', 'This week', 'Last week', 'This month', 'Custom…']) {
-      expect(html).toContain(p);
+    // Scope chips + Today reset in the scope bar.
+    for (const s of ['Day', 'Week', 'Month', 'Sprint', 'Custom', 'Today']) {
+      expect(html).toContain(s);
     }
+    // View switcher row; week scope offers the base views.
+    expect(html).toContain('view:');
+    for (const v of ['Timesheet', 'Summary', 'Epics']) {
+      expect(html).toContain(v);
+    }
+    // Old period chips are gone.
+    expect(html).not.toContain('Yesterday');
+    expect(html).not.toContain('Custom…');
   });
 
   it('formatPrintStamp = yyyy-MM-dd HH:mm', () => {
