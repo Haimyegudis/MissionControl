@@ -20,10 +20,8 @@ import { errText } from '../lib/errors';
 import { formatTimeSpan } from '../lib/format';
 import { addDays, parseYmd, ymd } from '../lib/viewFormat';
 import {
-  formatSprintLabel,
   scopeWindow,
   stepAnchor,
-  stepSprintName,
   viewsForScope,
   windowDays,
   type ScopeId,
@@ -258,7 +256,7 @@ export function TimeLoggedView() {
     return {
       from,
       to: ymd(addDays(parseYmd(toInclusive), 1)),
-      label: formatSprintLabel(selectedSprint || 'Active sprint', parseYmd(from), parseYmd(toInclusive)),
+      label: `${selectedSprint || 'Active sprint'} · ${from} → ${toInclusive}`,
     };
   }, [scope, report, selectedSprint]);
 
@@ -320,12 +318,16 @@ export function TimeLoggedView() {
     if (!legal.includes(view)) setView(s === 'month' ? 'calendar' : legal[0]);
   };
 
+  const stepSprint = (delta: number) => {
+    if (availableSprints.length === 0) return;
+    const idx = availableSprints.indexOf(selectedSprint);
+    const nextIdx = Math.min(availableSprints.length - 1, Math.max(0, (idx < 0 ? 0 : idx) + delta));
+    setSprintName(availableSprints[nextIdx]);
+  };
+
   const step = (dir: 1 | -1) => {
-    if (scope === 'sprint') {
-      if (availableSprints.length > 0) setSprintName(stepSprintName(availableSprints, selectedSprint, dir));
-    } else if (scope !== 'custom') {
-      setAnchor(stepAnchor(scope, anchor, dir));
-    }
+    if (scope === 'sprint') stepSprint(dir);
+    else if (scope !== 'custom') setAnchor(stepAnchor(scope, anchor, dir));
   };
 
   const goToday = () => {

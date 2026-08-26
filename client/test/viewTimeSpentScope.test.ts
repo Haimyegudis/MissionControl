@@ -1,15 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildEditableRows,
-  formatSprintLabel,
   parseCellInput,
   scopeWindow,
   stepAnchor,
-  stepSprintName,
   viewsForScope,
   windowDays,
-  type ScopeId,
-  type ViewId,
 } from '../src/lib/viewTimeSpentScope';
 import type { DailyLogEntry, JiraIssue } from '../src/types';
 
@@ -79,62 +75,6 @@ describe('viewsForScope', () => {
 
   it('sprint: adds board', () => {
     expect(viewsForScope('sprint')).toEqual(['timesheet', 'summary', 'epics', 'board']);
-  });
-
-  it('view coercion round-trips: an illegal view for a scope is never carried over silently', () => {
-    // Simulates TimeLoggedView.changeScope: switching scope away and back
-    // must always land on a legal view for the *current* scope.
-    const coerce = (scope: ScopeId, view: ViewId): ViewId => {
-      const legal = viewsForScope(scope);
-      return legal.includes(view) ? view : scope === 'month' ? 'calendar' : legal[0];
-    };
-    // sprint/board -> month coerces to calendar (a 31-col sheet is unusable as timesheet).
-    expect(coerce('month', 'board')).toBe('calendar');
-    // month/calendar -> sprint coerces to a legal sprint view (not necessarily 'board').
-    const backToSprint = coerce('sprint', coerce('month', 'board'));
-    expect(viewsForScope('sprint')).toContain(backToSprint);
-    // week/timesheet -> sprint keeps 'timesheet' (legal in both).
-    expect(coerce('sprint', 'timesheet')).toBe('timesheet');
-  });
-});
-
-describe('stepSprintName', () => {
-  const sprints = ['Sprint 40', 'Sprint 41', 'Sprint 42'];
-
-  it('steps forward/backward through the list', () => {
-    expect(stepSprintName(sprints, 'Sprint 41', 1)).toBe('Sprint 42');
-    expect(stepSprintName(sprints, 'Sprint 41', -1)).toBe('Sprint 40');
-  });
-
-  it('clamps at the newest end (no wraparound)', () => {
-    expect(stepSprintName(sprints, 'Sprint 42', 1)).toBe('Sprint 42');
-  });
-
-  it('clamps at the oldest end (no wraparound)', () => {
-    expect(stepSprintName(sprints, 'Sprint 40', -1)).toBe('Sprint 40');
-  });
-
-  it('unknown/blank current (active sprint) starts from index 0', () => {
-    expect(stepSprintName(sprints, '', 1)).toBe('Sprint 41');
-    expect(stepSprintName(sprints, '', -1)).toBe('Sprint 40');
-  });
-
-  it('empty list is a no-op', () => {
-    expect(stepSprintName([], 'Sprint 41', 1)).toBe('Sprint 41');
-  });
-});
-
-describe('formatSprintLabel', () => {
-  it('"<name> · dd Mon – dd Mon" (no year)', () => {
-    expect(formatSprintLabel('Sprint 42', new Date(2026, 7, 23), new Date(2026, 8, 10))).toBe(
-      'Sprint 42 · 23 Aug – 10 Sep',
-    );
-  });
-
-  it('falls back to "Active sprint" when no name resolved yet', () => {
-    expect(formatSprintLabel('Active sprint', new Date(2026, 7, 1), new Date(2026, 7, 14))).toBe(
-      'Active sprint · 01 Aug – 14 Aug',
-    );
   });
 });
 

@@ -2,8 +2,69 @@
 // chart data builders (logged-vs-estimated, per-day sprint stack) and CSV
 // rows. Ported from WPF TimeLoggedViewModel.
 
-import type { DailyLogEntry, JiraIssue } from '../types';
-import { fmtHours, formatDayLong, formatDayShort, parseYmd } from './viewFormat';
+import type { DailyLogEntry, JiraIssue, TimeLoggedReport } from '../types';
+import { addDays, fmtHours, formatDayLong, formatDayShort, parseYmd, ymd } from './viewFormat';
+
+// ---------------------------------------------------------------------------
+// Weekly timesheet
+// ---------------------------------------------------------------------------
+
+export interface TimesheetRow {
+  issueKey: string;
+  summary: string;
+  loggedHours: number;
+  /** Hours per day cell, index 0 = week start. */
+  days: number[];
+}
+
+export interface Timesheet {
+  rows: TimesheetRow[];
+  /** Per-day totals (7 cells). */
+  totals: number[];
+  weeklyTotalHours: number;
+}
+
+/** Build the 7-day timesheet grid from a range report (rows ordered by key). */
+export function buildTimesheet(weekStart: Date, report: TimeLoggedReport): Timesheet {
+  const from = ymd(weekStart);
+  const byIssue = new Map<string, DailyLogEntry[]>();
+  for (const e of report.dailyByIssue) {
+    const list = byIssue.get(e.issueKey);
+    if (list) list.push(e);
+    else byIssue.set(e.issueKey, [e]);
+  }
+  const fromDate = parseYmd(from);
+  const totals = [0, 0, 0, 0, 0, 0, 0];
+  const rows: TimesheetRow[] = [];
+  for (const issue of [...report.issues].sort((a, b) => a.key.localeCompare(b.key))) {
+    const days = [0, 0, 0, 0, 0, 0, 0];
+    for (const e of byIssue.get(issue.key) ?? []) {
+      const idx = Math.round((parseYmd(e.day).getTime() - fromDate.getTime()) / 86_400_000);
+      if (idx < 0 || idx > 6) continue;
+      const hours = e.timeSpent / 3600;
+      days[idx] += hours;
+      totals[idx] += hours;
+    }
+    rows.push({
+      issueKey: issue.key,
+      summary: issue.summary,
+      loggedHours: days.reduce((a, b) => a + b, 0),
+      days,
+    });
+  }
+  return { rows, totals, weeklyTotalHours: totals.reduce((a, b) => a + b, 0) };
+}
+
+/** Header cells: `dd` (bold) over `DDD` (uppercase day name) per §7. */
+export function timesheetHeaders(weekStart: Date): Array<{ dayNumber: string; dayLabel: string }> {
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = addDays(weekStart, i);
+    return {
+      dayNumber: String(d.getDate()).padStart(2, '0'),
+      dayLabel: formatDayShort(d).slice(0, 3).toUpperCase(),
+    };
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Logged vs Estimated chart
