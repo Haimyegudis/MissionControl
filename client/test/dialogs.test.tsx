@@ -121,6 +121,32 @@ describe('TransitionDialog helpers (§10.5)', () => {
     // comment renders only as the bottom box, not as a field label list entry
     expect((html.match(/Comment/g) ?? []).length).toBe(1);
   });
+
+  it('shows Date Started when the screen has a worklog field', () => {
+    const html = renderToString(
+      <TransitionDialog
+        issueKey="ISW-7"
+        transition={{ id: '31', name: 'Close Issue', toStatus: 'Closed' }}
+        fields={[tf({ id: 'worklog', name: 'Worklog' })]}
+        onClose={noop}
+      />,
+    );
+    expect(html).toContain('Date Started');
+    expect(html).toContain('datetime-local');
+    expect(html).toContain('Pick date');
+  });
+
+  it('hides Date Started when the screen has no worklog field', () => {
+    const html = renderToString(
+      <TransitionDialog
+        issueKey="ISW-7"
+        transition={{ id: '31', name: 'Close Issue', toStatus: 'Closed' }}
+        fields={[tf({ id: 'resolution', name: 'Resolution', schemaType: 'resolution', allowedValues: ['Fixed'] })]}
+        onClose={noop}
+      />,
+    );
+    expect(html).not.toContain('Date Started');
+  });
 });
 
 describe('LogWork (§10.4)', () => {

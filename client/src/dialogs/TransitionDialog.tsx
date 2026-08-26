@@ -4,7 +4,9 @@
 
 import { useMemo, useState } from 'react';
 import { issues as issuesApi } from '../api/client';
+import { DateTimeField } from '../components/DateTimeField';
 import { Modal } from '../components/Modal';
+import { nowLocalInput } from '../lib/timeFormat';
 import type { JiraTransition, JiraTransitionField } from '../types';
 
 export interface TransitionDialogProps {
@@ -112,12 +114,15 @@ export function TransitionDialog({ issueKey, transition, fields, onClose, onDone
   // Special ids: comment → bottom box; worklog → "Time Spent"; assignee → assignee.
   const formFields = useMemo(() => fields.filter((f) => f.id !== 'comment'), [fields]);
 
+  const hasWorklog = useMemo(() => formFields.some((f) => f.id === 'worklog'), [formFields]);
+
   const [values, setValues] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     for (const f of formFields) initial[f.id] = initialFieldValue(f);
     return initial;
   });
   const [comment, setComment] = useState('');
+  const [worklogStarted, setWorklogStarted] = useState(nowLocalInput());
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -160,6 +165,7 @@ export function TransitionDialog({ issueKey, transition, fields, onClose, onDone
         comment: comment.trim() ? comment : undefined,
         assignee,
         timeSpent,
+        worklogStarted: timeSpent ? new Date(worklogStarted).toISOString() : undefined,
       });
       onDone?.();
     } catch (err) {
@@ -270,14 +276,22 @@ export function TransitionDialog({ issueKey, transition, fields, onClose, onDone
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {formFields.map((f) => (
-          <div key={f.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label>
-              {f.id === 'worklog' ? 'Time Spent' : f.name}
-              {(f.id === 'worklog' || isHeuristicallyRequired(f)) && (
-                <span style={{ color: 'var(--accent-red)' }}> *</span>
-              )}
-            </label>
-            {renderControl(f)}
+          <div key={f.id}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label>
+                {f.id === 'worklog' ? 'Time Spent' : f.name}
+                {(f.id === 'worklog' || isHeuristicallyRequired(f)) && (
+                  <span style={{ color: 'var(--accent-red)' }}> *</span>
+                )}
+              </label>
+              {renderControl(f)}
+            </div>
+            {f.id === 'worklog' && hasWorklog && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
+                <label>Date Started</label>
+                <DateTimeField value={worklogStarted} onChange={setWorklogStarted} />
+              </div>
+            )}
           </div>
         ))}
 

@@ -4,7 +4,7 @@
 import { useState, type ReactNode } from 'react';
 import { issues as issuesApi } from '../api/client';
 import { Modal } from '../components/Modal';
-import { parseJiraTime } from '../lib/timeFormat';
+import { nowLocalInput, parseJiraTime } from '../lib/timeFormat';
 
 export type AdjustMode = 'auto' | 'leave' | 'new' | 'manual';
 
@@ -23,12 +23,6 @@ export function formatExistingEstimate(seconds: number): string {
     return `${hours} hours`;
   }
   return `${Math.round(seconds / 60)} minutes`;
-}
-
-function nowLocalInput(): string {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export function LogWork({ issueKey, remainingEstimate = null, onClose, onLogged }: LogWorkProps) {
