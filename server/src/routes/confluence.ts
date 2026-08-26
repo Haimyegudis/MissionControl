@@ -126,6 +126,43 @@ function sanitizeConfluenceBody(html: string): string {
   });
 }
 
+/** draw.io diagram macros render an empty viewer div plus a `<script>` that boots the
+ *  viewer client-side — but we strip scripts, so the diagram would render blank. The
+ *  script always embeds a static PNG export URL (`readerOpts.imageUrl`, built from a
+ *  simple string concatenation) and sometimes a `readerOpts.width`; swap the empty
+ *  viewer content for an `<img>` of that export before sanitizing away the script.
+ *  The extracted src is a raw upstream-relative path — sanitize/proxyAssetTag downstream
+ *  handle signing it, same as any other asset. */
+export function inlineDrawioImages(html: string): string {
+  const doc = parseDocument(html);
+  const macros = findAll(
+    (el) => el.attribs?.['data-macro-name'] === 'drawio' || el.attribs?.['data-macro-name'] === 'drawio-sketch',
+    doc.children,
+  );
+  for (const macro of macros) {
+    const scripts = findAll((el) => el.name === 'script', macro.children);
+    let imageUrl: string | null = null;
+    let width: string | null = null;
+    for (const script of scripts) {
+      const text = textContent(script);
+      const urlMatch = /readerOpts\.imageUrl\s*=\s*([^;]+);/.exec(text);
+      if (urlMatch) {
+        const segments = [...urlMatch[1].matchAll(/'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"/g)];
+        if (segments.length) imageUrl = segments.map((m) => m[1] ?? m[2] ?? '').join('');
+      }
+      const widthMatch = /readerOpts\.width\s*=\s*['"](\d+)['"]/.exec(text);
+      if (widthMatch) width = widthMatch[1];
+      if (imageUrl) break;
+    }
+    if (!imageUrl) continue;
+    const imgHtml = `<img class="drawio-exported" src="${escapeHtml(imageUrl)}" alt="drawio diagram"${width ? ` width="${width}"` : ''} />`;
+    for (const child of macro.children.slice()) removeElement(child);
+    const [imgNode] = parseDocument(imgHtml).children;
+    if (imgNode) appendChild(macro, imgNode as Element);
+  }
+  return render(doc);
+}
+
 function hasClassToken(el: Element, token: string): boolean {
   const value = el.attribs?.class;
   return typeof value === 'string' && value.split(/\s+/).includes(token);
@@ -188,7 +225,7 @@ document.addEventListener('click',function(event){
     .join('\n');
   const author = page.lastModifiedBy ? ` by ${escapeHtml(page.lastModifiedBy)}` : '';
   const modified = page.lastModifiedAt ? new Date(page.lastModifiedAt).toLocaleString('en-US') : '';
-  const safeBody = mergeTableFilterTables(sanitizeConfluenceBody(page.viewBody || page.storageBody));
+  const safeBody = mergeTableFilterTables(sanitizeConfluenceBody(inlineDrawioImages(page.viewBody || page.storageBody)));
   const content = proxyAssetTag(
     `<div id="jiraweb-confluence-page" class="page view"><h1 id="title-heading" class="pagetitle"><span id="title-text">${escapeHtml(page.title)}</span></h1><div class="page-metadata">Last updated ${escapeHtml(modified)}${author} · Version ${page.version}</div><main id="main-content" class="wiki-content">${safeBody}</main></div>`,
     pageUrl,

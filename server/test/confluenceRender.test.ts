@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mergeTableFilterTables, originalPageDocument, rewriteCssUrls } from '../src/routes/confluence.js';
+import { inlineDrawioImages, mergeTableFilterTables, originalPageDocument, rewriteCssUrls } from '../src/routes/confluence.js';
 import { signProxyUrl } from '../src/security.js';
 import type { ConfluencePageContent } from '@mc/core';
 
@@ -191,6 +191,67 @@ describe('rewriteCssUrls', () => {
     const css = '.a{background:url(http://[::1)}';
     const out = rewriteCssUrls(css, 'https://conf.test/s/batch.css', makeProxyUrl);
     expect(out).toContain('url(http://[::1)');
+  });
+});
+
+describe('inlineDrawioImages', () => {
+  const drawioBlock = (opts: { width?: boolean } = {}) =>
+    '<div class="conf-macro output-block" data-macro-name="drawio">' +
+    '<div class="drawio-content"></div>' +
+    '<script>' +
+    "var readerOpts = {};" +
+    "readerOpts.imageUrl = '' + '/download/attachments/413762877/IO recording update process.png' + '?version=5&api=v2';" +
+    (opts.width !== false ? "readerOpts.width = '1051';" : '') +
+    '</script>' +
+    '</div>';
+
+  it('replaces the empty viewer with an <img> of the exported PNG', () => {
+    const out = inlineDrawioImages(drawioBlock());
+    expect(out).toContain(
+      '<img class="drawio-exported" src="/download/attachments/413762877/IO recording update process.png?version=5&amp;api=v2" alt="drawio diagram" width="1051">',
+    );
+    expect(out).not.toContain('readerOpts');
+  });
+
+  it('omits width when readerOpts.width is absent', () => {
+    const out = inlineDrawioImages(drawioBlock({ width: false }));
+    expect(out).toContain(
+      '<img class="drawio-exported" src="/download/attachments/413762877/IO recording update process.png?version=5&amp;api=v2" alt="drawio diagram">',
+    );
+    expect(out).not.toContain('width=');
+  });
+
+  it('leaves a drawio block unchanged when no imageUrl is found', () => {
+    const html = '<div class="conf-macro output-block" data-macro-name="drawio"><div class="drawio-content"></div><script>var x = 1;</script></div>';
+    const out = inlineDrawioImages(html);
+    expect(out).toContain('<div class="drawio-content"></div>');
+    expect(out).not.toContain('drawio-exported');
+  });
+
+  it('renders a signed proxy img src through the full originalPageDocument pipeline', () => {
+    const page: ConfluencePageContent = {
+      id: '42',
+      spaceKey: 'DOC',
+      title: 'Diagram',
+      parentId: null,
+      status: 'current',
+      url: '/pages/viewpage.action?pageId=42',
+      createdBy: null,
+      createdAt: null,
+      lastModifiedBy: 'Author',
+      lastModifiedAt: '2026-08-17T08:00:00.000Z',
+      excerpt: null,
+      storageBody: '',
+      viewBody: drawioBlock(),
+      version: 7,
+    };
+    const apiToken = 'a'.repeat(64);
+
+    const html = originalPageDocument(page, 'https://docs.example', '', 'known-nonce', 'http://self.test', apiToken);
+    expect(html).toMatch(/src="http:\/\/self\.test\/api\/confluence\/proxy\?url=[^"]*download%2Fattachments%2F413762877[^"]*&sig=[0-9a-f]+"/);
+    expect(html).toContain('drawio-exported');
+    expect(html).not.toContain('<script>');
+    expect(html).not.toContain('readerOpts.imageUrl');
   });
 });
 
