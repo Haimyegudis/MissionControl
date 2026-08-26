@@ -23,6 +23,7 @@ import {
   buildTimesheet,
   dailyCsvRows,
   issuesCsvRow,
+  loggedOnlyIssues,
   timesheetHeaders,
 } from '../src/lib/viewTimeLogged';
 import type { DailyLogEntry, JiraBoard, JiraIssue, TimeLoggedReport } from '../src/types';
@@ -200,6 +201,15 @@ describe('CSV aggregation (§7 exports)', () => {
       ['2026-08-10', '0.5'],
       ['2026-08-11', '1.5'],
     ]);
+  });
+});
+
+describe('loggedOnlyIssues', () => {
+  it('drops zero and null workLoggedForPeriod, keeps positive', () => {
+    const zero = issue({ key: 'ISW-1', workLoggedForPeriod: 0 });
+    const nullLogged = issue({ key: 'ISW-2', workLoggedForPeriod: null });
+    const positive = issue({ key: 'ISW-3', workLoggedForPeriod: 3600 });
+    expect(loggedOnlyIssues([zero, nullLogged, positive])).toEqual([positive]);
   });
 });
 

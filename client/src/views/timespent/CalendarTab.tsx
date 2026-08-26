@@ -66,7 +66,7 @@ export function CalendarTab({ user }: { user: string }) {
       {error ? <div style={{ color: 'var(--accent-red)', fontSize: 12.5 }}>{error}</div> : null}
 
       <div className="card" style={{ padding: 8 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, width: '100%' }}>
           {WEEKDAYS.map((d) => (
             <div key={d} className="muted" style={{ fontSize: 11, fontWeight: 700, padding: '2px 6px' }}>{d}</div>
           ))}
@@ -75,6 +75,8 @@ export function CalendarTab({ user }: { user: string }) {
               key={cell.day}
               style={{
                 minHeight: 100,
+                minWidth: 0,
+                overflow: 'hidden',
                 borderRadius: 6,
                 padding: '4px 6px',
                 border: cell.isToday ? '2px solid var(--accent-green)' : '1px solid var(--border-soft)',
@@ -89,15 +91,27 @@ export function CalendarTab({ user }: { user: string }) {
                   type="button"
                   onClick={() => dialogs.openLogWork(e.issueKey, { onLogged: () => setRefreshTick((t) => t + 1) })}
                   title={`${e.issueKey} — ${summaryByKey.get(e.issueKey) ?? ''}`}
-                  style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '2px 0', cursor: 'pointer' }}
+                  style={{ display: 'block', width: '100%', maxWidth: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '2px 0', cursor: 'pointer' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 4 }}>
-                    <span style={{ fontSize: 11, color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)' }}>{e.issueKey}</span>
-                    <span style={{ fontSize: 11, color: 'var(--accent-green)', fontWeight: 600 }}>{e.hours.toFixed(1)}h</span>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 4, minWidth: 0 }}>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--accent-cyan)',
+                        fontFamily: 'var(--font-mono)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        minWidth: 0,
+                      }}
+                    >
+                      {e.issueKey}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--accent-green)', fontWeight: 600, flexShrink: 0 }}>{e.hours.toFixed(1)}h</span>
                   </div>
                   <div
                     className="muted"
-                    style={{ fontSize: 10.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    style={{ fontSize: 10.5, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                   >
                     {summaryByKey.get(e.issueKey) ?? ''}
                   </div>

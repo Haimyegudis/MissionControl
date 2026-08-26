@@ -172,6 +172,11 @@ export function aggregateDailyHours(daily: readonly DailyLogEntry[]): Record<str
 // Exports (§7): {stem}-issues.csv + {stem}-daily.csv
 // ---------------------------------------------------------------------------
 
+/** Issues that actually carry logged time in the reported period. */
+export function loggedOnlyIssues(issues: readonly JiraIssue[]): JiraIssue[] {
+  return issues.filter((i) => (i.workLoggedForPeriod ?? 0) > 0);
+}
+
 export const ISSUES_CSV_HEADERS = [
   'Key',
   'Summary',

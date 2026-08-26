@@ -50,7 +50,9 @@ export function timeloggedRoutes(deps: AppDeps): Router {
   router.get(
     '/sprint',
     h(async (req, res) => {
-      res.json(await deps.timeLogged.buildReportForSprint(qstr(req.query.name) ?? ''));
+      res.json(
+        await deps.timeLogged.buildReportForSprint(qstr(req.query.name) ?? '', qstr(req.query.user)),
+      );
     }),
   );
 

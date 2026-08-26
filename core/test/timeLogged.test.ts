@@ -377,6 +377,24 @@ describe('TimeLoggedService.buildReportForSprint', () => {
     );
   });
 
+  it('when a user is given, builds sprint JQL with a quoted assignee and matches only their worklogs (ci)', async () => {
+    const issue = makeIssue('ISW-1', { allSprints: [activeSprint] });
+    const worklogs = makeWorklogFetcher({
+      'ISW-1': [
+        makeWorklog('ISW-1', new Date(2026, 7, 10, 9, 0), 3600, 'dana q', null), // ci match
+        makeWorklog('ISW-1', new Date(2026, 7, 10, 9, 0), 900, 'Someone Else', null), // no match
+      ],
+    });
+    const searcher = sprintSearcher([issue], []);
+    const svc = service(searcher, worklogs);
+    const report = await svc.buildReportForSprint('Sprint 42', 'Dana Q');
+
+    expect(searcher.calls[0].jql).toBe(
+      'project = ISW AND sprint = "Sprint 42" AND assignee = "Dana Q" AND issuetype != Incident ORDER BY updated DESC',
+    );
+    expect(report.total).toBe(3600);
+  });
+
   it('excludes worklogs outside the sprint window (endDate + 1d exclusive)', async () => {
     const issue = makeIssue('ISW-1', { allSprints: [activeSprint] });
     const worklogs = makeWorklogFetcher({

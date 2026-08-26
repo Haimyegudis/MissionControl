@@ -981,7 +981,9 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
     query: URLSearchParams,
   ): Promise<DispatchResponse> {
     if (method !== 'GET') return NOT_FOUND;
-    if (rest[0] === 'sprint') return ok(await core.timeLogged.buildReportForSprint(query.get('name') ?? ''));
+    if (rest[0] === 'sprint') {
+      return ok(await core.timeLogged.buildReportForSprint(query.get('name') ?? '', query.get('user')));
+    }
     if (rest[0] === 'range') {
       const from = parseDate(query.get('from'), 'from');
       const to = parseDate(query.get('to'), 'to');

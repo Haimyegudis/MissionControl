@@ -102,7 +102,7 @@ export interface TimeLoggedDep {
     customTo?: Date | null,
     extraJql?: string | null,
   ): Promise<TimeLoggedReport>;
-  buildReportForSprint(sprintName: string): Promise<TimeLoggedReport>;
+  buildReportForSprint(sprintName: string, user?: string | null): Promise<TimeLoggedReport>;
   buildReportForRange(fromLocal: Date, toLocalExclusive: Date, user?: string | null): Promise<TimeLoggedReport>;
 }
 

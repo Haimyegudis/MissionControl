@@ -22,12 +22,14 @@ import { buildCsv, downloadCsv } from '../lib/csv';
 import { errText } from '../lib/errors';
 import { formatTimeSpan } from '../lib/format';
 import { addDays, formatDMmmYy, hoursDisplay, startOfWeekSunday, ymd } from '../lib/viewFormat';
+import { activeSprintRange } from '../lib/viewTimeSpentTabs';
 import {
   ISSUES_CSV_HEADERS,
   aggregateDailyHours,
   buildTimesheet,
   dailyCsvRows,
   issuesCsvRow,
+  loggedOnlyIssues,
   timesheetHeaders,
 } from '../lib/viewTimeLogged';
 import { sessionStore } from '../stores/session';
@@ -131,6 +133,8 @@ export function TimeLoggedView() {
   const [period, setPeriod] = useState<PeriodId>('today');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+  const [sprintMode, setSprintMode] = useState(false);
+  const [sprintName, setSprintName] = useState(''); // '' = active sprint
   const [userFilter, setUserFilter] = useState('');
   const [users, setUsers] = useState<string[]>([]);
   const [report, setReport] = useState<TimeLoggedReport | null>(null);
@@ -153,18 +157,23 @@ export function TimeLoggedView() {
 
   const load = async () => {
     if (sessionStore.get().phase !== 'connected') return;
-    if (period === 'customRange' && (!customFrom || !customTo)) return;
+    if (!sprintMode && period === 'customRange' && (!customFrom || !customTo)) return;
     const seq = ++loadSeq.current;
     setBusy(true);
     setError(null);
     try {
-      const opts: { from?: string; to?: string; user?: string } = {};
-      if (period === 'customRange') {
-        opts.from = customFrom;
-        opts.to = customTo;
+      let r: TimeLoggedReport;
+      if (sprintMode) {
+        r = await timeloggedApi.sprint(sprintName, userFilter.trim() || undefined);
+      } else {
+        const opts: { from?: string; to?: string; user?: string } = {};
+        if (period === 'customRange') {
+          opts.from = customFrom;
+          opts.to = customTo;
+        }
+        if (userFilter.trim()) opts.user = userFilter;
+        r = await timeloggedApi.report(period, opts);
       }
-      if (userFilter.trim()) opts.user = userFilter;
-      const r = await timeloggedApi.report(period, opts);
       if (seq !== loadSeq.current) return;
       setReport(r);
 
@@ -195,11 +204,24 @@ export function TimeLoggedView() {
 
   useEffect(() => {
     if (connected) void loadRef.current();
-  }, [connected, period, customFrom, customTo, userFilter]);
+  }, [connected, period, customFrom, customTo, userFilter, sprintMode, sprintName]);
 
   const changeWeek = (start: Date) => {
     setWeekStart(start);
     void loadTimesheet(start);
+  };
+
+  const availableSprints = report?.availableSprints ?? [];
+  const selectedSprint = sprintName || availableSprints[0] || '';
+  const sprintLabel =
+    sprintName || activeSprintRange(report?.issues ?? [])?.name || availableSprints[0] || 'Current sprint';
+
+  const stepSprint = (delta: number) => {
+    const list = availableSprints;
+    if (list.length === 0) return;
+    const idx = list.indexOf(selectedSprint);
+    const nextIdx = Math.min(list.length - 1, Math.max(0, (idx < 0 ? 0 : idx) + delta));
+    setSprintName(list[nextIdx]);
   };
 
   const timesheet = useMemo(
@@ -207,11 +229,9 @@ export function TimeLoggedView() {
     [weekReport, weekStart],
   );
   const weekHeaders = useMemo(() => timesheetHeaders(weekStart), [weekStart]);
-  const statusChips = useMemo(() => loggedByStatus(report?.issues ?? []), [report]);
-  const loggedIssues = useMemo(
-    () => (report?.issues ?? []).filter((i) => (i.workLoggedForPeriod ?? 0) > 0).length,
-    [report],
-  );
+  const loggedRows = useMemo(() => loggedOnlyIssues(report?.issues ?? []), [report]);
+  const statusChips = useMemo(() => loggedByStatus(loggedRows), [loggedRows]);
+  const loggedIssues = loggedRows.length;
 
   const exportCsv = () => {
     if (!report) return;
@@ -223,7 +243,7 @@ export function TimeLoggedView() {
         `${stem}-issues.csv`,
         buildCsv(
           ISSUES_CSV_HEADERS.map((header, idx) => ({ header, value: (i: JiraIssue) => issuesCsvRow(i)[idx] })),
-          report.issues,
+          loggedRows,
         ),
       );
       downloadCsv(
@@ -363,9 +383,12 @@ export function TimeLoggedView() {
             <button
               key={p.id}
               className="btn"
-              onClick={() => setPeriod(p.id)}
+              onClick={() => {
+                setSprintMode(false);
+                setPeriod(p.id);
+              }}
               style={
-                period === p.id
+                !sprintMode && period === p.id
                   ? { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)', fontWeight: 700 }
                   : undefined
               }
@@ -373,12 +396,44 @@ export function TimeLoggedView() {
               {p.label}
             </button>
           ))}
+          <button
+            className="btn"
+            onClick={() => setSprintMode(true)}
+            style={
+              sprintMode
+                ? { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)', fontWeight: 700 }
+                : undefined
+            }
+          >
+            Sprint
+          </button>
         </div>
-        {period === 'customRange' ? (
+        {!sprintMode && period === 'customRange' ? (
           <>
             <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
             <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
           </>
+        ) : null}
+        {sprintMode ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button className="btn btn-icon" onClick={() => stepSprint(-1)} title="Older sprint">
+              ◀
+            </button>
+            <select value={selectedSprint} onChange={(e) => setSprintName(e.target.value)}>
+              {availableSprints.length === 0 ? (
+                <option value="">{sprintLabel}</option>
+              ) : (
+                availableSprints.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))
+              )}
+            </select>
+            <button className="btn btn-icon" onClick={() => stepSprint(1)} title="Newer sprint">
+              ▶
+            </button>
+          </div>
         ) : null}
         {busy ? <span className="accent-cyan">…</span> : null}
         <div style={{ flex: 1 }} />
@@ -405,7 +460,7 @@ export function TimeLoggedView() {
       >
         <div>
           <div className="muted" style={{ fontSize: 10.5, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            Total logged · {PERIODS.find((p) => p.id === period)?.label}
+            Total logged · {sprintMode ? sprintLabel : PERIODS.find((p) => p.id === period)?.label}
           </div>
           <div style={{ fontSize: 30, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--accent-green)', lineHeight: 1.15 }}>
             {formatTimeSpan(report?.total ?? 0)}
@@ -452,7 +507,7 @@ export function TimeLoggedView() {
       <ResponsiveGrid<JiraIssue>
         stateKey="TimeLogged.Issues"
         columns={columns}
-        rows={report?.issues ?? []}
+        rows={loggedRows}
         rowKey={(i) => i.key}
         multiSelect
         onRowDoubleClick={(i) => dialogs.openIssueDetails(i.key)}
@@ -559,7 +614,7 @@ export function TimeLoggedView() {
             </tr>
           </thead>
           <tbody>
-            {(report?.issues ?? []).map((i) => (
+            {loggedRows.map((i) => (
               <tr key={i.key}>
                 <td>{i.key}</td>
                 <td>{i.summary}</td>

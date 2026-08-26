@@ -271,7 +271,8 @@ export const dashboards = {
 export const timelogged = {
   report: (period: string, opts?: { from?: string; to?: string; user?: string }) =>
     api.get<TimeLoggedReport>('/api/timelogged', { period, ...opts }),
-  sprint: (name: string) => api.get<TimeLoggedReport>('/api/timelogged/sprint', { name }),
+  sprint: (name: string, user?: string) =>
+    api.get<TimeLoggedReport>('/api/timelogged/sprint', { name, ...(user ? { user } : {}) }),
   range: (from: string, to: string, user?: string) =>
     api.get<TimeLoggedReport>('/api/timelogged/range', { from, to, ...(user ? { user } : {}) }),
 };
