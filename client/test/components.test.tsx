@@ -9,7 +9,6 @@ import { EpicChip } from '../src/components/EpicChip';
 import { IssueLinkText } from '../src/components/IssueLinkText';
 import { Bars } from '../src/charts/Bars';
 import { StackedBarsH } from '../src/charts/StackedBarsH';
-import { Heatmap, dayKey } from '../src/charts/Heatmap';
 
 interface Row {
   key: string;
@@ -118,20 +117,5 @@ describe('charts', () => {
     expect(html).toContain('Mon 10 Aug');
     expect(html).toContain('ISW-1');
     expect(html).toContain('ISW-2');
-  });
-
-  it('Heatmap renders 13-week grid, skips future days, colors by ramp', () => {
-    const end = new Date(2026, 7, 12);
-    const key = dayKey(new Date(2026, 7, 10));
-    const html = renderToString(<Heatmap hoursByDay={{ [key]: 4 }} endDate={end} />);
-    // 13 full weeks minus the days after `end` in the current (Sunday-start) week.
-    const futureDays = 6 - end.getDay();
-    const cellCount = (html.match(/<rect/g) ?? []).length;
-    expect(cellCount).toBe(13 * 7 - futureDays);
-    // Max cell gets the full ramp: rgb(0x10, 0xC8, 0x60).
-    expect(html).toContain('rgb(16, 200, 96)');
-    // Empty cells use the translucent gray.
-    expect(html).toContain('rgba(102, 102, 102, 0.2)');
-    expect(html).toContain(`${key} — 4h`);
   });
 });

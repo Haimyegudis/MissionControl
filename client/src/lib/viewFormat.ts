@@ -42,7 +42,7 @@ export function addDays(d: Date, days: number): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
 }
 
-/** Sunday-start week (heatmap + timesheet parity, §12.6). */
+/** Sunday-start week (timesheet parity, §12.6). */
 export function startOfWeekSunday(d: Date): Date {
   return addDays(d, -d.getDay());
 }

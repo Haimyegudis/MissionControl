@@ -87,4 +87,10 @@ describe('sprintJql', () => {
       'project = ISW AND sprint in openSprints() AND assignee = "jdoe\\" OR assignee = \\"x" ORDER BY status',
     );
   });
+
+  it('escapes embedded backslashes before quotes', () => {
+    expect(sprintJql('ISW', 'dom\\jdoe')).toBe(
+      'project = ISW AND sprint in openSprints() AND assignee = "dom\\\\jdoe" ORDER BY status',
+    );
+  });
 });

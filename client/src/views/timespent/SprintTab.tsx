@@ -24,6 +24,7 @@ export function SprintTab({ user }: { user: string }) {
   const [error, setError] = useState<string | null>(null);
   const [startingKey, setStartingKey] = useState<string | null>(null);
   const loadGenRef = useRef(0);
+  const loadRef = useRef<() => Promise<void>>(async () => {});
 
   const load = useCallback(async () => {
     const gen = ++loadGenRef.current;
@@ -46,6 +47,8 @@ export function SprintTab({ user }: { user: string }) {
     }
   }, [user]);
 
+  loadRef.current = load;
+
   useEffect(() => {
     void load();
     return () => { loadGenRef.current++; };
@@ -65,11 +68,11 @@ export function SprintTab({ user }: { user: string }) {
       const screen = await issuesApi.transitionScreen(issue.key, t.id);
       const hasRequired = screen.some((f) => f.required && f.id !== 'comment');
       if (hasRequired) {
-        dialogs.openTransition(issue.key, t, screen, () => void load());
+        dialogs.openTransition(issue.key, t, screen, () => void loadRef.current());
       } else {
         await issuesApi.performTransition(issue.key, { id: t.id });
         pushToast({ title: issue.key, body: `Moved to ${t.toStatus ?? 'In Progress'}.` });
-        await load();
+        await loadRef.current();
       }
     } catch (e) {
       pushToast({ title: 'Transition failed', body: errText(e) });

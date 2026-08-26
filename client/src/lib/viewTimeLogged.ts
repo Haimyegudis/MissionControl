@@ -1,6 +1,6 @@
 // Time Spent view pure logic (ui-parity §7): weekly timesheet assembly,
-// chart data builders (logged-vs-estimated, per-day sprint stack, heatmap
-// aggregation) and CSV rows. Ported from WPF TimeLoggedViewModel.
+// chart data builders (logged-vs-estimated, per-day sprint stack) and CSV
+// rows. Ported from WPF TimeLoggedViewModel.
 
 import type { DailyLogEntry, JiraIssue, TimeLoggedReport } from '../types';
 import { addDays, fmtHours, formatDayLong, formatDayShort, parseYmd, ymd } from './viewFormat';

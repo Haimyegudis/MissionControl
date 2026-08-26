@@ -132,7 +132,7 @@ export function sprintBars(issue: JiraIssue): SprintBarRow {
  */
 export function sprintJql(project: string, resolvedUser: string | null): string {
   const assignee = resolvedUser && resolvedUser.trim()
-    ? `"${resolvedUser.replace(/"/g, '\\"')}"`
+    ? `"${resolvedUser.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
     : 'currentUser()';
   return `project = ${project} AND sprint in openSprints() AND assignee = ${assignee} ORDER BY status`;
 }
