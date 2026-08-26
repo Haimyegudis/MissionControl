@@ -232,6 +232,17 @@ describe('JiraIssueService transitions', () => {
     expect(add).toEqual({ timeSpent: '3h' });
   });
 
+  it('omits started when worklogStarted is unparseable', async () => {
+    const session = makeSession('datacenter');
+    const { fn, calls } = mockFetch(() => null);
+    const svc = new JiraIssueService(session, fn);
+
+    await svc.performTransitionWithData('ISW-1', '5', {}, null, null, '3h', 'garbage');
+
+    const add = (calls[0].opts.body as any).update.worklog[0].add;
+    expect(add).toEqual({ timeSpent: '3h' });
+  });
+
   it('performTransition posts the bare transition id', async () => {
     const session = makeSession();
     const { fn, calls } = mockFetch(() => null);

@@ -605,7 +605,8 @@ export class JiraIssueService {
     if (timeSpent && timeSpent.trim().length > 0) {
       const add: Record<string, unknown> = { timeSpent };
       if (worklogStarted && worklogStarted.trim().length > 0) {
-        add.started = formatWorklogStarted(new Date(worklogStarted));
+        const d = new Date(worklogStarted);
+        if (!Number.isNaN(d.getTime())) add.started = formatWorklogStarted(d);
       }
       update.worklog = [{ add }];
     }

@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 import { issues as issuesApi } from '../api/client';
 import { DateTimeField } from '../components/DateTimeField';
 import { Modal } from '../components/Modal';
-import { nowLocalInput } from '../lib/timeFormat';
+import { nowLocalInput, toWorklogStartedIso } from '../lib/timeFormat';
 import type { JiraTransition, JiraTransitionField } from '../types';
 
 export interface TransitionDialogProps {
@@ -114,8 +114,6 @@ export function TransitionDialog({ issueKey, transition, fields, onClose, onDone
   // Special ids: comment → bottom box; worklog → "Time Spent"; assignee → assignee.
   const formFields = useMemo(() => fields.filter((f) => f.id !== 'comment'), [fields]);
 
-  const hasWorklog = useMemo(() => formFields.some((f) => f.id === 'worklog'), [formFields]);
-
   const [values, setValues] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     for (const f of formFields) initial[f.id] = initialFieldValue(f);
@@ -165,7 +163,7 @@ export function TransitionDialog({ issueKey, transition, fields, onClose, onDone
         comment: comment.trim() ? comment : undefined,
         assignee,
         timeSpent,
-        worklogStarted: timeSpent ? new Date(worklogStarted).toISOString() : undefined,
+        worklogStarted: toWorklogStartedIso(timeSpent, worklogStarted),
       });
       onDone?.();
     } catch (err) {
@@ -286,7 +284,7 @@ export function TransitionDialog({ issueKey, transition, fields, onClose, onDone
               </label>
               {renderControl(f)}
             </div>
-            {f.id === 'worklog' && hasWorklog && (
+            {f.id === 'worklog' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
                 <label>Date Started</label>
                 <DateTimeField value={worklogStarted} onChange={setWorklogStarted} />

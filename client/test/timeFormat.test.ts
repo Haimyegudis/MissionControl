@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseJiraTime } from '../src/lib/timeFormat';
+import { parseJiraTime, toWorklogStartedIso } from '../src/lib/timeFormat';
 
 describe('parseJiraTime (client port, ui-parity §12.5)', () => {
   it('parses hour/minute combos', () => {
@@ -31,5 +31,26 @@ describe('parseJiraTime (client port, ui-parity §12.5)', () => {
 
   it('unknown units contribute 0', () => {
     expect(parseJiraTime('1x 1h')).toBe(3600);
+  });
+});
+
+describe('toWorklogStartedIso', () => {
+  it('converts a local datetime value to ISO when timeSpent is set', () => {
+    const iso = toWorklogStartedIso('1h', '2026-08-26T10:00');
+    expect(iso).toBe(new Date('2026-08-26T10:00').toISOString());
+  });
+
+  it('returns undefined when the local value is empty', () => {
+    expect(toWorklogStartedIso('1h', '')).toBeUndefined();
+    expect(toWorklogStartedIso('1h', '   ')).toBeUndefined();
+  });
+
+  it('returns undefined when there is no time spent', () => {
+    expect(toWorklogStartedIso(undefined, '2026-08-26T10:00')).toBeUndefined();
+    expect(toWorklogStartedIso('', '2026-08-26T10:00')).toBeUndefined();
+  });
+
+  it('returns undefined for an invalid local value', () => {
+    expect(toWorklogStartedIso('1h', 'not-a-date')).toBeUndefined();
   });
 });

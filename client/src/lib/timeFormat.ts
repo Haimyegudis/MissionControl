@@ -64,3 +64,10 @@ export function nowLocalInput(): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+/** ISO string for a transition worklog start, or undefined when no worklog or no date. */
+export function toWorklogStartedIso(timeSpent: string | undefined, local: string): string | undefined {
+  if (!timeSpent || !local.trim()) return undefined;
+  const d = new Date(local);
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+}

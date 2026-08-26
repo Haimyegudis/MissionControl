@@ -52,6 +52,11 @@ export function LogWork({ issueKey, remainingEstimate = null, onClose, onLogged 
       setError('Enter a value to reduce the remaining estimate by.');
       return;
     }
+    const startedDate = new Date(started);
+    if (!started.trim() || Number.isNaN(startedDate.getTime())) {
+      setError('Enter a valid Date Started.');
+      return;
+    }
 
     const adjustValue = mode === 'new' ? setToValue.trim() : mode === 'manual' ? reduceByValue.trim() : undefined;
 
@@ -60,7 +65,7 @@ export function LogWork({ issueKey, remainingEstimate = null, onClose, onLogged 
     try {
       await issuesApi.addWorklog(issueKey, {
         seconds: Math.round(seconds),
-        started: new Date(started).toISOString(),
+        started: startedDate.toISOString(),
         comment: description.trim() ? description : undefined,
         adjustEstimate: mode,
         adjustValue,
