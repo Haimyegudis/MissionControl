@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mergeTableFilterTables, originalPageDocument } from '../src/routes/confluence.js';
+import { mergeTableFilterTables, originalPageDocument, rewriteCssUrls } from '../src/routes/confluence.js';
 import { signProxyUrl } from '../src/security.js';
 import type { ConfluencePageContent } from '@mc/core';
 
@@ -148,6 +148,49 @@ describe('Confluence render document', () => {
     // Without a token (e.g. auth disabled in tests), no sig is appended — prior behavior.
     const unsigned = originalPageDocument(page, 'https://docs.example', upstreamHtml, 'known-nonce', 'http://self.test');
     expect(unsigned).not.toContain('&sig=');
+  });
+});
+
+describe('rewriteCssUrls', () => {
+  const makeProxyUrl = (absolute: string) => `http://self.test/api/confluence/proxy?url=${encodeURIComponent(absolute)}&sig=SIG`;
+
+  it('resolves a relative url() ref against the CSS file location, not the proxy path', () => {
+    const css = '.icon{background:url(images/icon.woff2)}';
+    const out = rewriteCssUrls(css, 'https://conf.test/s/batch.css', makeProxyUrl);
+    expect(out).toContain(makeProxyUrl('https://conf.test/s/images/icon.woff2'));
+  });
+
+  it('rewrites absolute, root-relative, and quoted url() variants, but leaves data: URIs alone', () => {
+    const css = [
+      '.a{background:url(https://conf.test/f.png)}',
+      '.b{background:url(/s/f.png)}',
+      ".c{background:url('x.png')}",
+      '.d{background:url("x.png")}',
+      '.e{background:url(data:font/woff2;base64,AAA)}',
+    ].join('\n');
+    const out = rewriteCssUrls(css, 'https://conf.test/s/batch.css', makeProxyUrl);
+    expect(out).toContain(makeProxyUrl('https://conf.test/f.png'));
+    expect(out).toContain(makeProxyUrl('https://conf.test/s/f.png'));
+    expect(out).toContain(makeProxyUrl('https://conf.test/s/x.png'));
+    // both quoted variants resolve to the same absolute URL
+    expect(out.match(new RegExp(makeProxyUrl('https://conf.test/s/x.png').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'))).toHaveLength(2);
+    expect(out).toContain('url(data:font/woff2;base64,AAA)');
+  });
+
+  it('rewrites @import refs, both url() and bare string forms', () => {
+    const css1 = '@import "extra.css";';
+    const out1 = rewriteCssUrls(css1, 'https://conf.test/s/batch.css', makeProxyUrl);
+    expect(out1).toContain(makeProxyUrl('https://conf.test/s/extra.css'));
+
+    const css2 = "@import url('extra.css');";
+    const out2 = rewriteCssUrls(css2, 'https://conf.test/s/batch.css', makeProxyUrl);
+    expect(out2).toContain(makeProxyUrl('https://conf.test/s/extra.css'));
+  });
+
+  it('leaves refs that fail to resolve as absolute URLs untouched', () => {
+    const css = '.a{background:url(http://[::1)}';
+    const out = rewriteCssUrls(css, 'https://conf.test/s/batch.css', makeProxyUrl);
+    expect(out).toContain('url(http://[::1)');
   });
 });
 

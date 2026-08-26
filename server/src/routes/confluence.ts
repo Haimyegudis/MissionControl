@@ -42,6 +42,36 @@ function signedProxyUrl(selfOrigin: string, absolute: string, apiToken: string):
   return `${selfOrigin}/api/confluence/proxy?url=${encodeURIComponent(absolute)}${sig}`;
 }
 
+/** Rewrites `url(...)` and `@import` refs inside a CSS body so relative font/image
+ *  paths resolve against the CSS's own upstream URL instead of the proxy path the
+ *  browser actually fetched the stylesheet from — otherwise AUI icon fonts 404 and
+ *  render as missing-glyph squares. `data:` URIs pass through untouched. */
+export function rewriteCssUrls(css: string, cssUrl: string, makeProxyUrl: (absUrl: string) => string): string {
+  const resolve = (raw: string): string | null => {
+    const value = raw.trim();
+    if (!value || /^data:/i.test(value)) return null;
+    try {
+      return new URL(value, cssUrl).toString();
+    } catch {
+      return null;
+    }
+  };
+
+  // Handle @import first (it may itself contain a url(...) form) so the generic
+  // url() pass below never re-rewrites an already-rewritten @import reference.
+  const out = css.replace(
+    /@import\s+(?:url\(\s*(['"]?)([^)'"]*)\1\s*\)|(['"])([^'"]*)\3)|url\(\s*(['"]?)([^)'"]*)\5\s*\)/gi,
+    (match, _urlQuote: string, urlRef: string | undefined, _strQuote: string, strRef: string | undefined, _quote: string, raw: string | undefined) => {
+      const isImport = urlRef !== undefined || strRef !== undefined;
+      const absolute = resolve((urlRef ?? strRef ?? raw ?? ''));
+      if (!absolute) return match;
+      return isImport ? `@import url("${makeProxyUrl(absolute)}")` : `url("${makeProxyUrl(absolute)}")`;
+    },
+  );
+
+  return out;
+}
+
 function proxyAssetTag(tag: string, pageUrl: string, selfOrigin = '', apiToken = ''): string {
   return tag.replace(/\b(href|src)=(['"])([^'"]+)\2/gi, (match, attribute: string, quote: string, raw: string) => {
     if (/^(?:data:|blob:|javascript:|#)/i.test(raw)) return match;
@@ -335,14 +365,10 @@ export function confluenceRoutes(deps: AppDeps): Router {
     if (disposition) res.setHeader('Content-Disposition', disposition);
     res.setHeader('Cache-Control', 'private, max-age=300');
     if (type?.includes('text/css')) {
-      const cssBase = new URL(rawUrl, `${client.baseUrl}/`);
+      const cssUrl = new URL(rawUrl, `${client.baseUrl}/`).toString();
       const apiToken = deps.apiToken ?? '';
-      const css = (await upstream.text()).replace(/url\(\s*(['"]?)(?!data:|blob:|#)([^)'"\s]+)\1\s*\)/gi, (_match, quote: string, value: string) => {
-        try {
-          const absolute = new URL(value, cssBase).toString();
-          return `url(${quote}${signedProxyUrl('', absolute, apiToken)}${quote})`;
-        } catch { return _match; }
-      });
+      const selfOrigin = `${req.protocol}://${req.get('host')}`;
+      const css = rewriteCssUrls(await upstream.text(), cssUrl, (absolute) => signedProxyUrl(selfOrigin, absolute, apiToken));
       res.send(css);
       return;
     }
