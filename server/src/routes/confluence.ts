@@ -48,13 +48,27 @@ function sanitizeConfluenceBody(html: string): string {
       'time', 'mark', 'del', 'ins', 'u', 'colgroup', 'col', 'tbody', 'thead', 'tfoot',
     ]),
     allowedAttributes: {
-      '*': ['id', 'class', 'title', 'role', 'aria-*', 'data-*'],
+      '*': ['id', 'class', 'title', 'role', 'aria-*', 'data-*', 'style'],
       a: ['href', 'name', 'target', 'rel'],
       img: ['src', 'alt', 'width', 'height', 'loading'],
       td: ['colspan', 'rowspan'],
       th: ['colspan', 'rowspan', 'scope'],
       col: ['span', 'width'],
       time: ['datetime'],
+    },
+    // Safe inline-style subset only: excludes position/visibility/opacity/z-index/content/
+    // top|left|right|bottom so inline styles can't overlay or hide surrounding chrome.
+    allowedStyles: {
+      '*': {
+        color: [/^.*$/], 'background-color': [/^.*$/], background: [/^.*$/],
+        width: [/^.*$/], 'min-width': [/^.*$/], 'max-width': [/^.*$/], height: [/^.*$/],
+        'font-size': [/^.*$/], 'font-weight': [/^.*$/], 'font-style': [/^.*$/], 'font-family': [/^.*$/],
+        'text-align': [/^.*$/], 'text-decoration': [/^.*$/], 'letter-spacing': [/^.*$/], 'line-height': [/^.*$/],
+        'vertical-align': [/^.*$/], 'white-space': [/^.*$/], display: [/^.*$/],
+        padding: [/^.*$/], margin: [/^.*$/],
+        border: [/^.*$/], 'border-color': [/^.*$/], 'border-width': [/^.*$/], 'border-style': [/^.*$/],
+        'border-top': [/^.*$/], 'border-bottom': [/^.*$/], 'border-left': [/^.*$/], 'border-right': [/^.*$/],
+      },
     },
     allowedSchemes: ['http', 'https', 'mailto', 'data'],
     allowedSchemesByTag: { img: ['http', 'https', 'data'] },
@@ -116,6 +130,16 @@ body{padding:0!important;font-family:Arial,"Helvetica Neue",sans-serif!important
 .wiki-content .confluenceTh{background:#f4f5f7!important;font-weight:600!important}
 @media(max-width:720px){#jiraweb-confluence-page{padding:22px 20px 60px!important}}
 @media(max-width:720px){.wiki-content .contentLayout2 .columnLayout{display:block!important}.wiki-content .contentLayout2 .cell{display:block!important;width:100%!important;padding:0!important;margin-bottom:16px!important}}
+/* Table Filter plugin's CSS hides its wrapper (visibility:hidden) until its own JS
+   runs to reveal it — we strip scripts, so force the content visible and hide the
+   now-inert filter buttons/menus that would otherwise render as dead chrome. */
+.wiki-content .tablefilter-outer-wrapper[data-id]{visibility:visible!important;padding:0!important}
+.wiki-content .tablefilter-outer-wrapper .tf-floating-btn-container,
+.wiki-content .tablefilter-outer-wrapper .tfac-menu,
+.wiki-content .tablefilter-outer-wrapper .tableFilterCbStyle,
+.wiki-content .tablefilter-outer-wrapper .tf-shower-wrapper,
+.wiki-content .tablefilter-pagination,
+.wiki-content .aui-dropdown2{display:none!important}
 </style></head>
 <body id="com-atlassian-confluence" class="theme-default aui-layout aui-theme-default">${content}${toggleScript}</body></html>`;
 }

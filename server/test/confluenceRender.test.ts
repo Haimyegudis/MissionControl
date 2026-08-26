@@ -35,5 +35,63 @@ describe('Confluence render document', () => {
     expect(html).toContain('<script nonce="known-nonce">');
     expect(html).toContain('&lt;Unsafe title&gt;');
   });
+
+  it('keeps a safe subset of inline styles but strips positioning properties', () => {
+    const basePage: Omit<ConfluencePageContent, 'viewBody'> = {
+      id: '42',
+      spaceKey: 'DOC',
+      title: 'Styled',
+      parentId: null,
+      status: 'current',
+      url: '/pages/viewpage.action?pageId=42',
+      createdBy: null,
+      createdAt: null,
+      lastModifiedBy: 'Author',
+      lastModifiedAt: '2026-08-17T08:00:00.000Z',
+      excerpt: null,
+      storageBody: '',
+      version: 7,
+    };
+
+    const allowedHtml = originalPageDocument(
+      { ...basePage, viewBody: '<p style="color: red; text-align: center;">x</p>' },
+      'https://docs.example',
+      '',
+      'known-nonce',
+    );
+    expect(allowedHtml).toContain('color:red');
+    expect(allowedHtml).toContain('text-align:center');
+
+    const strippedHtml = originalPageDocument(
+      { ...basePage, viewBody: '<p style="position: absolute; color: blue">x</p>' },
+      'https://docs.example',
+      '',
+      'known-nonce',
+    );
+    expect(strippedHtml).not.toContain('position');
+    expect(strippedHtml).toContain('color:blue');
+  });
+
+  it('forces the Table Filter plugin wrapper visible now that its JS is stripped', () => {
+    const page: ConfluencePageContent = {
+      id: '42',
+      spaceKey: 'DOC',
+      title: 'Filtered',
+      parentId: null,
+      status: 'current',
+      url: '/pages/viewpage.action?pageId=42',
+      createdBy: null,
+      createdAt: null,
+      lastModifiedBy: 'Author',
+      lastModifiedAt: '2026-08-17T08:00:00.000Z',
+      excerpt: null,
+      storageBody: '',
+      viewBody: '<p>content</p>',
+      version: 7,
+    };
+
+    const html = originalPageDocument(page, 'https://docs.example', '', 'known-nonce');
+    expect(html).toContain('.tablefilter-outer-wrapper[data-id]{visibility:visible');
+  });
 });
 
