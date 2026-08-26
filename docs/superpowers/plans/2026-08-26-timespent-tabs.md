@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Tests: `npm run test --workspace client` (Vitest). Component tests use `renderToString` from `react-dom/server` — markup assertions only; interaction logic must live in the pure lib so it is unit-testable.
-- Report tab content, period chips, CSV/PDF export, timesheet, and heatmap are untouched.
+- Report tab content, period chips, CSV/PDF export, and timesheet are untouched — EXCEPT the 13-week heatmap section, which is REMOVED (user request): delete the heatmap card JSX, the `Heatmap` import, `heatmapHours` state, and `loadHeatmap`; the CSV export's daily rows switch to `aggregateDailyHours(report.dailyByIssue)` (period-scoped) so `dailyCsvRows` keeps working.
 - User picker (`UserSearchPicker`, `userFilter` state, empty string = signed-in user) applies to all tabs.
 - Reuse existing helpers: `statusColor`, `formatTimeSpan`, `hoursDisplay`, `ymd`/`addDays`/`parseYmd` from `lib/viewFormat`, `dialogs.openIssueDetails`/`openTransition`, `pushToast`.
 - `JiraTransition` has `toStatus` only (no category) — Start picks by name per spec.
@@ -368,8 +368,8 @@ git commit -m "feat(client): pure logic for Time Spent calendar/epics/sprint tab
 
 **Files:**
 - Create: `client/src/views/timespent/CalendarTab.tsx`
-- Modify: `client/src/views/TimeLoggedView.tsx`
-- Test: `client/test/timeSpentTabs.test.tsx` (create)
+- Modify: `client/src/views/TimeLoggedView.tsx` (tab strip + heatmap removal per Global Constraints)
+- Test: `client/test/timeSpentTabs.test.tsx` (create); update `client/test/viewTimeLogged.test.ts`/`views.test.tsx` if they reference the heatmap
 
 **Interfaces:**
 - Consumes: `buildCalendarMonth`, `activeSprintRange` (Task 1); `timelogged.report('customRange', { from, to, user })`; `dialogs.openIssueDetails`.
