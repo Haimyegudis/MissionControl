@@ -65,6 +65,7 @@ export interface IssuesDep {
     comment?: string | null,
     assignee?: string | null,
     timeSpent?: string | null,
+    worklogStarted?: string | null,
   ): Promise<void>;
   addComment(issueKey: string, body: string): Promise<void>;
   addLabel(issueKey: string, label: string): Promise<void>;
