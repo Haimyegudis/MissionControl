@@ -1,6 +1,5 @@
-// Sprint board: issues with Estimated/Logged/Remaining bars and a one-click
-// Start (To Do → In Progress). Follows the user picker ('' = me) and the
-// scope bar's sprint ('' = active sprint via openSprints()).
+// Current-sprint issues with Estimated/Logged/Remaining bars and a one-click
+// Start (To Do → In Progress). Follows the user picker ('' = me).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { issues as issuesApi, metadataExtra } from '../../api/client';
@@ -19,7 +18,7 @@ const BARS: Array<{ key: 'estimated' | 'logged' | 'remaining'; label: string; co
   { key: 'remaining', label: 'Remaining', color: 'var(--accent-red)' },
 ];
 
-export function SprintTab({ sprintName, user }: { sprintName: string; user: string }) {
+export function SprintTab({ user }: { user: string }) {
   const [issues, setIssues] = useState<JiraIssue[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +37,7 @@ export function SprintTab({ sprintName, user }: { sprintName: string; user: stri
         resolvedUser = resolved.username ?? user;
       }
       const project = getSettings().defaultProjectKey || 'ISW';
-      const jql = sprintJql(project, resolvedUser, sprintName);
+      const jql = sprintJql(project, resolvedUser);
       const page = await issuesApi.search(jql, 0, 100);
       if (gen === loadGenRef.current) setIssues(page.items ?? []);
     } catch (e) {
@@ -46,7 +45,7 @@ export function SprintTab({ sprintName, user }: { sprintName: string; user: stri
     } finally {
       if (gen === loadGenRef.current) setBusy(false);
     }
-  }, [user, sprintName]);
+  }, [user]);
 
   loadRef.current = load;
 
@@ -86,8 +85,7 @@ export function SprintTab({ sprintName, user }: { sprintName: string; user: stri
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontWeight: 700, fontSize: 14 }}>
-          {sprintName.trim() || sprint?.name || 'Current sprint'}
-          {sprint ? ` (${sprint.start} → ${sprint.end})` : ''}
+          Current sprint{sprint ? ` — ${sprint.name} (${sprint.start} → ${sprint.end})` : ''}
         </span>
         {busy ? <span className="accent-cyan">…</span> : null}
         <span className="muted" style={{ fontSize: 11.5, marginLeft: 'auto' }}>{issues.length} issue(s)</span>

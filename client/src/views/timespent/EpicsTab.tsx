@@ -1,36 +1,73 @@
-// Work logged in the scope window, grouped by epic (reference: "Features Log").
-// The window arrives as [from, toExclusive) yyyy-MM-dd props — the scope bar decides.
+// Work logged in the last X days, grouped by epic (reference: "Features Log").
 
 import { useEffect, useMemo, useState } from 'react';
 import { timelogged } from '../../api/client';
 import { dialogs } from '../../dialogs/DialogHost';
 import { errText } from '../../lib/errors';
 import { formatTimeSpan } from '../../lib/format';
+import { addDays, ymd } from '../../lib/viewFormat';
 import { formatEpicTotal, groupByEpic } from '../../lib/viewTimeSpentTabs';
 import type { TimeLoggedReport } from '../../types';
 
-export function EpicsTab({ from, to, user }: { from: string; to: string; user: string }) {
+export function EpicsTab({ user }: { user: string }) {
+  const [daysBack, setDaysBack] = useState(30);
+  const [daysDraft, setDaysDraft] = useState('30');
   const [report, setReport] = useState<TimeLoggedReport | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    const clamped = Math.min(365, Math.max(1, daysBack));
+    const to = new Date();
+    const from = addDays(to, -clamped);
     setBusy(true);
     setError(null);
     timelogged
-      .range(from, to, user.trim() || undefined)
+      .range(ymd(from), ymd(addDays(to, 1)), user.trim() || undefined)
       .then((r) => { if (!cancelled) setReport(r); })
       .catch((e) => { if (!cancelled) setError(errText(e)); })
       .finally(() => { if (!cancelled) setBusy(false); });
     return () => { cancelled = true; };
-  }, [from, to, user]);
+  }, [daysBack, user]);
 
   const groups = useMemo(() => groupByEpic(report?.issues ?? []), [report]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <label style={{ fontSize: 12.5 }}>Days to look back:</label>
+        <input
+          type="number"
+          min={1}
+          max={365}
+          value={daysDraft}
+          onChange={(e) => setDaysDraft(e.target.value)}
+          onBlur={() => {
+            const n = Number(daysDraft);
+            if (Number.isFinite(n) && n >= 1) {
+              const clamped = Math.min(365, Math.round(n));
+              setDaysBack(clamped);
+              setDaysDraft(String(clamped));
+            } else {
+              setDaysDraft(String(daysBack));
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              const n = Number(daysDraft);
+              if (Number.isFinite(n) && n >= 1) {
+                const clamped = Math.min(365, Math.round(n));
+                setDaysBack(clamped);
+                setDaysDraft(String(clamped));
+              } else {
+                setDaysDraft(String(daysBack));
+              }
+              e.currentTarget.blur();
+            }
+          }}
+          style={{ width: 70 }}
+        />
         {busy ? <span className="accent-cyan">…</span> : null}
         <span className="muted" style={{ fontSize: 11.5 }}>
           {groups.length} epic group(s) with logged time
