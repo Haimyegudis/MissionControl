@@ -1,6 +1,10 @@
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import { randomBytes } from 'node:crypto';
 import sanitizeHtml from 'sanitize-html';
+import { parseDocument } from 'htmlparser2';
+import { render } from 'dom-serializer';
+import { appendChild, findAll, removeElement, textContent } from 'domutils';
+import type { Element } from 'domhandler';
 import { ConfluenceApiError } from '@mc/core';
 import type { ConfluenceConnection, ConfluenceSearchOptions } from '@mc/core';
 import type { Credentials } from '../config/credentialsStore.js';
@@ -29,12 +33,12 @@ function escapeHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function proxyAssetTag(tag: string, pageUrl: string): string {
+function proxyAssetTag(tag: string, pageUrl: string, selfOrigin = ''): string {
   return tag.replace(/\b(href|src)=(['"])([^'"]+)\2/gi, (match, attribute: string, quote: string, raw: string) => {
     if (/^(?:data:|blob:|javascript:|#)/i.test(raw)) return match;
     try {
       const absolute = new URL(raw, pageUrl).toString();
-      return `${attribute}=${quote}/api/confluence/proxy?url=${encodeURIComponent(absolute)}${quote}`;
+      return `${attribute}=${quote}${selfOrigin}/api/confluence/proxy?url=${encodeURIComponent(absolute)}${quote}`;
     } catch {
       return match;
     }
@@ -83,7 +87,53 @@ function sanitizeConfluenceBody(html: string): string {
   });
 }
 
-export function originalPageDocument(page: Awaited<ReturnType<NonNullable<AppDeps['confluence']>['requirePage']>>, baseUrl: string, upstreamHtml: string, nonce = ''): string {
+function hasClassToken(el: Element, token: string): boolean {
+  const value = el.attribs?.class;
+  return typeof value === 'string' && value.split(/\s+/).includes(token);
+}
+
+function tableRowSignature(table: Element): string | null {
+  const rows = findAll((el) => el.name === 'tr', table.children);
+  if (rows.length === 0) return null;
+  const cells = findAll((el) => el.name === 'td' || el.name === 'th', rows[0].children);
+  return cells.map((cell) => textContent(cell).trim()).join('');
+}
+
+function isBlankNode(node: { type: string; data?: string }): boolean {
+  return node.type === 'text' ? !node.data?.trim() : node.type === 'comment';
+}
+
+/** Table Filter plugin wrappers hold N source tables that its JS merges into one at
+ *  render time; since we strip scripts, merge server-side: when every table in a
+ *  wrapper shares the same first-row (header) cell text, keep the first table and
+ *  append every other table's non-header rows to it, dropping the emptied tables. */
+export function mergeTableFilterTables(html: string): string {
+  const doc = parseDocument(html);
+  const wrappers = findAll((el) => el.name === 'div' && hasClassToken(el, 'tablefilter-outer-wrapper'), doc.children);
+  for (const wrapper of wrappers) {
+    const tables = findAll((el) => el.name === 'table', wrapper.children);
+    if (tables.length < 2) continue;
+    const signature = tableRowSignature(tables[0]);
+    if (signature === null) continue;
+    if (!tables.every((table) => tableRowSignature(table) === signature)) continue;
+
+    const targetRows = findAll((el) => el.name === 'tr', tables[0].children);
+    const targetBody = (targetRows[0].parent as Element | null) ?? tables[0];
+
+    for (const table of tables.slice(1)) {
+      const rows = findAll((el) => el.name === 'tr', table.children);
+      for (const row of rows.slice(1)) appendChild(targetBody, row);
+      const shell = table.parent as Element | null;
+      removeElement(table);
+      if (shell?.type === 'tag' && hasClassToken(shell, 'table-wrap') && shell.children.every((child) => isBlankNode(child))) {
+        removeElement(shell);
+      }
+    }
+  }
+  return render(doc);
+}
+
+export function originalPageDocument(page: Awaited<ReturnType<NonNullable<AppDeps['confluence']>['requirePage']>>, baseUrl: string, upstreamHtml: string, nonce = '', selfOrigin = ''): string {
   const pageUrl = new URL(page.url ?? '/', `${baseUrl}/`).toString();
   const toggleScript = `<script nonce="${nonce}">
 document.addEventListener('click',function(event){
@@ -95,14 +145,15 @@ document.addEventListener('click',function(event){
 </script>`;
   const stylesheets = (upstreamHtml.match(/<link\b[^>]*>/gi) ?? [])
     .filter((tag) => /\bstylesheet\b/i.test(tag))
-    .map((tag) => proxyAssetTag(tag, pageUrl))
+    .map((tag) => proxyAssetTag(tag, pageUrl, selfOrigin))
     .join('\n');
   const author = page.lastModifiedBy ? ` by ${escapeHtml(page.lastModifiedBy)}` : '';
   const modified = page.lastModifiedAt ? new Date(page.lastModifiedAt).toLocaleString('en-US') : '';
-  const safeBody = sanitizeConfluenceBody(page.viewBody || page.storageBody);
+  const safeBody = mergeTableFilterTables(sanitizeConfluenceBody(page.viewBody || page.storageBody));
   const content = proxyAssetTag(
     `<div id="jiraweb-confluence-page" class="page view"><h1 id="title-heading" class="pagetitle"><span id="title-text">${escapeHtml(page.title)}</span></h1><div class="page-metadata">Last updated ${escapeHtml(modified)}${author} · Version ${page.version}</div><main id="main-content" class="wiki-content">${safeBody}</main></div>`,
     pageUrl,
+    selfOrigin,
   );
   return `<!doctype html>
 <html><head><meta charset="utf-8"><base href="${escapeHtml(pageUrl)}">
@@ -207,7 +258,8 @@ export function confluenceRoutes(deps: AppDeps): Router {
     res.setHeader('Cache-Control', 'private, max-age=60');
     const nonce = randomBytes(18).toString('base64');
     res.setHeader('Content-Security-Policy', `default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; frame-ancestors 'self'; sandbox allow-scripts allow-popups`);
-    res.send(originalPageDocument(page, client.baseUrl, upstreamHtml, nonce));
+    const selfOrigin = `${req.protocol}://${req.get('host')}`;
+    res.send(originalPageDocument(page, client.baseUrl, upstreamHtml, nonce, selfOrigin));
   }));
 
   router.get('/pages/:id', h(async (req, res) => {
