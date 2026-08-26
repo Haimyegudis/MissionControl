@@ -126,6 +126,17 @@ export function sprintBars(issue: JiraIssue): SprintBarRow {
   return { estimated, logged, remaining, estimatedPct: pct(estimated), loggedPct: pct(logged), remainingPct: pct(remaining) };
 }
 
+/**
+ * Sprint tab JQL. `resolvedUser` null/empty → assignee = currentUser();
+ * otherwise the value is quote-escaped to prevent JQL injection.
+ */
+export function sprintJql(project: string, resolvedUser: string | null): string {
+  const assignee = resolvedUser && resolvedUser.trim()
+    ? `"${resolvedUser.replace(/"/g, '\\"')}"`
+    : 'currentUser()';
+  return `project = ${project} AND sprint in openSprints() AND assignee = ${assignee} ORDER BY status`;
+}
+
 /** Transition that lands the issue in progress: exact toStatus match, then fuzzy. */
 export function pickStartTransition(transitions: readonly JiraTransition[]): JiraTransition | null {
   const exact = transitions.find((t) => (t.toStatus ?? '').toLowerCase() === 'in progress');

@@ -1,13 +1,13 @@
 // Current-sprint issues with Estimated/Logged/Remaining bars and a one-click
 // Start (To Do → In Progress). Follows the user picker ('' = me).
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { issues as issuesApi, metadataExtra } from '../../api/client';
 import { dialogs } from '../../dialogs/DialogHost';
 import { statusColor } from '../../lib/colors';
 import { errText } from '../../lib/errors';
 import { formatTimeSpan } from '../../lib/format';
-import { activeSprintRange, pickStartTransition, sprintBars } from '../../lib/viewTimeSpentTabs';
+import { activeSprintRange, pickStartTransition, sprintBars, sprintJql } from '../../lib/viewTimeSpentTabs';
 import { getSettings } from '../../stores/settings';
 import { pushToast } from '../../stores/toasts';
 import type { JiraIssue } from '../../types';
@@ -23,28 +23,33 @@ export function SprintTab({ user }: { user: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [startingKey, setStartingKey] = useState<string | null>(null);
+  const loadGenRef = useRef(0);
 
   const load = useCallback(async () => {
+    const gen = ++loadGenRef.current;
     setBusy(true);
     setError(null);
     try {
-      let assignee = 'currentUser()';
+      let resolvedUser: string | null = null;
       if (user.trim()) {
         const resolved = await metadataExtra.resolveUser(user).catch(() => ({ username: null }));
-        assignee = `"${resolved.username ?? user}"`;
+        resolvedUser = resolved.username ?? user;
       }
       const project = getSettings().defaultProjectKey || 'ISW';
-      const jql = `project = ${project} AND sprint in openSprints() AND assignee = ${assignee} ORDER BY status`;
+      const jql = sprintJql(project, resolvedUser);
       const page = await issuesApi.search(jql, 0, 100);
-      setIssues(page.items ?? []);
+      if (gen === loadGenRef.current) setIssues(page.items ?? []);
     } catch (e) {
-      setError(errText(e));
+      if (gen === loadGenRef.current) setError(errText(e));
     } finally {
-      setBusy(false);
+      if (gen === loadGenRef.current) setBusy(false);
     }
   }, [user]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+    return () => { loadGenRef.current++; };
+  }, [load]);
 
   const sprint = useMemo(() => activeSprintRange(issues), [issues]);
 

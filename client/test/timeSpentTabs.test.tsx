@@ -41,6 +41,7 @@ vi.mock('../src/api/client', () => {
 import { CalendarTab } from '../src/views/timespent/CalendarTab';
 import { EpicsTab } from '../src/views/timespent/EpicsTab';
 import { SprintTab } from '../src/views/timespent/SprintTab';
+import { sprintJql } from '../src/lib/viewTimeSpentTabs';
 
 describe('CalendarTab', () => {
   it('renders month title, weekday headers and nav buttons', () => {
@@ -65,5 +66,25 @@ describe('SprintTab', () => {
   it('renders the empty state scaffold', () => {
     const html = renderToString(<SprintTab user="" />);
     expect(html).toContain('Current sprint');
+  });
+});
+
+describe('sprintJql', () => {
+  it('uses currentUser() when no resolved user is given', () => {
+    expect(sprintJql('ISW', null)).toBe(
+      'project = ISW AND sprint in openSprints() AND assignee = currentUser() ORDER BY status',
+    );
+  });
+
+  it('quotes a resolved user', () => {
+    expect(sprintJql('ISW', 'jdoe')).toBe(
+      'project = ISW AND sprint in openSprints() AND assignee = "jdoe" ORDER BY status',
+    );
+  });
+
+  it('escapes embedded double quotes to prevent JQL injection', () => {
+    expect(sprintJql('ISW', 'jdoe" OR assignee = "x')).toBe(
+      'project = ISW AND sprint in openSprints() AND assignee = "jdoe\\" OR assignee = \\"x" ORDER BY status',
+    );
   });
 });
