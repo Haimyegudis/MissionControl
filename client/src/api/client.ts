@@ -257,6 +257,7 @@ export const dashboard = {
 export const watch = {
   feed: () => api.get<WatchFeed>('/api/watch/feed'),
   ack: () => api.post<WatchFeed>('/api/watch/ack', {}),
+  clear: () => api.post<WatchFeed>('/api/watch/clear', {}),
   run: () => api.post<WatchFeed & { count: number }>('/api/watch/run', {}),
   getConfig: () => api.get<WatchConfig>('/api/watch/config'),
   setConfig: (config: WatchConfig) => api.put<WatchConfig>('/api/watch/config', config),

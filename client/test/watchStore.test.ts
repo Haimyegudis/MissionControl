@@ -24,13 +24,14 @@ vi.mock('../src/api/client', () => ({
     feed: vi.fn(async () => feedResponse),
     ack: vi.fn(async () => ({ ...feedResponse, unreadCount: 0 })),
     run: vi.fn(async () => ({ ...feedResponse, count: 1 })),
+    clear: vi.fn(async () => ({ events: [], unreadCount: 0, lastCycle: feedResponse.lastCycle })),
   },
 }));
 
 vi.mock('../src/stores/scheduler', () => ({ onTick: vi.fn(() => () => {}) }));
 
 import { watch } from '../src/api/client';
-import { ackWatchFeed, refreshWatchFeed, watchStore } from '../src/stores/watch';
+import { ackWatchFeed, clearWatchFeed, refreshWatchFeed, watchStore } from '../src/stores/watch';
 
 describe('watch store', () => {
   beforeEach(() => {
@@ -62,6 +63,21 @@ describe('watch store', () => {
     await refreshWatchFeed();
     (watch.ack as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('offline'));
     await ackWatchFeed();
+    expect(watchStore.get().unreadCount).toBe(0);
+  });
+
+  it('empties the feed on clear all', async () => {
+    await refreshWatchFeed();
+    await clearWatchFeed();
+    expect(watchStore.get().events).toEqual([]);
+    expect(watchStore.get().unreadCount).toBe(0);
+  });
+
+  it('still empties the feed locally when the clear request fails', async () => {
+    await refreshWatchFeed();
+    (watch.clear as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('offline'));
+    await clearWatchFeed();
+    expect(watchStore.get().events).toEqual([]);
     expect(watchStore.get().unreadCount).toBe(0);
   });
 });

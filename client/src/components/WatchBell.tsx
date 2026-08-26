@@ -3,7 +3,7 @@
 // opening the dropdown clears the badge.
 
 import { useEffect, useRef, useState } from 'react';
-import { ackWatchFeed, watchStore } from '../stores/watch';
+import { ackWatchFeed, clearWatchFeed, watchStore } from '../stores/watch';
 import { useStore } from '../stores/useStore';
 import type { WatchEvent, WatchEventKind } from '../types';
 
@@ -53,6 +53,20 @@ export function describeEvent(event: WatchEvent): string {
       return event.to === null ? 'due date cleared' : `due ${event.to}`;
     default:
       return `${event.from ?? '—'} → ${event.to ?? '—'}`;
+  }
+}
+
+/** Row headline: "Status: In Progress → Done" for field changes, sentences otherwise. */
+export function describeEventTitle(event: WatchEvent): string {
+  const detail = describeEvent(event);
+  switch (event.kind) {
+    case 'status':
+    case 'sprint':
+    case 'priority':
+    case 'dueDate':
+      return `${KIND_LABEL[event.kind]}: ${detail}`;
+    default:
+      return detail;
   }
 }
 
@@ -128,8 +142,20 @@ export function WatchBell({ onOpenIssue }: { onOpenIssue?: (key: string) => void
             zIndex: 40,
           }}
         >
-          <div className="muted" style={{ fontSize: 11, padding: '4px 6px 8px' }}>
-            {feed.lastCycle ? `Last checked ${relative(feed.lastCycle, now)}` : 'Not checked yet'}
+          <div style={{ display: 'flex', alignItems: 'center', padding: '4px 6px 8px' }}>
+            <span className="muted" style={{ fontSize: 11 }}>
+              {feed.lastCycle ? `Last checked ${relative(feed.lastCycle, now)}` : 'Not checked yet'}
+            </span>
+            {feed.events.length > 0 ? (
+              <button
+                type="button"
+                className="btn"
+                onClick={() => void clearWatchFeed()}
+                style={{ marginLeft: 'auto', padding: '2px 8px', fontSize: 11 }}
+              >
+                Clear all
+              </button>
+            ) : null}
           </div>
           {feed.events.length === 0 ? (
             <div className="muted" style={{ fontSize: 12.5, padding: '8px 6px' }}>
@@ -164,10 +190,8 @@ export function WatchBell({ onOpenIssue }: { onOpenIssue?: (key: string) => void
                     {relative(event.at, now)}
                   </span>
                 </div>
-                <div style={{ fontSize: 12.5, marginTop: 1 }}>{event.summary}</div>
-                <div className="muted" style={{ fontSize: 11.5 }}>
-                  {describeEvent(event)}
-                </div>
+                <div style={{ fontSize: 12.5, marginTop: 1 }}>{describeEventTitle(event)}</div>
+                <div className="muted" style={{ fontSize: 11.5 }}>{event.summary}</div>
               </button>
             ))
           )}

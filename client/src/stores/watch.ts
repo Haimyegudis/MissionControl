@@ -32,6 +32,16 @@ export async function ackWatchFeed(): Promise<void> {
   }
 }
 
+/** "Clear all" in the bell: empty the feed server-side and locally. */
+export async function clearWatchFeed(): Promise<void> {
+  try {
+    watchStore.set(await watch.clear());
+  } catch {
+    // The feed is the user's own view — honor the clear locally regardless.
+    watchStore.set({ ...watchStore.get(), events: [], unreadCount: 0 });
+  }
+}
+
 /** Force a cycle now ("Check now" in Settings), then repaint the feed. */
 export async function runWatchCycleNow(): Promise<number> {
   const result = await watch.run();
