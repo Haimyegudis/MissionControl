@@ -11,6 +11,7 @@ import type { TimeLoggedReport } from '../../types';
 
 export function EpicsTab({ user }: { user: string }) {
   const [daysBack, setDaysBack] = useState(30);
+  const [daysDraft, setDaysDraft] = useState('30');
   const [report, setReport] = useState<TimeLoggedReport | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,8 +41,31 @@ export function EpicsTab({ user }: { user: string }) {
           type="number"
           min={1}
           max={365}
-          value={daysBack}
-          onChange={(e) => setDaysBack(Number(e.target.value) || 30)}
+          value={daysDraft}
+          onChange={(e) => setDaysDraft(e.target.value)}
+          onBlur={() => {
+            const n = Number(daysDraft);
+            if (Number.isFinite(n) && n >= 1) {
+              const clamped = Math.min(365, Math.round(n));
+              setDaysBack(clamped);
+              setDaysDraft(String(clamped));
+            } else {
+              setDaysDraft(String(daysBack));
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              const n = Number(daysDraft);
+              if (Number.isFinite(n) && n >= 1) {
+                const clamped = Math.min(365, Math.round(n));
+                setDaysBack(clamped);
+                setDaysDraft(String(clamped));
+              } else {
+                setDaysDraft(String(daysBack));
+              }
+              e.currentTarget.blur();
+            }
+          }}
           style={{ width: 70 }}
         />
         {busy ? <span className="accent-cyan">…</span> : null}
