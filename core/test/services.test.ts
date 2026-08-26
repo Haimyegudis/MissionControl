@@ -206,6 +206,32 @@ describe('JiraIssueService transitions', () => {
     expect(body.fields.resolution).toEqual({ name: 'Done' });
   });
 
+  it('adds started to the transition worklog when worklogStarted is given', async () => {
+    const session = makeSession('datacenter');
+    const { fn, calls } = mockFetch(() => null);
+    const svc = new JiraIssueService(session, fn);
+
+    await svc.performTransitionWithData('ISW-1', '5', {}, null, null, '3h', '2026-08-20T10:30:00.000Z');
+
+    const body = calls[0].opts.body as any;
+    const add = body.update.worklog[0].add;
+    expect(add.timeSpent).toBe('3h');
+    // Local-time render of the UTC instant; check shape + preserved minutes.
+    expect(add.started).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{4}$/);
+    expect(new Date('2026-08-20T10:30:00.000Z').getMinutes()).toBe(new Date(add.started).getMinutes());
+  });
+
+  it('omits started when worklogStarted is absent', async () => {
+    const session = makeSession('datacenter');
+    const { fn, calls } = mockFetch(() => null);
+    const svc = new JiraIssueService(session, fn);
+
+    await svc.performTransitionWithData('ISW-1', '5', {}, null, null, '3h');
+
+    const add = (calls[0].opts.body as any).update.worklog[0].add;
+    expect(add).toEqual({ timeSpent: '3h' });
+  });
+
   it('performTransition posts the bare transition id', async () => {
     const session = makeSession();
     const { fn, calls } = mockFetch(() => null);

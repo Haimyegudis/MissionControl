@@ -31,6 +31,7 @@ import {
   setSeverityFieldId,
   setSprintFieldId,
 } from './mapper.js';
+import { formatWorklogStarted } from './worklogService.js';
 import type {
   JiraComment,
   JiraIssue,
@@ -579,6 +580,7 @@ export class JiraIssueService {
    * - assignee → `fields.assignee = { name }` (DC-style username);
    * - comment → `update.comment = [{ add }]` — ADF on Cloud, `{ body }` on DC;
    * - timeSpent → `update.worklog = [{ add: { timeSpent } }]`;
+   * - worklogStarted → started on the worklog add;
    * - `update` omitted entirely when both comment and timeSpent are absent.
    */
   async performTransitionWithData(
@@ -588,6 +590,7 @@ export class JiraIssueService {
     comment?: string | null,
     assignee?: string | null,
     timeSpent?: string | null,
+    worklogStarted?: string | null,
   ): Promise<void> {
     const shapedFields: Record<string, unknown> = { ...fields };
     delete shapedFields.worklog;
@@ -600,7 +603,11 @@ export class JiraIssueService {
       update.comment = [{ add: this.isCloud ? adfParagraph(comment) : { body: comment } }];
     }
     if (timeSpent && timeSpent.trim().length > 0) {
-      update.worklog = [{ add: { timeSpent } }];
+      const add: Record<string, unknown> = { timeSpent };
+      if (worklogStarted && worklogStarted.trim().length > 0) {
+        add.started = formatWorklogStarted(new Date(worklogStarted));
+      }
+      update.worklog = [{ add }];
     }
 
     const body: Record<string, unknown> = {
