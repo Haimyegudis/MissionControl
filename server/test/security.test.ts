@@ -2,7 +2,7 @@ import express from 'express';
 import { request, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterEach, describe, expect, it } from 'vitest';
-import { securityMiddleware } from '../src/security.js';
+import { securityMiddleware, signProxyUrl } from '../src/security.js';
 
 const TOKEN = 'a'.repeat(64);
 let server: Server | null = null;
@@ -16,6 +16,7 @@ async function start(): Promise<string> {
   app.use(securityMiddleware(TOKEN, { apiPort: activePort }));
   app.get('/', (_req, res) => res.type('html').send('<!doctype html>'));
   app.get('/api/ping', (_req, res) => res.json({ ok: true }));
+  app.get('/api/confluence/proxy', (_req, res) => res.json({ ok: true }));
   return `http://127.0.0.1:${activePort}`;
 }
 
@@ -118,5 +119,47 @@ describe('local API security middleware', () => {
     const response = await fetch(`${base}/api/bootstrap`, { method: 'POST', headers: localHeaders() });
     expect(response.status).toBe(401);
     expect(response.headers.get('set-cookie')).toBeNull();
+  });
+
+  describe('signed Confluence proxy asset requests', () => {
+    const upstreamUrl = 'https://docs.example/s/main.css';
+
+    it('accepts a valid sig without any cookie or header (sandboxed iframe has neither)', async () => {
+      const base = await start();
+      const sig = signProxyUrl(TOKEN, upstreamUrl);
+      const response = await fetch(
+        `${base}/api/confluence/proxy?url=${encodeURIComponent(upstreamUrl)}&sig=${sig}`,
+        { headers: localHeaders() },
+      );
+      expect(response.status).toBe(200);
+    });
+
+    it('rejects a wrong sig when no auth is presented', async () => {
+      const base = await start();
+      const response = await fetch(
+        `${base}/api/confluence/proxy?url=${encodeURIComponent(upstreamUrl)}&sig=${'0'.repeat(32)}`,
+        { headers: localHeaders() },
+      );
+      expect(response.status).toBe(401);
+    });
+
+    it('rejects a sig computed for a different URL (bound to the exact upstream URL)', async () => {
+      const base = await start();
+      const sig = signProxyUrl(TOKEN, 'https://docs.example/s/other.css');
+      const response = await fetch(
+        `${base}/api/confluence/proxy?url=${encodeURIComponent(upstreamUrl)}&sig=${sig}`,
+        { headers: localHeaders() },
+      );
+      expect(response.status).toBe(401);
+    });
+
+    it('still allows normal cookie/header auth on the proxy route without a sig', async () => {
+      const base = await start();
+      const response = await fetch(
+        `${base}/api/confluence/proxy?url=${encodeURIComponent(upstreamUrl)}`,
+        { headers: localHeaders({ 'x-mc-token': TOKEN }) },
+      );
+      expect(response.status).toBe(200);
+    });
   });
 });

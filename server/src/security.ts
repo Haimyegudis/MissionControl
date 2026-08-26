@@ -13,7 +13,7 @@
 //      file and use the header directly.
 
 import { spawnSync } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { NextFunction, Request, Response } from 'express';
@@ -22,6 +22,26 @@ const COOKIE_NAME = 'mc_token';
 const HEADER_NAME = 'x-mc-token';
 /** Idle lifetime of the session cookie; every authenticated call restarts it. */
 const COOKIE_MAX_AGE_SECONDS = 86_400;
+
+/** The one path allowed to bypass cookie/header auth via a valid `sig`; the
+ *  sandboxed Confluence render iframe sends no cookies, so its proxied
+ *  asset requests must authenticate a different way (see signProxyUrl). */
+const SIGNED_PROXY_PATH = '/api/confluence/proxy';
+
+/** HMAC(apiToken, url) hex digest, truncated — binds a proxied asset request
+ *  to one exact upstream URL so it can't be replayed as an open proxy. */
+export function signProxyUrl(token: string, url: string): string {
+  return createHmac('sha256', token).update(url).digest('hex').slice(0, 32);
+}
+
+/** Timing-safe check of a `sig` query param against signProxyUrl(token, url). */
+export function verifyProxySignature(token: string, url: string | undefined, sig: string | undefined): boolean {
+  if (!token || !url || !sig) return false;
+  const expected = Buffer.from(signProxyUrl(token, url), 'utf8');
+  const presented = Buffer.from(sig, 'utf8');
+  if (expected.length !== presented.length) return false;
+  return timingSafeEqual(expected, presented);
+}
 
 const HOST_RE = /^(127\.0\.0\.1|localhost|\[::1\])(?::(\d+))?$/i;
 const ORIGIN_RE = /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(?::(\d+))?$/i;
@@ -155,6 +175,17 @@ export function securityMiddleware(token: string, options: SecurityOptions = {})
       res.setHeader('Set-Cookie', tokenCookie(token));
       res.status(204).end();
       return;
+    }
+
+    if (token && req.path === SIGNED_PROXY_PATH) {
+      const query = req.query as Record<string, unknown>;
+      const url = typeof query.url === 'string' ? query.url : undefined;
+      const sig = typeof query.sig === 'string' ? query.sig : undefined;
+      if (verifyProxySignature(token, url, sig)) {
+        next();
+        return;
+      }
+      // Falls through to normal cookie/header auth below when sig is absent or wrong.
     }
 
     if (token && req.path.startsWith('/api')) {

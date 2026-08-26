@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mergeTableFilterTables, originalPageDocument } from '../src/routes/confluence.js';
+import { signProxyUrl } from '../src/security.js';
 import type { ConfluencePageContent } from '@mc/core';
 
 describe('Confluence render document', () => {
@@ -117,6 +118,36 @@ describe('Confluence render document', () => {
     expect(html).toContain('<base href="https://docs.example/pages/viewpage.action?pageId=42">');
     expect(html).toContain('href="http://self.test/api/confluence/proxy?url=');
     expect(html).not.toContain('href="/api/confluence/proxy?url=');
+  });
+
+  it('signs proxied asset URLs so the sandboxed iframe (no cookies) can fetch them', () => {
+    const page: ConfluencePageContent = {
+      id: '42',
+      spaceKey: 'DOC',
+      title: 'Styled',
+      parentId: null,
+      status: 'current',
+      url: '/pages/viewpage.action?pageId=42',
+      createdBy: null,
+      createdAt: null,
+      lastModifiedBy: 'Author',
+      lastModifiedAt: '2026-08-17T08:00:00.000Z',
+      excerpt: null,
+      storageBody: '',
+      viewBody: '<p>content</p>',
+      version: 7,
+    };
+    const upstreamHtml = '<html><head><link rel="stylesheet" href="/s/main.css"></head><body></body></html>';
+    const apiToken = 'a'.repeat(64);
+
+    const html = originalPageDocument(page, 'https://docs.example', upstreamHtml, 'known-nonce', 'http://self.test', apiToken);
+    const upstreamAsset = 'https://docs.example/s/main.css';
+    const expectedSig = signProxyUrl(apiToken, upstreamAsset);
+    expect(html).toContain(`url=${encodeURIComponent(upstreamAsset)}&sig=${expectedSig}`);
+
+    // Without a token (e.g. auth disabled in tests), no sig is appended — prior behavior.
+    const unsigned = originalPageDocument(page, 'https://docs.example', upstreamHtml, 'known-nonce', 'http://self.test');
+    expect(unsigned).not.toContain('&sig=');
   });
 });
 

@@ -8,6 +8,7 @@ import type { Element } from 'domhandler';
 import { ConfluenceApiError } from '@mc/core';
 import type { ConfluenceConnection, ConfluenceSearchOptions } from '@mc/core';
 import type { Credentials } from '../config/credentialsStore.js';
+import { signProxyUrl } from '../security.js';
 import { h, HttpError, qstr, requireString, type AppDeps } from './deps.js';
 
 function emptyCredentials(): Credentials {
@@ -33,12 +34,20 @@ function escapeHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function proxyAssetTag(tag: string, pageUrl: string, selfOrigin = ''): string {
+/** Builds a proxied asset URL, signed with HMAC(apiToken, url) when a token is
+ *  supplied so the sandboxed render iframe (no cookies) can fetch it without
+ *  session auth; the signature binds the request to this exact upstream URL. */
+function signedProxyUrl(selfOrigin: string, absolute: string, apiToken: string): string {
+  const sig = apiToken ? `&sig=${signProxyUrl(apiToken, absolute)}` : '';
+  return `${selfOrigin}/api/confluence/proxy?url=${encodeURIComponent(absolute)}${sig}`;
+}
+
+function proxyAssetTag(tag: string, pageUrl: string, selfOrigin = '', apiToken = ''): string {
   return tag.replace(/\b(href|src)=(['"])([^'"]+)\2/gi, (match, attribute: string, quote: string, raw: string) => {
     if (/^(?:data:|blob:|javascript:|#)/i.test(raw)) return match;
     try {
       const absolute = new URL(raw, pageUrl).toString();
-      return `${attribute}=${quote}${selfOrigin}/api/confluence/proxy?url=${encodeURIComponent(absolute)}${quote}`;
+      return `${attribute}=${quote}${signedProxyUrl(selfOrigin, absolute, apiToken)}${quote}`;
     } catch {
       return match;
     }
@@ -133,7 +142,7 @@ export function mergeTableFilterTables(html: string): string {
   return render(doc);
 }
 
-export function originalPageDocument(page: Awaited<ReturnType<NonNullable<AppDeps['confluence']>['requirePage']>>, baseUrl: string, upstreamHtml: string, nonce = '', selfOrigin = ''): string {
+export function originalPageDocument(page: Awaited<ReturnType<NonNullable<AppDeps['confluence']>['requirePage']>>, baseUrl: string, upstreamHtml: string, nonce = '', selfOrigin = '', apiToken = ''): string {
   const pageUrl = new URL(page.url ?? '/', `${baseUrl}/`).toString();
   const toggleScript = `<script nonce="${nonce}">
 document.addEventListener('click',function(event){
@@ -145,7 +154,7 @@ document.addEventListener('click',function(event){
 </script>`;
   const stylesheets = (upstreamHtml.match(/<link\b[^>]*>/gi) ?? [])
     .filter((tag) => /\bstylesheet\b/i.test(tag))
-    .map((tag) => proxyAssetTag(tag, pageUrl, selfOrigin))
+    .map((tag) => proxyAssetTag(tag, pageUrl, selfOrigin, apiToken))
     .join('\n');
   const author = page.lastModifiedBy ? ` by ${escapeHtml(page.lastModifiedBy)}` : '';
   const modified = page.lastModifiedAt ? new Date(page.lastModifiedAt).toLocaleString('en-US') : '';
@@ -154,6 +163,7 @@ document.addEventListener('click',function(event){
     `<div id="jiraweb-confluence-page" class="page view"><h1 id="title-heading" class="pagetitle"><span id="title-text">${escapeHtml(page.title)}</span></h1><div class="page-metadata">Last updated ${escapeHtml(modified)}${author} · Version ${page.version}</div><main id="main-content" class="wiki-content">${safeBody}</main></div>`,
     pageUrl,
     selfOrigin,
+    apiToken,
   );
   return `<!doctype html>
 <html><head><meta charset="utf-8"><base href="${escapeHtml(pageUrl)}">
@@ -259,7 +269,7 @@ export function confluenceRoutes(deps: AppDeps): Router {
     const nonce = randomBytes(18).toString('base64');
     res.setHeader('Content-Security-Policy', `default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; frame-ancestors 'self'; sandbox allow-scripts allow-popups`);
     const selfOrigin = `${req.protocol}://${req.get('host')}`;
-    res.send(originalPageDocument(page, client.baseUrl, upstreamHtml, nonce, selfOrigin));
+    res.send(originalPageDocument(page, client.baseUrl, upstreamHtml, nonce, selfOrigin, deps.apiToken ?? ''));
   }));
 
   router.get('/pages/:id', h(async (req, res) => {
@@ -326,10 +336,11 @@ export function confluenceRoutes(deps: AppDeps): Router {
     res.setHeader('Cache-Control', 'private, max-age=300');
     if (type?.includes('text/css')) {
       const cssBase = new URL(rawUrl, `${client.baseUrl}/`);
+      const apiToken = deps.apiToken ?? '';
       const css = (await upstream.text()).replace(/url\(\s*(['"]?)(?!data:|blob:|#)([^)'"\s]+)\1\s*\)/gi, (_match, quote: string, value: string) => {
         try {
           const absolute = new URL(value, cssBase).toString();
-          return `url(${quote}/api/confluence/proxy?url=${encodeURIComponent(absolute)}${quote})`;
+          return `url(${quote}${signedProxyUrl('', absolute, apiToken)}${quote})`;
         } catch { return _match; }
       });
       res.send(css);
