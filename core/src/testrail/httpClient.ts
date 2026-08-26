@@ -62,6 +62,29 @@ function looksSignedOut(status: number, text: string): boolean {
   return text.trimStart().startsWith('<');
 }
 
+/**
+ * fetch()'s text() always decodes UTF-8, ignoring the response charset —
+ * TestRail DC can serve Windows-1252 bytes (CSV-imported bullets, curly
+ * quotes, dashes), which then surface as U+FFFD. Decode honoring the
+ * declared charset; when a UTF-8 decode still mangles bytes, fall back to
+ * Windows-1252, which maps every byte and covers the observed data.
+ */
+export function decodeResponseText(buf: ArrayBuffer, contentType: string | null): string {
+  const match = /charset=["']?([\w-]+)/i.exec(contentType ?? '');
+  const declared = (match?.[1] ?? 'utf-8').toLowerCase();
+  try {
+    const text = new TextDecoder(declared).decode(buf);
+    if ((declared === 'utf-8' || declared === 'utf8') && text.includes('�')) {
+      return new TextDecoder('windows-1252').decode(buf);
+    }
+    return text;
+  } catch {
+    // Unknown label — decode UTF-8, with the same 1252 fallback.
+    const text = new TextDecoder('utf-8').decode(buf);
+    return text.includes('�') ? new TextDecoder('windows-1252').decode(buf) : text;
+  }
+}
+
 export class TestRailHttp {
   private readonly apiBaseUrl: string;
   private readonly authorization: string;
@@ -166,7 +189,8 @@ export class TestRailHttp {
       clearTimeout(timer);
     }
 
-    const text = await response.text().catch(() => '');
+    const buf = await response.arrayBuffer().catch(() => new ArrayBuffer(0));
+    const text = decodeResponseText(buf, response.headers.get('content-type'));
     return {
       status: response.status,
       statusText: response.statusText,
