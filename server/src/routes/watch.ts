@@ -17,6 +17,11 @@ export function watchRoutes(deps: AppDeps): Router {
     res.json(deps.watch.feed());
   });
 
+  router.post('/clear', (_req, res) => {
+    deps.watch.clearFeed();
+    res.json(deps.watch.feed());
+  });
+
   router.get('/config', (_req, res) => {
     res.json(deps.watch.getConfig());
   });

@@ -107,6 +107,15 @@ export class WatchService {
     this.repo.setState({ ...this.repo.getState(), ackedAt: this.now().toISOString() });
   }
 
+  /** Empty the feed and mark it read; the snapshot stays so nothing re-reports. */
+  clearFeed(): void {
+    this.repo.setState({
+      ...this.repo.getState(),
+      feed: [],
+      ackedAt: this.now().toISOString(),
+    });
+  }
+
   private search(jql: string): Promise<unknown> {
     const prefix = apiPrefix(this.session.profile?.instanceType ?? 'datacenter');
     const fields = [...WATCH_FIELDS];

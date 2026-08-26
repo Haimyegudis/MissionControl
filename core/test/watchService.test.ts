@@ -148,4 +148,23 @@ describe('WatchService', () => {
     expect(repo.getState().snapshot).toEqual({});
     expect(repo.getState().feed).toEqual([]);
   });
+
+  it('clearFeed empties the feed and resets unread, keeping snapshot and lastCycle', () => {
+    const fetchFn = vi.fn(async () => ({ issues: [issue()], total: 1 }));
+    const { repo, service } = make(fetchFn);
+    // Seed the state with a feed and snapshot
+    repo.setState({
+      snapshot: { 'ISW-1': { key: 'ISW-1', status: 'To Do', priority: 'Major', assignee: 'Haim', summary: 'Fix', statusCategory: 'new', sprintName: null, dueDate: null, commentCount: 0, updated: '2026-08-23T09:00:00.000Z' } },
+      feed: [{ id: 'ISW-1:status:2026-08-23T10:00:00.000Z', kind: 'status' as const, key: 'ISW-1', summary: 'Fix', from: 'To Do', to: 'In Progress', at: '2026-08-23T10:00:00.000Z' }],
+      lastCycle: '2026-08-23T10:00:00.000Z',
+      ackedAt: null,
+    });
+    service.clearFeed();
+    const feed = service.feed();
+    expect(feed.events).toEqual([]);
+    expect(feed.unreadCount).toBe(0);
+    const state = repo.getState();
+    expect(state.lastCycle).not.toBeNull();
+    expect(Object.keys(state.snapshot).length).toBeGreaterThan(0);
+  });
 });

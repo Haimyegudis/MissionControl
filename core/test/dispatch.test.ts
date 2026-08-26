@@ -48,6 +48,16 @@ describe('routing', () => {
     expect((await dispatch('DELETE', '/api/watch/feed')).status).toBe(404);
   });
 
+  it('POST /api/watch/clear empties the feed', async () => {
+    const { core, dispatch } = harness();
+    const clear = vi.spyOn(core.watch, 'clearFeed').mockImplementation(() => {});
+    vi.spyOn(core.watch, 'feed').mockReturnValue({ events: [], unreadCount: 0, lastCycle: null });
+    const res = await dispatch('POST', '/api/watch/clear', {});
+    expect(clear).toHaveBeenCalled();
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ events: [], unreadCount: 0, lastCycle: null });
+  });
+
   it('404s a route group the mobile build does not serve', async () => {
     const { dispatch } = harness();
     // Lumo is desktop-only: it needs a local model runner.

@@ -110,6 +110,7 @@ export interface WatchDep {
   runCycle(): Promise<WatchEvent[]>;
   feed(): { events: WatchEvent[]; unreadCount: number; lastCycle: string | null };
   ack(): void;
+  clearFeed(): void;
   getConfig(): WatchConfig;
   setConfig(raw: unknown): WatchConfig;
 }

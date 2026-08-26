@@ -1220,6 +1220,10 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
       core.watch.ack();
       return ok(core.watch.feed());
     }
+    if (method === 'POST' && sub === 'clear') {
+      core.watch.clearFeed();
+      return ok(core.watch.feed());
+    }
     if (method === 'POST' && sub === 'run') {
       const events = await core.watch.runCycle();
       return ok({ count: events.length, ...core.watch.feed() });

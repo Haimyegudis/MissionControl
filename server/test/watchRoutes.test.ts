@@ -25,6 +25,7 @@ function makeWatch(over: Partial<AppDeps['watch']> = {}): AppDeps['watch'] {
     runCycle: vi.fn(async () => []),
     feed: vi.fn(() => FEED),
     ack: vi.fn(),
+    clearFeed: vi.fn(),
     getConfig: vi.fn(() => ({ enabled: true, intervalMinutes: 5, kinds: {} as never })),
     setConfig: vi.fn((raw: unknown) => ({ enabled: true, intervalMinutes: 5, kinds: {} as never, ...(raw as object) })),
     ...over,
@@ -62,6 +63,15 @@ describe('/api/watch', () => {
     const res = await fetch(`${base}/api/watch/ack`, { method: 'POST' });
     expect(res.status).toBe(200);
     expect(watch.ack).toHaveBeenCalledOnce();
+  });
+
+  it('POST /clear clears the feed and returns it', async () => {
+    const watch = makeWatch();
+    const base = await start(watch);
+    const res = await fetch(`${base}/api/watch/clear`, { method: 'POST' });
+    expect(res.status).toBe(200);
+    expect(watch.clearFeed).toHaveBeenCalledOnce();
+    expect(await res.json()).toEqual(FEED);
   });
 
   it('reads and writes the config', async () => {
