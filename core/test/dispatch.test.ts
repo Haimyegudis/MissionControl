@@ -172,7 +172,18 @@ describe('issues', () => {
     const { core, dispatch } = harness();
     const withData = vi.spyOn(core.issues, 'performTransitionWithData').mockResolvedValue(undefined as never);
     await dispatch('POST', '/api/issues/ABC-1/transitions', { id: '5', comment: 'note' });
-    expect(withData).toHaveBeenCalledWith('ABC-1', '5', {}, 'note', null, null);
+    expect(withData).toHaveBeenCalledWith('ABC-1', '5', {}, 'note', null, null, null);
+  });
+
+  it('forwards worklogStarted to the extended call', async () => {
+    const { core, dispatch } = harness();
+    const withData = vi.spyOn(core.issues, 'performTransitionWithData').mockResolvedValue(undefined as never);
+    await dispatch('POST', '/api/issues/ABC-1/transitions', {
+      id: '5',
+      timeSpent: '1h',
+      worklogStarted: '2026-08-20T10:30:00.000Z',
+    });
+    expect(withData).toHaveBeenCalledWith('ABC-1', '5', {}, null, null, '1h', '2026-08-20T10:30:00.000Z');
   });
 
   it('rejects a worklog with a non-numeric seconds value', async () => {

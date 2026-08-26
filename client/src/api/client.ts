@@ -213,6 +213,7 @@ export const issues = {
       comment?: string;
       assignee?: string;
       timeSpent?: string;
+      worklogStarted?: string;
     },
   ) => api.post<void>(`/api/issues/${encodeURIComponent(key)}/transitions`, body),
   addComment: (key: string, body: string) =>

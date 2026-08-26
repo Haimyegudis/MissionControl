@@ -119,6 +119,7 @@ export function issueRoutes(deps: AppDeps): Router {
       const comment = typeof body.comment === 'string' ? body.comment : null;
       const assignee = typeof body.assignee === 'string' ? body.assignee : null;
       const timeSpent = typeof body.timeSpent === 'string' ? body.timeSpent : null;
+      const worklogStarted = typeof body.worklogStarted === 'string' ? body.worklogStarted : null;
 
       if (fields || comment || assignee || timeSpent) {
         await deps.issues.performTransitionWithData(
@@ -128,6 +129,7 @@ export function issueRoutes(deps: AppDeps): Router {
           comment,
           assignee,
           timeSpent,
+          worklogStarted,
         );
       } else {
         await deps.issues.performTransition(req.params.key, id);

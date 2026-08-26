@@ -482,8 +482,9 @@ export function createDispatcher(core: Core, options: DispatcherOptions = {}): D
       const comment = optStr(b.comment);
       const assignee = optStr(b.assignee);
       const timeSpent = optStr(b.timeSpent);
+      const worklogStarted = optStr(b.worklogStarted);
       if (fields || comment || assignee || timeSpent) {
-        await core.issues.performTransitionWithData(key, id, fields ?? {}, comment, assignee, timeSpent);
+        await core.issues.performTransitionWithData(key, id, fields ?? {}, comment, assignee, timeSpent, worklogStarted);
       } else {
         await core.issues.performTransition(key, id);
       }
