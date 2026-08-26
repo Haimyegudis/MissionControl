@@ -31,6 +31,13 @@ function formatRangeLabel(start: Date, endInclusive: Date): string {
   return `${startPart} – ${endPart} ${endInclusive.getFullYear()}`;
 }
 
+/** "<name> · 23 Aug – 10 Sep" — sprint scope label from name + inclusive date range (no year, per spec). */
+export function formatSprintLabel(name: string, start: Date, endInclusive: Date): string {
+  const startPart = `${pad2(start.getDate())} ${MONTH_ABBR[start.getMonth()]}`;
+  const endPart = `${pad2(endInclusive.getDate())} ${MONTH_ABBR[endInclusive.getMonth()]}`;
+  return `${name} · ${startPart} – ${endPart}`;
+}
+
 /** Window for a scope anchored at `anchor` (any date inside the window). Custom uses the inclusive customTo. */
 export function scopeWindow(
   scope: Exclude<ScopeId, 'sprint'>,
@@ -74,6 +81,18 @@ export function stepAnchor(scope: 'day' | 'week' | 'month', anchor: Date, dir: 1
     case 'month':
       return new Date(anchor.getFullYear(), anchor.getMonth() + dir, 1);
   }
+}
+
+/**
+ * Sprint ◀ ▶ stepping: moves `current` by `dir` within `available`, clamped
+ * at both ends (no wraparound). An unknown/blank `current` (e.g. '' = active
+ * sprint) starts from index 0. Empty `available` is a no-op.
+ */
+export function stepSprintName(available: readonly string[], current: string, dir: 1 | -1): string {
+  if (available.length === 0) return current;
+  const idx = available.indexOf(current);
+  const nextIdx = Math.min(available.length - 1, Math.max(0, (idx < 0 ? 0 : idx) + dir));
+  return available[nextIdx];
 }
 
 const BASE_VIEWS: ViewId[] = ['timesheet', 'summary', 'epics'];

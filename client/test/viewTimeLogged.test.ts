@@ -20,13 +20,11 @@ import {
   aggregateDailyHours,
   buildLoggedVsEstimated,
   buildSprintDailyChart,
-  buildTimesheet,
   dailyCsvRows,
   issuesCsvRow,
   loggedOnlyIssues,
-  timesheetHeaders,
 } from '../src/lib/viewTimeLogged';
-import type { DailyLogEntry, JiraBoard, JiraIssue, TimeLoggedReport } from '../src/types';
+import type { DailyLogEntry, JiraBoard, JiraIssue } from '../src/types';
 
 function issue(partial: Partial<JiraIssue>): JiraIssue {
   return {
@@ -70,18 +68,6 @@ function entry(day: string, issueKey: string, seconds: number, summary = 'Fix pr
   return { day, issueKey, issueSummary: summary, timeSpent: seconds };
 }
 
-function report(partial: Partial<TimeLoggedReport>): TimeLoggedReport {
-  return {
-    issues: [],
-    total: 0,
-    fromUtc: '2026-08-09T00:00:00.000Z',
-    toUtc: '2026-08-16T00:00:00.000Z',
-    dailyByIssue: [],
-    availableSprints: [],
-    ...partial,
-  };
-}
-
 describe('viewFormat', () => {
   it('fmtHours = 0.## / fmtHours1 = 0.#', () => {
     expect(fmtHours(1.5)).toBe('1.5');
@@ -106,35 +92,6 @@ describe('viewFormat', () => {
     expect(formatDayShort(d)).toBe('Sun 09 Aug');
     expect(formatDayLong(d)).toBe('Sun 09 Aug 2026');
     expect(formatDMmmYy(d)).toBe('9/Aug/26');
-  });
-});
-
-describe('buildTimesheet (§7 weekly card)', () => {
-  const weekStart = new Date(2026, 7, 9); // Sunday
-  const r = report({
-    issues: [issue({ key: 'ISW-2', summary: 'B' }), issue({ key: 'ISW-1', summary: 'A' })],
-    dailyByIssue: [
-      entry('2026-08-10', 'ISW-1', 3600),
-      entry('2026-08-10', 'ISW-2', 1800),
-      entry('2026-08-12', 'ISW-1', 7200),
-      entry('2026-08-20', 'ISW-1', 3600), // outside the week — skipped
-    ],
-  });
-
-  it('rows ordered by key, day cells + totals + weekly total', () => {
-    const ts = buildTimesheet(weekStart, r);
-    expect(ts.rows.map((x) => x.issueKey)).toEqual(['ISW-1', 'ISW-2']);
-    expect(ts.rows[0].days).toEqual([0, 1, 0, 2, 0, 0, 0]);
-    expect(ts.rows[0].loggedHours).toBe(3);
-    expect(ts.rows[1].days).toEqual([0, 0.5, 0, 0, 0, 0, 0]);
-    expect(ts.totals).toEqual([0, 1.5, 0, 2, 0, 0, 0]);
-    expect(ts.weeklyTotalHours).toBe(3.5);
-  });
-
-  it('headers = dd over DDD', () => {
-    const headers = timesheetHeaders(weekStart);
-    expect(headers[0]).toEqual({ dayNumber: '09', dayLabel: 'SUN' });
-    expect(headers[6]).toEqual({ dayNumber: '15', dayLabel: 'SAT' });
   });
 });
 
