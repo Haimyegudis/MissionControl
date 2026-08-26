@@ -85,14 +85,13 @@ describe('RecentUpdatesView (§6)', () => {
 });
 
 describe('TimeLoggedView (redesigned)', () => {
-  it('renders toolbar chips, hero summary, timesheet and heatmap', () => {
+  it('renders toolbar chips, hero summary and timesheet', () => {
     const html = renderToString(<TimeLoggedView />);
     expect(html).toContain('Time Spent');
     expect(html).toContain('⬇ CSV');
     expect(html).toContain('⬇ PDF');
     expect(html).toContain('Total logged');
     expect(html).toContain('Weekly timesheet');
-    expect(html).toContain('Activity — last 13 weeks');
     expect(html).toContain('This week');
     // All six periods offered as chips.
     for (const p of ['Today', 'Yesterday', 'This week', 'Last week', 'This month', 'Custom…']) {

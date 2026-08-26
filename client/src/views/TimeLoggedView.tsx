@@ -6,13 +6,13 @@
 //     Estimated↔Logged progress bar per row (replaces the old separate
 //     "Logged vs Estimated" chart) + per-row Log work button (replaces the
 //     old select-then-expander flow)
-//   · weekly timesheet (unique per-day × per-issue) + 13-week heatmap
-// The old sprint-per-day chart duplicated timesheet+heatmap and is gone.
+//   · weekly timesheet (unique per-day × per-issue)
+//   · Report / Calendar tabs (Epics, Sprint tabs land in later tasks)
+// The old sprint-per-day chart and 13-week heatmap are gone.
 // Refresh: session change ONLY — no scheduler tick.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { metadata as metadataApi, timelogged as timeloggedApi } from '../api/client';
-import { Heatmap } from '../charts/Heatmap';
 import { ResponsiveGrid } from '../components/ResponsiveGrid';
 import type { GridColumn } from '../components/DataGrid';
 import { UserSearchPicker } from '../components/UserSearchPicker';
@@ -34,6 +34,7 @@ import { sessionStore } from '../stores/session';
 import { pushToast } from '../stores/toasts';
 import { useStore } from '../stores/useStore';
 import type { JiraIssue, TimeLoggedReport } from '../types';
+import { CalendarTab } from './timespent/CalendarTab';
 
 const PERIODS = [
   { id: 'today', label: 'Today' },
@@ -134,21 +135,11 @@ export function TimeLoggedView() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const [heatmapHours, setHeatmapHours] = useState<Record<string, number>>({});
+  const [tab, setTab] = useState<'report' | 'calendar' | 'epics' | 'sprint'>('report');
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeekSunday(new Date()));
   const [weekReport, setWeekReport] = useState<TimeLoggedReport | null>(null);
 
   const loadSeq = useRef(0);
-
-  const loadHeatmap = async () => {
-    try {
-      const today = new Date();
-      const r = await timeloggedApi.range(ymd(addDays(today, -91)), ymd(addDays(today, 1)));
-      setHeatmapHours(aggregateDailyHours(r.dailyByIssue));
-    } catch (err) {
-      pushToast({ title: 'Heatmap unavailable', body: errText(err), severity: 'error' });
-    }
-  };
 
   const loadTimesheet = async (start: Date) => {
     try {
@@ -188,7 +179,6 @@ export function TimeLoggedView() {
       if (seq !== loadSeq.current) return;
       setUsers([...roster].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })));
 
-      void loadHeatmap();
       void loadTimesheet(weekStart);
     } catch (err) {
       if (seq !== loadSeq.current) return;
@@ -241,7 +231,7 @@ export function TimeLoggedView() {
             { header: 'Date', value: (r: [string, string]) => r[0] },
             { header: 'Hours', value: (r: [string, string]) => r[1] },
           ],
-          dailyCsvRows(heatmapHours),
+          dailyCsvRows(aggregateDailyHours(report.dailyByIssue)),
         ),
       );
       pushToast({ title: 'Export complete', body: `${stem}-issues.csv, ${stem}-daily.csv`, severity: 'success' });
@@ -344,9 +334,28 @@ export function TimeLoggedView() {
         .tl-chip:hover { transform: translateY(-1px); }
       `}</style>
 
-      {/* ------------------------------------------------ toolbar ---------- */}
+      {/* ------------------------------------------------ tab strip --------- */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <h2 style={{ fontSize: 18, fontFamily: 'var(--font-display)' }}>Time Spent</h2>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {(['report', 'calendar'] as const).map((t) => (
+            <button
+              key={t}
+              className="btn"
+              onClick={() => setTab(t)}
+              style={tab === t ? { borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)', fontWeight: 700 } : undefined}
+            >
+              {t === 'report' ? 'Report' : 'Calendar'}
+            </button>
+          ))}
+        </div>
+        <UserSearchPicker users={users} value={userFilter} onCommit={setUserFilter} />
+      </div>
+
+      {tab === 'report' ? (
+        <>
+      {/* ------------------------------------------------ toolbar ---------- */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           {PERIODS.map((p) => (
             <button
@@ -369,7 +378,6 @@ export function TimeLoggedView() {
             <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
           </>
         ) : null}
-        <UserSearchPicker users={users} value={userFilter} onCommit={setUserFilter} />
         {busy ? <span className="accent-cyan">…</span> : null}
         <div style={{ flex: 1 }} />
         <button className="btn" onClick={exportCsv} disabled={!report}>
@@ -530,12 +538,6 @@ export function TimeLoggedView() {
         </div>
       </div>
 
-      {/* --------------------------------------------- heatmap ------------- */}
-      <div className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 8 }}>Activity — last 13 weeks</div>
-        <Heatmap hoursByDay={heatmapHours} />
-      </div>
-
       {/* Print-only section for the PDF export (window.print). */}
       <div className="tl-print" aria-hidden="true">
         <h2>Time Spent — {formatPrintStamp(new Date())}</h2>
@@ -569,6 +571,10 @@ export function TimeLoggedView() {
           </tbody>
         </table>
       </div>
+        </>
+      ) : null}
+
+      {tab === 'calendar' ? <CalendarTab user={userFilter} /> : null}
     </div>
   );
 }
