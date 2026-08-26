@@ -253,6 +253,14 @@ textarea:focus {
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
+/* Native date/datetime picker indicator: visible in the dark theme and
+   clearly clickable. color-scheme handles the popup itself. */
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  cursor: pointer;
+}
+
 select option {
   background: #101a36;
   color: #e8eefa;

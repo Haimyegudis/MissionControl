@@ -3,6 +3,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { issues as issuesApi } from '../api/client';
+import { DateTimeField } from '../components/DateTimeField';
 import { Modal } from '../components/Modal';
 import { nowLocalInput, parseJiraTime } from '../lib/timeFormat';
 
@@ -131,12 +132,7 @@ export function LogWork({ issueKey, remainingEstimate = null, onClose, onLogged 
           <label>
             Date Started<span style={{ color: 'var(--accent-red)' }}> *</span>
           </label>
-          <input
-            type="datetime-local"
-            value={started}
-            onChange={(e) => setStarted(e.target.value)}
-            style={{ width: '100%' }}
-          />
+          <DateTimeField value={started} onChange={setStarted} />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

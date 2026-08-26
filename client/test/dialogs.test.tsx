@@ -172,6 +172,12 @@ describe('LogWork (§10.4)', () => {
     const withoutEstimate = renderToString(<LogWork issueKey="ISW-9" onClose={noop} />);
     expect(withoutEstimate).not.toContain('Use existing estimate');
   });
+
+  it('LogWork renders the Date Started picker button', () => {
+    const html = renderToString(<LogWork issueKey="ISW-7" onClose={noop} />);
+    expect(html).toContain('Date Started');
+    expect(html).toContain('Pick date');
+  });
 });
 
 describe('CreateIssue (§10.2)', () => {
