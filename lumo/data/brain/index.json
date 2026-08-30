@@ -1,0 +1,223 @@
+{
+  "entries": [
+    {
+      "id": "brain-learned-skills",
+      "type": "learned",
+      "source": "auto-learn",
+      "name": "TestBrain Knowledge Base (S6)",
+      "description": "1042 skills, 369 signals, 89 parameters | Last updated: 2026-07-12T16:28",
+      "tags": [
+        "BID",
+        "BKT",
+        "BR",
+        "Bids",
+        "BktTen",
+        "Blanket",
+        "CVC",
+        "CVC_EXIT_BLOWER_CTRL",
+        "CVC_FEED_BLOWER_FAIL",
+        "CWS",
+        "CWS_InletPressure",
+        "CWS_InletTemp",
+        "Chrg",
+        "Diagnostic",
+        "Dryer",
+        "EmsFbState",
+        "EmsInputPoleA_PE_FRNT_EXIT_ESTOP",
+        "General",
+        "Global",
+        "HW_Inputs",
+        "HW_Outputs",
+        "ImoSystem",
+        "Ink System",
+        "InterlockInputPoleA",
+        "InterlockInputPoleB",
+        "InterlockLockStatus",
+        "LPH",
+        "LPH_Tank_Temperature_Sens",
+        "LP_MG90EStopCtrl",
+        "LphCooling",
+        "MgmtCtrl",
+        "PLC",
+        "Press States",
+        "PrintControl",
+        "PrintControlManager",
+        "PrintFailMonitor",
+        "RW",
+        "Reservoir",
+        "Safety",
+        "Stations",
+        "Stir",
+        "Subsystems",
+        "Tension",
+        "UW",
+        "WHS",
+        "Web",
+        "X",
+        "arrInk"
+      ],
+      "addedAt": "2026-03-18T11:59:36.851Z",
+      "updatedAt": "2026-07-12T16:28:57.820Z",
+      "usageCount": 0
+    },
+    {
+      "id": "brain-learned-skills-s4",
+      "type": "learned",
+      "source": "auto-learn",
+      "name": "TestBrain Knowledge Base (S4)",
+      "description": "7 skills, 0 signals, 0 parameters | Last updated: 2026-07-06T09:02",
+      "tags": [
+        "General"
+      ],
+      "addedAt": "2026-03-18T19:41:02.714Z",
+      "updatedAt": "2026-07-06T09:02:36.753Z",
+      "usageCount": 0
+    },
+    {
+      "id": "brain-1779548868216-cda8b6",
+      "type": "pattern",
+      "source": "copilot-skill:ccc-failure-investigation",
+      "name": "CCC Failure Investigation Methodology",
+      "description": "Methodology for investigating CCC (Continuous Color Calibration) failures on HP Indigo S6 presses. Symptom→cause→signal table. Covers CCC_GENERAL_CALIB_FAILURE, YPositionErrorFailure, web handling issues, SPM problems. Uses Elasticsearch press history + EngineLogs + Press.Host.App logs.",
+      "tags": [
+        "CCC",
+        "calibration",
+        "failure",
+        "investigation",
+        "negative-test",
+        "SPM",
+        "YPositionError",
+        "web-handling",
+        "ColorCalib",
+        "CCC_GENERAL_CALIB_FAILURE",
+        "spectrophotometer",
+        "elasticsearch",
+        "EngineLogs"
+      ],
+      "addedAt": "2026-05-23T15:07:48.216Z",
+      "usageCount": 0
+    },
+    {
+      "id": "brain-1779548868235-a2cf11",
+      "type": "reference",
+      "source": "copilot-skill:s4-log-discovery",
+      "name": "S4/S6 Binary Log Discovery + .ilog File Reference",
+      "description": "Reference: binary .ilog log file types in S6 ZIP archives (EngineLogs, Press.Host.App, Ido, iVision, nosn, WebHandling, CCC, Spm, AutoBias). Search/tail/metadata/scan methodology for log investigation.",
+      "tags": [
+        "logs",
+        "ilog",
+        "EngineLogs",
+        "HostApp",
+        "PLC",
+        "Ido",
+        "iVision",
+        "nosn",
+        "WebHandling",
+        "AutoBias",
+        "SPM",
+        "CCC",
+        "investigation",
+        "s4-log-discovery"
+      ],
+      "addedAt": "2026-05-23T15:07:48.236Z",
+      "usageCount": 0
+    },
+    {
+      "id": "brain-1779548868253-5ef4ee",
+      "type": "reference",
+      "source": "copilot-skill:elasticsearch-query",
+      "name": "Press Elasticsearch Indices + Kibana Query Reference",
+      "description": "Reference: Elasticsearch on press machines (http://<machine>/elastic). Resolving machines via ColorTrack machines.json. Parsing Kibana Discover URLs. Useful indices: spm-position-offset-history, auto-bias-calibration-history, csc-correction-history.",
+      "tags": [
+        "elasticsearch",
+        "kibana",
+        "press-history",
+        "spm-position-offset",
+        "auto-bias",
+        "csc-correction",
+        "investigation",
+        "data-source"
+      ],
+      "addedAt": "2026-05-23T15:07:48.253Z",
+      "usageCount": 0
+    },
+    {
+      "id": "brain-1779548868270-e129b7",
+      "type": "reference",
+      "source": "copilot-skill:check-db",
+      "name": "PressDB.db Schema Reference",
+      "description": "Reference: PressDB.db tables and rows on S6 press. ToRecreatePersistentDB flag, press version, VersionConfigurationInfoEntityDBObject, SpmYOffsetEntityDBObject, PrintCountersEntityDBObject. Useful for resolving entity-level expected values.",
+      "tags": [
+        "PressDB",
+        "sqlite",
+        "VersionConfigurationInfoEntityDBObject",
+        "SpmYOffset",
+        "PrintCounters",
+        "persistence",
+        "data-source"
+      ],
+      "addedAt": "2026-05-23T15:07:48.270Z",
+      "usageCount": 0
+    },
+    {
+      "id": "brain-1779548868286-1c461f",
+      "type": "pattern",
+      "source": "copilot-agent:s6-press-investigation",
+      "name": "S6 Press Investigation Methodology (full workflow)",
+      "description": "Full S6 press investigation workflow: Jira ticket read, log location, ZIP scan, PLC tag resolution (Kedem/David), source-code verification, Elasticsearch history, Confluence report. Component-specific guides (PLC/BktManLib, CCC, AutoBias, WebHandling, Ido).",
+      "tags": [
+        "investigation",
+        "S6",
+        "press",
+        "workflow",
+        "PLC",
+        "BktManLib",
+        "CCC",
+        "AutoBias",
+        "WebHandling",
+        "Kedem",
+        "David",
+        "methodology"
+      ],
+      "addedAt": "2026-05-23T15:07:48.286Z",
+      "usageCount": 0
+    },
+    {
+      "id": "brain-1779550152027-b6f87d",
+      "type": "investigation",
+      "source": "investigation:ISW-62424",
+      "name": "Investigation ISW-62424: BID Manager change state from NotActive to Init  for NonActive Bids",
+      "description": "Auto-generated investigation report. Components: PLC BidManagerLib. Product: Unknown. Status: Verification.",
+      "tags": [
+        "investigation",
+        "ISW-62424",
+        "PLC BidManagerLib",
+        "Unknown",
+        "press_S6 OCB"
+      ],
+      "addedAt": "2026-05-23T15:29:12.027Z",
+      "usageCount": 0
+    },
+    {
+      "id": "brain-1784738097292-8e1b57",
+      "type": "press-issues",
+      "source": "ingest-press-cases",
+      "name": "Press Issues Knowledge (SCA + V12 cases)",
+      "description": "715 field-service cases clustered into 470 known issues with ranked solutions. Queried via the lookup_press_issue tool.",
+      "tags": [
+        "press-issues",
+        "symptoms",
+        "solutions",
+        "V12",
+        "SCA"
+      ],
+      "addedAt": "2026-07-22T16:34:57.293Z",
+      "usageCount": 0
+    }
+  ],
+  "stats": {
+    "totalEntries": 9,
+    "totalGenerations": 173,
+    "lastUpdated": "2026-07-22T16:34:57.312Z"
+  }
+}

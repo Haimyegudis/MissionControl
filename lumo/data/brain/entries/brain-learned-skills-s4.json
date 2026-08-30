@@ -1,0 +1,14 @@
+{
+  "id": "brain-learned-skills-s4",
+  "type": "learned",
+  "source": "auto-learn",
+  "name": "TestBrain Knowledge Base (S4)",
+  "description": "7 skills, 0 signals, 0 parameters | Last updated: 2026-07-06T09:02",
+  "tags": [
+    "General"
+  ],
+  "addedAt": "2026-03-18T19:41:02.714Z",
+  "updatedAt": "2026-07-06T09:02:36.753Z",
+  "usageCount": 0,
+  "content": "TESTBRAIN UNIFIED KNOWLEDGE BASE\nEach component lists: code files, test folders, signal paths, skills, and parameters.\n\n=== General ===\nSkills (7):\n  DO: Trigger PQ TS to publish REPLACE_PIP after detecting PIP degradation\n\n  DO: [TBD - fault simulation mechanism not specified in SWR] Simulate the AMC Executer failing to return an Ack for the 'open\n\n  DO: [TBD - no additional distinct operational scenario for PIP replacement is documented beyond the sanity flow] Review the \n\n  DO: [TBD - no 'User Story' or 'Use Case' section is present in the supplied SWR page or Jira description] Review ISW-66904 a\n\n  DO: Run the PIP replacement wizard from opening it through to clicking Finish, per the sanity flow\n\n  DO: Trigger two separate REPLACE_PIP occurrences on the same press\n\n  DO: Complete each PIP replacement wizard run\n\n\n"
+}

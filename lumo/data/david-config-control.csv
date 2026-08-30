@@ -1,0 +1,140 @@
+﻿"Change description","Cabinet","Sub System","Component","Cluster","Initiative ID","Old PN","New PN","LP1 upgrade status","LP2 upgrade status","LP3 upgrade status","LP4 upgrade status","Photo","Related DDT","SW Config","Status","Comments","PECO"
+"Change left bracket","PE","Index/Edge Sensors",,"CL3","IPRG-3641",,"NA","Installed","Installed","Installed","Installed","original-40103fea-dbad-4cb4-b9a1-d85ee768c7ca.jpeg",,"No","Done",,
+"Replace external heaters mount from captive to screw","PE","BDV","External Heater lamp","CL1",,,,"Installed","Installed","Installed","Installed","Reserved_ImageAttachment_[5]_[Photo][8]_[EH mount][1]_[8].jpeg",,"No","Done","Upgrade on hold. Waiting for decision regrading EH lamp type- extrusion or sheet metal",
+"Replace lower hoods front cage mount brackets","PE","BDV","Lower Hoods","CL1",,,"CA002-87320","Installed","Installed","Installed","Installed","Reserved_ImageAttachment_[5]_[Photo][18]_[Lower hood bracket][2]_[10].jpeg",,"No","Done",,
+"Replace hoods pressure sensors mount bracket","PE","BDV","Pressure sensors","CL1",,,"CA002-81320","Installed","Installed","Installed","Installed",,,"No","Done",,
+"Replace air knife frame mount bracket","PE","BDV","Air Knife","CL1",,,,"Installed","Installed","Installed","Installed","Reserved_ImageAttachment_[5]_[Photo][8]_[AK mount][2]_[11].jpeg",,"No","Done",,
+"Add restrictor to service manifold","PE","T1",,"CL1","IPRG-753","NA","0100-6845","Installed","Installed","Installed","Installed","Reserved_ImageAttachment_[5]_[Photo][10]_[Restrictor][2]_[12].jpeg",,"No","Done",,
+"Replace front and rear flag sensor bracket","PE","T1",,"CL1","IPRG-753","CA001-75670","CA002-75671","Installed","Installed","Installed","Installed","original-f9caf93c-ecda-4f17-871f-e54f7160fd34.jpeg",,"No","Done",,
+"Add hard stop to 2nd engage piston (T1 force piston hard stop)","PE","T1",,"CL1","IPRG-753","NA","CA002-78050","Installed","Installed","Installed","Installed","original-8eeb8e91-7647-44cf-ae63-66dcf974fd35.jpeg",,"No","Done",,
+"Replace front arm sensor holder","PE","aSid Interface","aSid front arm","CL1","IPRG-1703","CA001-80670","CA001-80671","Installed","Installed","Installed","Installed","Reserved_ImageAttachment_[5]_[Photo][15]_[asid arm sensor][1]_[8].jpeg","286","No","Done",,
+"Guide bracket replaced with new material to avoid banding","PE","BID Interface","BID rails","CL1",,,"CA002-47460","Installed","Installed","Installed","Installed","Reserved_ImageAttachment_[5]_[Photo][13]_[BID Interface][1]_[4].jpeg",,"No","Done",,
+"Replace reservoir clean cover ","PE","IMO System",,"CL1",,"CA002-50810","CA002-50811","Not Relevant","Not Relevant","Installed","Installed","original-e96b29d6-a18b-454b-9680-e615a13ef573.jpeg","216","No","Done",,
+"Replace rear EP bracket","PE","Tensioner",,"CL1",,"CA002-35210","CA002-35211","Installed","Installed","Installed","Installed","original-55afceb4-2f93-4339-8427-900d49a28df7.jpeg",,"No","Done",,
+"Change edge sensor bracket","PE","Index/Edge Sensors",,"CL2",,,,"Installed","Installed","Installed","Installed","original-c81c1f35-05a2-4062-8e38-4c2e1715be5b.jpeg",,"No","Done",,
+"Change right bracket","PE","Index/Edge Sensors",,"CL3","IPRG-3641",,"NA","Installed","Installed","Installed","Installed","original-fdf0d43f-ea4b-4fbc-858e-d0ad86539640.jpeg",,"No","Done",,
+"Replace SG and separator platform","PE","IMO System",,"CL1",,"CA002-49980","CA002-49981","Not Relevant","Installed","Installed","Installed","original-7e82789e-248c-4bd2-928a-894e94600052.jpeg",,"No","Done",,
+"Pneumatic manifold EP cable replaced with longer cable","PE","PE Wiring",,"CL1",,,,"Installed","Installed","Installed","Installed","Reserved_ImageAttachment_[5]_[Photo][8]_[EP cable][2]_[10].jpeg","182","No","Done",,
+"Replace Front LC EP bracket","PE","Tensioner",,"CL1",,,"CA002-68530","Installed","Installed","Installed","Installed","Reserved_ImageAttachment_[5]_[Photo][13]_[EP LC bracket][1]_[7].jpeg",,"No","Done",,
+"Add silencer to avoid back pressure ","PE","PE Pneumatics",,"CL1",,,"0100-6672","Installed","Installed","Installed","Installed","Reserved_ImageAttachment_[5]_[Photo][8]_[Silencer][1]_[3].jpeg",,"No","Done",,
+"Replace upper hood EH connector bracket","PE","BDV","Upper Hoods","CL1",,,,"Installed","Installed","Installed","Installed","original-b3c9045d-c24a-42d5-9e0c-d780ae31026d.jpeg",,"No","Done",,
+"CR front rails guide pin replaced with longer part","PE","Charge Roller","CR rails","CL1",,,"CA002-69000","Installed","Installed","Installed","Installed","original-9469478e-066f-459c-a0b7-fd832b6fe339.jpeg",,"No","Done","Not relevant for new housing in cluster3",
+"stir 2.0","PE","Stir",,"CL5","IPRG-1343",,"CA002-71260- tray  CA003-42140  CA003-52280","Installed","Installed","Installed","Installed",,"0","Yes","Done",,"Yes"
+"replace cvc pipes flunges","PE","BDV","Suction pipes","CL1",,,"CA002-87660","Installed","Installed","Installed","Installed","original-c5cb8fe6-1d86-42ff-b130-e9d04519afa9.jpeg",,"No","Done","CA002-17360, CA002-87640",
+"Replace hood1 mirs bracket","PE","BDV","Upper hoods","CL1",,,"CA002-93490","Installed","Installed","Installed","Installed","pro-1ByxdIBp.jpeg",,"No","Done",,
+"Replace upper hoods pneumatic valve and bracket","PE","BDV","Hoods Pneumatics","CL1",,,,"Installed","Installed","Installed","Installed","original-d21da3d4-ab11-4e8c-9720-4bc2bebba07d.jpeg",,"No","Done",,
+"Replace welded drum with extrusion drum","PE","Tensioner","Tensioner Drum ","CL1",,"CA002-46240 ","CA002-42550","Installed","Installed","Installed","Installed","original-c84416a8-5a3d-4658-bb9d-2c388adfdc0b.jpeg",,"No","Done",,
+"Replace tensioner homing flag","PE","Tensioner","Homing flag","CL1",,,,"Installed","Installed","Installed","Installed","original-289ee954-5a12-4bf9-8ad0-d883ffea817f.jpeg",,"No","Done",,
+"Replace CS front arm, catch tray and onnector bracket","PE","Cleaning Station","CS","CL1",,,"CA002-21230, CA002-24900, CA001-53820, CA001-53830, 1410-2349","Installed","Installed","Installed","Installed","original-f5e50cb9-9890-4085-bfd3-0a52181739f2.jpeg",,"No","Done",,
+"1/4"" SAS pipes from RDU to ink tank","UIC","SAS","SAS pipes","CL1",,,,"Not Relevant","Not Relevant","Installed","Not Relevant",,,"No","Done",,
+"EBH and Hood 5 orifis","PE","BDV","upper hoods","CL1",,,,"Installed","Installed","Installed","Installed","original-76f9d457-e815-4975-adf7-4edbf68f8e08.jpeg",,"No","Done",,
+"Asid mirs bracket replaced","PE","Cleaning Station","Mirs bracket","CL2",,,,"Installed","Installed","Installed","Installed","original-083bbfb2-b26b-4085-b459-6962ae0a73ab.jpeg",,"No","Done",,"NA"
+"Change lower heating lamps to extrusion lamps","PE","BDV","external heating lamps","CL1",,,,"Installed","Installed","Installed","Installed",,,"No","Done","Following flame incident- installed as short term solution",
+"Change silica gel handle","PE","IMO System","silica gel","CL1",,,"CA003-00640","Installed","Installed","Installed","Installed","original-c50ad5d2-772e-4164-ab7e-1ed1522ab224.jpeg",,"No","Done",,
+"Remove check valves from all ink tanks flow towers","PE","Ink Tanks","SAS pipe","CL1",,,,"Installed","Installed","Installed","Installed",,,"No","Done","done only on station#5 (white ink on revolver)",
+"Replace odcs axis to shorter axis","PE","Ink Tanks","ODCS","CL1",,,"CA002-85180","Installed","Installed","Installed","Installed","original-ff1c2a86-7115-48df-87ed-58c9305e7939.jpeg",,"No","Done",,
+"Change rear sensor connector bracket location from shaft to shoulder","PE","Tensioner","Extrusion Drum","CL1",,,,"Installed","Installed","Installed","Installed","pro-vndXjLXh.jpeg",,"No","Done",,
+"Impression motor holder","PE","Impression","Impression motor","CL1",,,,"Installed","Installed","Installed","Installed","original-be373d2b-966a-4a70-b14a-0aa21480a5ca.jpeg",,"No","Done",,
+"Replace tenioner drum sensor","PE","Tensioner",,"CL1",,"CA454-03800","CA645-01940","Installed","Installed","Installed","Installed","original-b73d115e-4460-460b-8279-b6b8683b3dfb.jpeg",,"No","Done","Sensor and brackets ",
+"Add stopper on tensioner screw ball","PE","Tensioner","tensioner motor","CL1",,,,"Installed","Installed","Installed","Installed","original-dcb3f8ef-aa21-4154-92e3-bc1a6548b304.jpeg",,"No","Done",,
+"Seperate corona modbus emc noise in PWS EC","PWS","ILP Corona",,"CL1",,,,"Installed","Installed","Installed","Installed","original-51c9a048-b967-4817-b595-a2e954eb94a0.jpeg",,"No","Done",,
+"Replace a2p in PWS pneumatic panel","PWS","PWS WEB Thread","PWS pneumatics","CL2",,,"0960-2458","Installed","Installed","Installed","Installed",,,"No","Done","same wiring an sw. need to change pneumatic panel bracket",
+"T1 extrusion rollers","PE","T1",,"CL1","IPRG-753",,"CA001-89941","Not Relevant","Not Relevant","Installed","Not Relevant",,,"No","Done",,
+"LPH bracket st.3","PE","LPH","Wiring bracket","CL3","IPRG-4003",,"?","Installed","Installed","Installed","Installed","pro-z96Virss.jpeg",,"No","Done",,"Yes"
+"Move corona generator bracket","PWS","ILP Corona","Move corona generator bracket","CL2",,,,"Installed","Installed","Not Relevant","Installed",,,"No","Done",,
+"Relpace CR pneumatic valve","PE","Charge Roller","CR pneumatic valve","CL2",,,"0491-0587","Installed","Installed","Installed","Installed","original-cef14b89-c1a5-4d85-9933-763abc21d256.jpeg",,"Yes","Done","Need SW update",
+"Change AK blower bracket ","PE","BDV","AK Blower","CL2",,,,"Not Relevant","Not Relevant","Installed","Not Relevant","original-b52fb48f-7230-40fa-b26c-ebd354a83693.jpeg",,"No","Done",,
+"Asid sleeve collision","PE","LPH",,"CL2",,,"CA002-70470","Installed","Installed","Installed","Installed","original-6087658f-84e2-48b2-8822-b29d7eff68eb.jpeg",,"No","Done",,"NA"
+"BDV  lower hoods","PE","BDV","lower hoods","CL5","IPRG-1702",,"CA003-45900","Temporary","Installed","Temporary","Installed","original-7185ad4e-b3a0-4136-86f3-cde7fa4a3c6a.jpeg",,"No","On going","On LP2- new version (not final design)","No"
+"Antistatic brushes x 5","PWS","PWS WEB Thread",,"CL2",,,"CA240-08670","Installed","Installed","Installed","Installed","original-01fa2fca-6794-4d86-a6ed-f5aeeee1e49e.jpeg",,"No","Done","material behind press",
+"Replace SAS air valves","UIC","SAS",,"CL2",,,,"Not Relevant","Not Relevant","Installed","Installed","original-b6de8a97-01c6-49c1-b7a5-253e514691e0.jpeg",,"No","Done",,
+"Connect BID A DC Bus cables motors to PE tensioner junction box cb 409","PE","PE Wiring",,"CL3","IPRG-4926,4925,4500,4416",,"NA","Installed","Installed","Not Installed","Installed","original-b3480729-35c8-4717-a061-de4f37412614.jpeg",,"Yes","On going","No need to change configuration. Connected to cb 409",
+"Connct FE neep motor DC bus cable to UIC EC. Change from 48v to 24v","UIC","UIC EC","UIC EC","CL3",,,"NA","Installed","Installed","Not Installed","Installed","original-ee88cabb-784b-4c2f-971f-fbc5399286f9.jpeg",,"Yes","On going",,
+"UIC EC phase 2","UIC","UIC EC","EJ UIC","CL3","IPRG-2920",,"NA","Installed","Installed","Not Installed","Installed",,,"Yes","On going","Replaced Mxxx.8 module in UIC EJIC601-602 from EJ4008 to EJ9001",
+"IMO reservoir temp control- connect HX to filters line","PE","IMO System",,"CL5","IPRG-4161",,"?","Installed","Installed","Not Available","Installed",,,"No","On going",,"No"
+"SAS single station cage for david","UIC","SAS",,"CL5",,,,"Not Relevant","Not Relevant","Not Relevant","Partial","original-b15cab75-63c4-439c-b260-b9fa84706886.jpeg",,"No","Done",,"NA"
+"IC common EC removal","PE","IC common",,"CL3","IPRG-4571",,"NA","Installed","Installed","Not Installed","Installed",,,"Yes","On going","Replace ODCS cables","Yes"
+"Replace ink tank motors with EBM motors and drivers","PE","Ink Tanks",,"CL5","IPRG-4901",,"CA654-03800, 0960-6792, CA441-98910 (all x 8)","Installed","Installed","Not Installed","Installed",,,"Yes","On going",,"Yes"
+"Improve Electrometer box mounting","PE","Charge Roller",,"CL4","IPRG-4241",,"?","Not Relevant","Not Relevant","Not Relevant","Not Relevant",,,"No","Done","Will be replaced in cluster 4 as part of C4 new electrometer content",
+"New mirs sensors- 5 degree angle","PE","BDV","Mirs sensors","CL6","IPRG-1604",,"CA002-82880","Installed","Installed","Installed","Installed",,,"Yes","Done",,"Yes"
+"PWS Direct connectEMA to EC: Dryer blower, Dryer heater & corona blower ","PWS","PWS Wiring","PWS Wiring","CL3","IPRG-4925",,"NA","Installed","Installed","Installed","Installed",,,"Yes","Done",,
+"BID Interface fix cycle","PE","BID Interface","BID FI","CL3","IPRG-3381",,"?","Installed","Not Relevant","Not Relevant","Not Relevant",,,"No","Done",,
+"CS new catch tray design","PE","Cleaning Station","Catch tray","CL7","IPRG-5323",,"CA003-16540","Not Installed","Not Installed","Not Installed","Not Installed",,,"No","On going","LP1 solution is not final","No"
+"PE BDV AK blower- Direct connect","PE","PE Wiring","AK Blower","CL3","IPRG-4926",,"NA","Installed","Installed","Not Installed","Installed",,,"No","On going",,
+"DC BUS optimization- Lower ducts volume clearance","PE","PE Wiring","DC BUS cables","CL3","IPRG-4500",,"NA","Installed","Not Relevant","Not Relevant","Not Relevant",,,"No","Done",,
+"New GBIC CXP","UIC","PC","PC","CL3","IPRG-4381",,"?","Installed","Not Available","Not Available","Not Available",,,"No","On going",,"No"
+"PWS EC phase 2","PWS","PWS EC","PWS EC","CL3","IPRG-2277",,"NA","Installed","Installed","Not Installed","Installed",,,"Yes","On going",,
+"PE rear EC phase 2","PE","PE EC","PE Rear EC","CL3","IPRG-2113,2920,4571",,"NA","Installed","Installed","Not Installed","Installed",,,"Yes","On going",,
+"Replacement of David IMP engage and FP motors","PWS","Impression","IMP and FP motor","CL3","IPRG-3899",,"3140-1650","Installed","Installed","Not Available","Installed",,,"Yes","On going","Replace 2 motors 3140-1650 IMP Coupling 1530-2977, FP coupling 1500-2010","Yes"
+"Temperature sensor reliability","PE","CVC","CVC, PE&UIC temp sensor","CL3","IPRG-4346",,"0854-0629x2, 0854-0634x6","Installed","Installed","Not Installed","Installed","original-720f347b-94ac-408a-baf0-ef6ff5956719.jpeg",,"No","On going","0629 x2 per press (environment), On LP1&2 0628 x 6 per press (CVC). ","Yes"
+"RDU seal improvements","UIC","SAS","RDU","CL3","IPRG-4006",,"?","Installed","Installed","Installed","Installed","original-cf47b51c-3f52-44e2-8783-1692f48fcffc.jpeg",,"No","Done","חומר מאחורי המכונה",
+"Move pws EC fans from right door to left door","PWS","PWS EC",,"CL4",,,"?","Installed","Installed","Not Installed","Installed","original-045a29ec-0129-4443-ad1b-0de909c2cd41.jpeg",,"No","On going","rework in MS","Yes"
+"Add Impression roller locktight ","PE","Impression","Impression roller","CL3",,,"NA","Installed","Installed","Installed","Installed",,,"No","Done",,
+"Change CD tank location and cover","PE","CD","CD tank","CL3",,,"CA002-93111","Installed","Installed","Installed","Installed","original-26ca05e5-520d-4546-a832-47b4606a9f3d.jpeg",,"No","Done","חומר מאחורי המכונה",
+"Install static link","PE","Link",,"CL3",,,"?","Installed","Installed","Installed","Installed","original-51b60e64-0c74-4ec8-8d55-85ba29bae4e9.jpeg",,"No","Done","Not final config. LP1 is slightly different",
+"Improve LPH skew adjustment","PE","LPH Interface","LPH skew mechanism","CL3","IPRG-4345",,"CA003-59050","Installed","Not Available","Not Available","Not Available",,,"No","On going","LP1 ECO: replace front interface plate and adjust roller. LP2/3/4 FCO","Yes"
+"QSFP LPH optic cable","PE","LPH",,"CL5","IPRG-4427",,"CA003-51530","Installed","Installed","Not Installed","Installed","original-a1b197ed-7394-413f-9337-36b269b11240.jpeg",,"No","On going","Material expected in mid March","Yes"
+"LPH cooling tank air pressure release","UIC","LPH Cooling",,"CL5","IPRG-4558",,"?","Not available","Installed","Not Available","Installed","original-9a1ad8c5-dda4-4b2f-b6b0-7b7f85e2667c.jpeg",,"No","On going","Not final","No"
+"ILS high friction roller","PWS","ILS",,"CL2",,,"CA002-99511","Installed","Installed","Installed","Installed","original-517b86e2-362e-422b-9fb7-6480431008d4.jpeg",,"No","Done","Material behind press","NA"
+"BCR junction box removal","PE","PE Wiring",,"CL5","IPRG-5171",,,"Installed","Installed","Not Installed","Installed",,,"Yes","On going","pending stir 2.0","Yes"
+"BDV upper hoods (hell)","PE","BDV","upper hood ","CL5","IPRG-1702",,,"Temporary","Installed","Not Installed","Installed","original-475138a0-2ff4-4f98-9952-a239436bdfb4.jpeg",,"No","On going","Material on Boaz shelf in LAB","Yes"
+"IMO ME filters safety solution","PE","IMO System","ME filters","CL4","IPRG-3666",,,"Installed","Installed","Not Available","Installed","original-0b939dd7-5fbd-4cb5-adfb-8328be111dcd.jpeg",,"Yes","Not started",,"No"
+"Tensioner DDT fix for C4","PE","Tensioner",,"CL4","IPRG-5007",,"NA","Installed","Installed","Installed","Installed","original-c5d3dbe3-e009-4991-b3ac-392b55a1680d.jpeg",,"No","Done","Front and rear wiring brackets, Front and rear hard stops,, front and rear connector mount",
+"Distilled oil return to SG pipe","PE","IMO System",,"CL5","IPRG-4287",,,"Installed","Installed","Not Available","Installed","original-a806e617-1745-4cdf-9dc6-01bf5a28121e.jpeg",,"No","On going","Including bracket for IMO fill","No"
+"Edge sensor improved bracket","PE","Index/Edge Sensors",,"CL4","IPRG-5007",,"CA002-91051","Not Relevant","Installed","Not Relevant","Not Relevant","original-aad5f481-cd6b-4298-8d08-8d7715ab491d.jpeg",,"No","Done","No impact on functionality. Will be part of PP",
+"aSid interface rear plates redesign","PE","aSid Interface",,"CL4","IPRG-4667",,"CA002-68900","Installed","Installed","Installed","Installed",,,"No","Done","Material available",
+"BID FI Design and verification","PE","BID Interface","BID FI","CL4","IPRG-875",,,"Not Relevant","Not Relevant","Not Relevant","Not Relevant","original-94e8475a-9fb3-4b14-8316-d7fc23f9a8c6.jpeg",,"No","Done","Shutter (2 units installed on LP2)","No"
+"CWS DDT fix","UIC","CWS",,"CL4","IPRG-4558",,"CA003-09800 (proportional valve) CA003-34600 (manifold assy)","Installed","Installed","Not Available","Installed","original-1a1c2fad-d1d4-4ce5-a66d-11894bb97c6a.jpeg",,"No","On going","change sw flag to support new actuator. LP1 installed with latest version of inlet manifold",
+"New Ink tank handle mechanism","PE","Ink Tanks",,"CL5","IPRG-1817",,,"Not available","Installed","Not Available","Installed",,,"No","On going","Installed on LP2 1st tank","No"
+"Level sensor for priming tank","PWS","ILP Liquid",,"CL7","IPRG-4367",,,"Not available","Not Available","Not Available","Not Available",,,"No","Not started",,"No"
+"Liquid phase 2","PWS","ILP Liquid",,"CL4","IPRG-2933",,"CA003-34630 liquid tub side bracket1 CA003-34660 liquid tub side bracket2  CA003-34670 liquid tub inner rib CA003-38330 liquid new valve ser3 CA003-34220 liquid sensor double valve support cA003-34300 liquid system upper valve bracket","Installed","Installed","Not Available","Installed",,,"No","Not started",,"No"
+"Priming phase 2","PWS","ILP Priming",,"CL4","IPRG-565",,"CA003-37020 front protective cover CA003-36210 main primer carch tray CA003-37040 tinter front panel CA003-36950 primer catch tray first rail  CA003-36980 catch tray second rail  ","Installed","Installed","Partial","Installed",,,"No","On going",,"No"
+"Dryer phase 2","PWS","ILP Drying",,"CL4","IPRG-2066,1207",,,"Installed","Installed","Not Available","Installed",,,"No","On going",,"No"
+"Corona phase2","PWS","ILP Corona",,"CL4","IPRG-566,3314",,,"Installed","Installed","Not Available","Installed",,,"No","On going",,"No"
+"Ethercat chain change","PE","PE Wiring",,"CL4","IPRG-5109",,,"Installed","Installed","Not Installed","Installed",,,"Yes","On going",,"Yes"
+"New electrometer","PE","Charge Roller","electrometer","CL4","IPRG-4241",,"Stad 0380-5022x6, Probe 0960-6685, Box cover CA003-44090, Box CA00344150, Board CA002-18391, Isolator CA003-45300","Installed","Installed","Not Installed","Installed",,,"No","On going","Probes available for all presses, Box cover and box available in WH for 1 press (3 units)","Yes"
+"UW new buttons with led- v12 like","UW","PWS Wiring","push buttons","CL4","IPRG-5390",,"3101-4427 x 2  ","Installed","Installed","Not Installed","Installed","original-fd479f3c-1b5e-423b-a75f-2dd6ef15dd3c.jpeg",,"Yes","On going","Manually drill holes in UW cover to install new buttons","Yes"
+"PE Illumination light","PE","PE Wiring",,"CL4","IPRG-4924",,"1990-5082","Installed","Not Available","Not Available","Not Available",,,"No","On going",,"No"
+"New Ink tank water female fitting ","PE","Ink Tanks","Ink tank","CL4","IPRG-4328",,,"Partial","Not Relevant","Not Relevant","Not Relevant",,,"No","Done","Installed on LP1 CMYK only","No"
+"BIS for David","PE","BIS",,"CL6","IPRG-1117",,"CA003-36990","Not Installed","Installed","Not Installed","Installed","Reserved_ImageAttachment_[5]_[Photo][32]_[45f7c8c25c844fc7bdc83d0d1d841f60][1]_[4].jpg",,"No","On going","Prototype installed on LP4","Yes"
+"Tube in place sensor revolver","UIC","SAS",,"CL7",,,,"Not available","Not Available","Not Available","Installed","original-50f66669-6260-4110-9fec-3432ddd879cc.jpeg",,"No","On going",,
+"Overflow seal reliability improvement","PE","SAS",,"CL6","IPRG-4636",,"CA001-33030","Not available","Partial","Not Available","Not Available",,,"No","On going","LP2- Install only on CMYK","No"
+"Tensioner- long term solution (maintain during failure)","PE","Tensioner",,"CL6","IPRG-3642",,"CA003-58860 x2 1410-3091 x2 CA003-58840 x2 CA003-71490 x1","Not available","Installed","Installed","Installed",,,"No","On going",,"No"
+"Dynamic link for David","PE","Link",,"CL6","IPRG-1146",,,"Not available","Installed","Not Available","Not Available","Reserved_ImageAttachment_[5]_[Photo][32]_[35c5157cf9c249ed9939e1322176d74f][1]_[3].jpg",,"No","On going",,"No"
+"PE wiring set cable","PE","PE Wiring",,"CL5","IPRG-2108",,,"Installed","Installed","Not Installed","Installed",,,"No","On going",,"Yes"
+"UC cable set","PE","PE Wiring",,"CL5","IPRG-2909",,,"Installed","Installed","Not Installed","Installed",,,"No","On going",,"Yes"
+"Tensioner mid roller stearing","PE","Tensioner",,"CL7",,,,"Not available","Not Available","Not Available","Partial","original-0a654b96-186f-41ad-a9eb-77e47018fd8f.jpeg",,"No","On going",,"No"
+"CS new engage sensors","PE","Cleaning Station",,"CL5","IPRG-4253",,"0960-6935","Not available","Installed","Not Available","Not Available",,,"No","On going","sensor + adapter","No"
+"CR housing- Bearing housing CR, new connector CR","PE","Charge Roller",,"CL6","IPRG-4243, IPRG-4242",,"ca003-34430","Not Installed","Installed","Not Installed","Installed",,,"No","On going",,"Yes"
+"LPH PS bracket St 2 & 3","PE","LPH","PS brackets","CL5","IPRG-4003",,"CA002-46960 x 3, CA002-49400, CA002-49330","Installed","Installed","Not Installed","Installed",,,"No","On going","Material from MS behind press","Yes"
+"Auto thread robustness","PWS","WHS","auto thread","CL5","IPRG-5297",,"CA002-52050, CA002-52330, CA002-52080, CA002-49430, CA003-41210","Installed","Installed","Not Installed","Not Installed",,,"No","On going",,"No"
+"Interface hard stop update","PE","LPH Interface","LPH interface","CL5","IPRG-5163",,"CA640-56591","Not available","Installed","Not Available","Not Available",,,"No","On going",,"No"
+"PIP end cup pins","PE","aSid Interface","End cup","CL5","IPRG-4705",,"CA003-13630","Installed","Installed","Not Available","Installed",,,"No","On going","Yossi to bring material for 2 more presses","Yes"
+"UIC EJIDS","UIC","UIC EC","EJIDS","CL5","IPRG-1237",,"CA003-09650","Installed","Installed","Not Installed","Installed",,,"Yes","On going",,"Yes"
+"EJPE replacement","PE","PE Boards",,"CL5","IPRG-4474",,,"Installed","Installed","Not Relevant","Not Relevant",,,"Yes","Done","Currently with manual fix. Will be replaced with final board",
+"EJIDS PE front EC","PE","PE Boards",,"CL5","IPRG-2109",,"CA003-09650","Installed","Installed","Not Installed","Installed",,,"Yes","On going",,"Yes"
+"Improve CVC performance- pre economizer filter design","PE","CVC",,"CL5","IPRG-4342",,,"Not available","Installed","Not Available","Installed",,,"No","On going",,"No"
+"ITM rust prevention","PE","ITM",,"CL7","IPRG-4457",,,"Not available","Not Available","Not Available","Not Available",,,"No","Not started",,"No"
+"BID automatic detection (BIDHV Rev B)","PE","BID",,"CL6","IPRG-5413",,,"Installed","Installed","Installed","Installed",,,"No","Done","Replace BID HV with Rev B","No"
+"CRU rev B","PE","Charge Roller","CRU","CL6","IPRG-5826",,"CA654-01023","Not available","Installed","Not Available","Installed",,,"No","On going",,"No"
+"CBA2v3","PE","PE Boards",,"CL7","IPRG-5381",,,"Not available","Not Available","Not Available","Not Available",,,"Yes","Not started",,"No"
+"LPH cooling- avoid hose banding","PE","LPH Cooling",,"CL7","IPRG-4370",,,"Not available","Not Available","Not Available","Not Available",,,"No","Not started",,"No"
+"operator console for LP","UIC","UIC Frame","operator console","CL6","IPRG-1095",,,"Not available","Not Available","Not Available","Installed",,,"No","On going",,"No"
+"ILP tinter chrome rollers","PWS","ILP Priming",,"CL7","IPRG-5779",,,"Not available","Not Available","Not Available","Not Available",,,"No","Not started",,"No"
+"Gorilla Glass plastic injection","PE","LPH","gorilla glass","CL7","IPRG-4405",,,"Not available","Not Available","Not Available","Not Available",,,"No","Not started",,"No"
+"Stir SSR heating","PE","Stir","SSR","CL7","IPRG-491",,,"Not available","Not Available","Not Available","Not Available",,,"No","Not started",,"No"
+"EJFNS new board","PE","PE Boards","EJFNS","CL7","IPRG-4023",,,"Not available","Not Available","Not Available","Not Available",,,"Yes","Not started",,"Yes"
+"EJPWS new board","PWS","PWS board","EJPWS","CL6","IPRG-1238",,,"Installed","Installed","Not Available","Installed",,,"Yes","Not started",,"Yes"
+"BID interface- PP press configuration","PE","BID Interface",,"CL6","IPRG-3810",,,"Temporary","Partial","Temporary","Not Available",,,"No","On going","Installed on LP1 st1 BID a/b/c","No"
+"Nip rollers CR","PWS","WHS",,"CL7","IPRG-3387",,,"Not available","Installed","Not Available","Not Available",,,"No","On going",,"No"
+"ILS HSL","PWS","ILS",,"CL6","IPRG-5836",,,"Not Relevant","Installed","Not Relevant","Installed",,,"No","Done",,"No"
+"Replace FP Motor","PWS","WHS",,"CL6","IPRG-5518",,"3140-1658","Installed","Installed","Not Installed","Installed",,,"Yes","On going",,"No"
+"BIDHV connector plastic injection","PE","BID Interface",,"CL6","IPRG-942",,,"Not Relevant","Not Relevant","Not Relevant","Not Relevant",,,"No","Done",,"Yes"
+"ILS encoder single output CR","PWS","ILS",,"CL7","IPRG-5904",,"0960-2991","Installed","Installed","Not Available","Installed",,,"No","Not started",,"No"
+"CVC ECO pressure sensor","PE","PE CVC",,"CL6","IPRG-5856",,"0960-5989","Installed","Installed","Not Installed","Installed",,,"Yes","On going",,"Yes"
+"BIDHV4 new rev (add resistors)","PE","PE Boards",,"CL6","IPRG-6264",,,"Not Installed","Installed","Not Installed","Installed",,,"No","On going","upgrade in house (add 2 resistors)","NA"
+"CVC temp sensor molded connector","PE","PE CVC",,"CL6","IPRG-6308",,,"Not available","Installed","Not Available","Not Available",,,"No","On going",,"No"
+"CVC phase 2 PP configuration","PE","CVC",,"CL6","IPRG-1089",,,"Not available","Installed","Not Available","Partial",,,"No","On going",,"No"
+"EJPE Ver2","PE","PE Boards",,"CL6","IPRG-6217",,"CA003-48520 x 2","Installed","Installed","Not Installed","Installed",,,"Yes","On going","LP1 and LP4- EJPEV2. LP2 and LP3- manual rework","Yes"
+"Dancer coupling break solution","RW","RW",,"CL6","IPRG-5556",,"0515-7969 (x2) 1520-0807 (x2) CA002-99330 (x1) CA003-11330 (x2)","Not available","Installed","Not Available","Not Available",,,"No","On going",,"No"
+"Corona EOL","PWS","ILP Corona",,"CL7","IPRG-5634",,,"Installed","Not Installed","Not Relevant","Not Relevant",,,"No","On going",,"Yes"

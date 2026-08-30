@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "series": "ramon",
+  "ingestedAt": "2026-07-02T21:17:42.316Z",
+  "sourcePages": [
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=607129560",
+      "title": "Guidelines For DFE Manual Testers",
+      "contentHash": "270f99480282a9bb",
+      "ingestedAt": "2026-07-02T21:17:42.315Z"
+    }
+  ],
+  "components": [],
+  "monitors": [],
+  "events": [],
+  "parameters": [],
+  "configTypes": {},
+  "diagrams": [
+    {
+      "name": "image-2025-11-6_13-5-39",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=607129560",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-02T21:17:42.314Z"
+    },
+    {
+      "name": "image-2025-11-6_13-3-57",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=607129560",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-02T21:17:42.314Z"
+    },
+    {
+      "name": "image-2025-11-6_12-54-37",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=607129560",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-02T21:17:42.314Z"
+    },
+    {
+      "name": "image-2025-11-6_12-53-6",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=607129560",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-02T21:17:42.314Z"
+    },
+    {
+      "name": "image-2025-11-6_12-29-1",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=607129560",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-02T21:17:42.314Z"
+    },
+    {
+      "name": "image-2025-11-6_12-20-53",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=607129560",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-02T21:17:42.314Z"
+    },
+    {
+      "name": "image-2024-11-24_15-52-52-1",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=607129560",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-02T21:17:42.314Z"
+    },
+    {
+      "name": "image-2024-12-5_12-19-15",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=607129560",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-02T21:17:42.314Z"
+    },
+    {
+      "name": "image-2025-1-7_15-27-30",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=607129560",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-02T21:17:42.315Z"
+    },
+    {
+      "name": "image (1)",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=607129560",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-02T21:17:42.315Z"
+    },
+    {
+      "name": "image (2)",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=607129560",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-02T21:17:42.315Z"
+    },
+    {
+      "name": "image (4)",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=607129560",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-02T21:17:42.315Z"
+    }
+  ],
+  "stateTransitions": [],
+  "availabilities": []
+}

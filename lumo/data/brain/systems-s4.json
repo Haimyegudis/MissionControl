@@ -1,0 +1,4121 @@
+{
+  "version": 1,
+  "series": "s4",
+  "ingestedAt": "2026-07-10T19:56:37.533Z",
+  "sourcePages": [
+    {
+      "url": "local://data/source-docs/s4-press-overview.txt",
+      "title": "HP Indigo Press, Series 4, Overview (local confidential document)",
+      "contentHash": "abc015a00957ccfa",
+      "ingestedAt": "2026-06-11T05:43:05.433Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369",
+      "title": "Printing Pipeline – Knowledge Hub",
+      "contentHash": "34f4f6437a7a2d2e",
+      "ingestedAt": "2026-07-10T19:56:37.530Z"
+    }
+  ],
+  "components": [
+    {
+      "id": "FEEDER-SHEET",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Cut-sheet substrate feeder. Picks substrate from selected origin (drawer or pile) and transfers to print engine or ILP. Sits before bridge.",
+      "sourceSection": "1.6.1. Feeding/Unwinding"
+    },
+    {
+      "id": "UNWINDER",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Roll unwinder for web/roll substrate. Physical roll capacity (substrate length available per roll) is reduced for heavier/thicker substrates.",
+      "sourceSection": "1.7. New Substrate Example"
+    },
+    {
+      "id": "ILP",
+      "type": "other",
+      "cabinet": "ILP",
+      "description": "In-Line Priming unit. Optional. Located between feeder/unwinder and print engine. Coats substrate with chemical layer for improved print adhesion. May be separate unit or physically integrated with feeder.",
+      "sourceSection": "1.5. General Block Diagram / 1.6.2. Priming",
+      "configType": "Arava"
+    },
+    {
+      "id": "PRINT-ENGINE",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Core printing unit. Receives unprinted substrate, outputs printed substrate. Series 4 machines have 1 engine except HP Indigo 50000 (NEGEV) which has 2.",
+      "sourceSection": "1.5. General Block Diagram / 1.6.3. Printing engine"
+    },
+    {
+      "id": "STACKER",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Output stacker or re-winder. Similar physical capacity and handling constraints to FEEDER/UNWINDER for heavy/thick substrates.",
+      "sourceSection": "11.1.2.2. Init / 11.1.2.7.1. Pre-print processes / 11.1.2.7.2. Post-print processes"
+    },
+    {
+      "id": "REWINDER",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Final substrate destination for web presses. Connected to print engine via bridge.",
+      "sourceSection": "1.6.4. Stacker/Re-winder"
+    },
+    {
+      "id": "BRIDGE-FEED",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Bridge between feeder/unwinder and print engine. Responsible for substrate alignment and accurate feed timing.",
+      "sourceSection": "1.6.1. Feeding/Unwinding"
+    },
+    {
+      "id": "BRIDGE-STACK",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Bridge between print engine and stacker/re-winder. Aligns substrate; diverts jammed substrate to waste bin (cut-sheet only).",
+      "sourceSection": "1.6.4. Stacker/Re-winder"
+    },
+    {
+      "id": "WASTE-BIN",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Waste can/bin located below bridge. Collects substrate during jamming events. Present in cut-sheet machines.",
+      "sourceSection": "1.6.1. Feeding/Unwinding / 1.6.4. Stacker/Re-winder"
+    },
+    {
+      "id": "CAB-ELECTRONICS",
+      "type": "other",
+      "cabinet": "UC",
+      "description": "Electronics cabinet. One of three dedicated utility cabinets housing utility systems and equipment.",
+      "sourceSection": "1.5. General Block Diagram"
+    },
+    {
+      "id": "CAB-UTILITY",
+      "type": "other",
+      "cabinet": "PE-Rear",
+      "description": "Utility cabinet. One of three dedicated utility cabinets housing utility systems and equipment.",
+      "sourceSection": "1.5. General Block Diagram"
+    },
+    {
+      "id": "CAB-INK",
+      "type": "other",
+      "cabinet": "Ink",
+      "description": "Ink cabinet. One of three dedicated utility cabinets housing utility systems and equipment.",
+      "sourceSection": "1.5. General Block Diagram"
+    },
+    {
+      "id": "SPM",
+      "type": "sensor",
+      "cabinet": "Engine",
+      "description": "SpectroPhotoMeter. Obtains full spectral data of printed patches for color calibration and density measurement. Two modes: (1) CCC (Continuous Color Calibration) — static on rear side, scans color dots printed on sheet rear edge; (2) Full color calibration — scans special print job line by line. Contains ceramic tile for self-calibration (tiles assumed known constant properties; measurements corrected to expected values). Requires separate rail-location calibration for different substrate widths.",
+      "sourceSection": "11.3.18. Replacement validation"
+    },
+    {
+      "id": "FEEDER",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Substrate feeder (drawer type, cut-sheet). Feeds and separates substrate into press. Physical drawer size constrains max substrate dimensions and weight. Heavier/thicker substrates reduce sheets-per-fill, increasing reload frequency.",
+      "sourceSection": "11.1.2.2. Init / 11.1.2.7.1. Pre-print processes / 11.1.2.8. Pause"
+    },
+    {
+      "id": "SUBSTRATE_GRIPPERS",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Mechanical grippers holding substrate during printing. Must physically support substrate weight and thickness. New heavy/thick substrates may require special calibration (color calibration, transfer pressure, heating/cooling control).",
+      "sourceSection": "1.7. New Substrate Example"
+    },
+    {
+      "id": "ILS",
+      "type": "sensor",
+      "cabinet": "Engine",
+      "connectedTo": "Press-PC via 4x USB interface (4 scanner units)",
+      "description": "In-Line Scanner. HP-based scanner (4 units), static while substrate moves. Interface: 4xUSB directly to Press-PC. Modes: (1) On-Line Customer Job Inspection — full image comparison to digital, 50x150 dpi max, 1600 mm/sec; (2) Off-Line Scan to File — variable resolution, 1600 mm/sec, remote assistance/validation support; (3) Off-Line Calibration — variable resolution, 235–1600 mm/sec, automatic between jobs; (4) Off-Line Diagnostics — variable resolution, 235–1600 mm/sec. Self-calibration covers: overlapping scanner bar areas (special job with roller), self-uniformity (white paper scan), and scanner port locating (first installation).",
+      "sourceSection": "11.3.18. Replacement validation; 11.3.19. Imaging"
+    },
+    {
+      "id": "PRESS-PC",
+      "type": "other",
+      "cabinet": "UC",
+      "partNumber": "HP Z-800 family",
+      "description": "Main user physical interface. HP Z-800 family, Windows 7 OS. Multiple touch-screens connected; only one screen at a time in active control mode (others in shadow/display-only) to prevent simultaneous press control. Hosts ILS via 4xUSB. Not installed in kiosk mode — user can access all installed software.",
+      "sourceSection": "3.1. Press PC"
+    },
+    {
+      "id": "BARCODE-SCANNER",
+      "type": "sensor",
+      "connectedTo": "Press PC",
+      "description": "Hand Barcode Scanner connected to Press PC. Enables user to scan replaceable parts. Infra-layer routes scanned device to proper service.",
+      "sourceSection": "3.1.1. Hand Barcode Scanner"
+    },
+    {
+      "id": "PRESS-TABLET",
+      "type": "other",
+      "description": "Future design: tablet interface for close-range operations (maintenance, inspection). UI views adaptive to tablet position relative to press machine sections (Feeder/Stacker/Engine). Position measured via Beacon (iOS-based, supports short-range localization) or NFC (Android-based, short-range identification only).",
+      "sourceSection": "3.2. Press Tablets"
+    },
+    {
+      "id": "SECURITY-DONGLE",
+      "type": "other",
+      "connectedTo": "Press PC (USB)",
+      "description": "SafeNet USB security dongle installed in Press PC. Functions: (1) Press Machine S/N storage; (2) Press Machine License — required to change state to Standby, machine cannot change to Standby without valid license; (3) Critical data storage and encryption (billing, replacements). On first insertion, S/N stored on dongle is copied to PC secured storage. S/N matching verified at every PC SW services-layer activity toward dongle; mismatch triggers user alert and may block press function (management policy dependent).",
+      "sourceSection": "3.3. Security Dongles"
+    },
+    {
+      "id": "WHS-PUW",
+      "type": "other",
+      "cabinet": "PUW",
+      "description": "Priming Unwinder — integration of Unwinder and Priming Unit into one functional unit. Feeds media to printing engine at constant speed, performs inline substrate priming, maintains substrate tension from input roll to engine, aligns web laterally, centers substrate before engine entry, controls tension including roll diameter measurement, provides motion profile control, and interfaces with printing engine.",
+      "configType": "ARAD",
+      "sourceSection": "4.1. PUW – Priming Unwinder"
+    },
+    {
+      "id": "WHS-UW",
+      "type": "other",
+      "cabinet": "PUW",
+      "description": "Unwinder sub-unit of PUW. Rolls/unrolls substrate roll maintaining constant substrate feed, maintains substrate tension during all press operations (web feed, priming, ramp-up/down), supports load/unload of substrate rolls of different sizes.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.1. Unwinder"
+    },
+    {
+      "id": "WHS-DNC",
+      "type": "roller",
+      "cabinet": "PUW",
+      "description": "Web Dancers. Maintain substrate tension during all press operations including web feed, priming, and ramp-up/down.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.2. Dancers"
+    },
+    {
+      "id": "WHS-COR",
+      "type": "other",
+      "cabinet": "PUW",
+      "description": "Corona Treatment system. Creates ionized air (corona/plasma) to increase surface electronic charge of substrate, ensuring better adhesion of inks, coatings, and adhesives. Raises dyne level by inducing electrons onto substrate surface. Generates ozone (O3) as byproduct — ejected outside press for safety. Inline corona refresh required on in-house priming machine for minimum dyne level.",
+      "sourceSection": "4.1.3. Corona Treatment"
+    },
+    {
+      "id": "WHS-HFG",
+      "type": "other",
+      "cabinet": "PUW",
+      "poweredBy": "3 x 400 VAC main power",
+      "connectedTo": "WHS-HVT",
+      "description": "High-Frequency Generator. Generates high-frequency supply voltage for the high-voltage transformer using 3x400 VAC main power.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.3.1. High-Frequency Generator & High-Voltage Transformer"
+    },
+    {
+      "id": "WHS-HVT",
+      "type": "other",
+      "cabinet": "PUW",
+      "poweredBy": "WHS-HFG output",
+      "connectedTo": "WHS-CDS",
+      "description": "High-Voltage Transformer. Transfers generator output to the corona discharge station and generates the required high voltage for the corona discharge process.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.3.1. High-Frequency Generator & High-Voltage Transformer"
+    },
+    {
+      "id": "WHS-CDS",
+      "type": "other",
+      "cabinet": "PUW",
+      "poweredBy": "WHS-HVT",
+      "description": "Corona Discharge Station. Location where corona (plasma air) is created between the grounded roller and electrodes. Substrate to be treated is guided by the grounded roller.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.3.2. Corona Discharge Station"
+    },
+    {
+      "id": "WHS-PRU",
+      "type": "other",
+      "cabinet": "PUW",
+      "description": "Priming Unit. Applies primer coating before printing for optimal ink transfer, good adhesion, and post-printing processes (lamination, OPV). Primer transferred from Anilox (gravure) roller to rubber roller then to substrate. Excess primer removed by doctor blade. Rubber roller engages pressure roller to transfer primer to substrate. Same process (minus pressure roller) used during washing. Milling/idling wets rollers when not printing.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.4. Priming Unit"
+    },
+    {
+      "id": "WHS-ANX",
+      "type": "roller",
+      "cabinet": "PUW",
+      "description": "Anilox Roller. Ceramic engraved roller (sleeve) that defines the amount of primer transferred to the rubber roller. Volume determined by BCM (Billion Cubic Microns per square inch). Requires frequent offline cleaning. User can assemble different sleeves with different engrave patterns.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.4.1. Anilox Roller"
+    },
+    {
+      "id": "WHS-DBC",
+      "type": "other",
+      "cabinet": "PUW",
+      "description": "Doctor Blade Chamber. Removes excess primer from smooth non-engraved portions of ceramic sleeve and from land areas of cell walls.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.4.2. Doctor Blade Chamber"
+    },
+    {
+      "id": "WHS-FLS",
+      "type": "other",
+      "cabinet": "PUW",
+      "description": "Fluid System. Delivers and circulates liquids (primer/detergent) in the doctor blade chamber system. Maintains necessary liquid level in chamber. Supports priming and washing sequences. Contains 3 separate tanks: primer, cleaning fluid, and waste.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.4.3. Fluid System"
+    },
+    {
+      "id": "WHS-SNS-MNT",
+      "type": "sensor",
+      "cabinet": "PUW",
+      "description": "Sensors Mount assembly for fluid system. Houses 3 ultrasonic sensors for liquid level measurement.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.4.3.1. Sensors"
+    },
+    {
+      "id": "WHS-USS",
+      "type": "sensor",
+      "cabinet": "PUW",
+      "description": "3x Ultrasonic Sensors in fluid system. Measure liquid levels in tanks.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.4.3.1. Sensors"
+    },
+    {
+      "id": "WHS-USS-WST",
+      "type": "sensor",
+      "cabinet": "PUW",
+      "description": "Ultrasound Sensor Waste Mount. Ultrasonic sensor mounted on waste tank for waste level measurement.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.4.3.1. Sensors"
+    },
+    {
+      "id": "WHS-TNK-BASE",
+      "type": "other",
+      "cabinet": "PUW",
+      "description": "Tanks Base. Base structure supporting fluid system tanks (primer, cleaning fluid, waste).",
+      "configType": "ARAD",
+      "sourceSection": "4.1.4.3.1. Sensors"
+    },
+    {
+      "id": "WHS-DMP",
+      "type": "pump",
+      "cabinet": "PUW",
+      "description": "2x Diaphragm Pumps. Used for primer delivery/return during printing and cleaning fluid delivery/return during cleaning cycles. Manages doctor-blade chamber feeding and primer recirculation during priming, and full system cleaning of pumps, pipes, chamber, sleeve roller, and rubber sleeve.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.4.3.2. Pumps"
+    },
+    {
+      "id": "WHS-V1",
+      "type": "valve",
+      "cabinet": "PUW",
+      "description": "Valve V1 — Return Fluid valve. Solenoid V1.1 with LED status indicator.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.4.3.3. Valves"
+    },
+    {
+      "id": "WHS-V2",
+      "type": "valve",
+      "cabinet": "PUW",
+      "description": "Valve V2 — Supply/Drain valve. Solenoid V1.2 with LED status indicator.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.4.3.3. Valves"
+    },
+    {
+      "id": "WHS-V3",
+      "type": "valve",
+      "cabinet": "PUW",
+      "description": "Valve V3 — Supply Fluid valve. Solenoid V1.3 with LED status indicator.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.4.3.3. Valves"
+    },
+    {
+      "id": "WHS-V4",
+      "type": "valve",
+      "cabinet": "PUW",
+      "description": "Valve V4 — Waste Valve. Solenoid V1.4 with LED status indicator.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.4.3.3. Valves"
+    },
+    {
+      "id": "WHS-DRY",
+      "type": "other",
+      "cabinet": "PUW",
+      "description": "Drying Unit. Dries substrate after priming process using hot air blow. Positioned after priming unit inline. Sub-components: main blower (air circulation), 15 kW electrical heat generator, exhaust blower, air knife unit, suction unit, and flexible pipes for tunnel connection.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.5. Drying Unit"
+    },
+    {
+      "id": "WHS-DRY-MBL",
+      "type": "fan",
+      "cabinet": "PUW",
+      "description": "Main blower of drying unit. Circulates hot air inside drying tunnel.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.5. Drying Unit"
+    },
+    {
+      "id": "WHS-DRY-HEG",
+      "type": "other",
+      "cabinet": "PUW",
+      "description": "15 kW electrical heat generator in drying unit. Generates heat for substrate drying after priming.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.5. Drying Unit"
+    },
+    {
+      "id": "WHS-DRY-EBL",
+      "type": "fan",
+      "cabinet": "PUW",
+      "description": "Exhaust blower of drying unit. Extracts air/vapors from drying tunnel.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.5. Drying Unit"
+    },
+    {
+      "id": "WHS-DRY-AKN",
+      "type": "other",
+      "cabinet": "PUW",
+      "description": "Air knife unit in drying unit. Directs concentrated air stream at substrate surface during drying.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.5. Drying Unit"
+    },
+    {
+      "id": "WHS-DRY-SUC",
+      "type": "other",
+      "cabinet": "PUW",
+      "description": "Suction unit in drying unit. Provides suction function within drying tunnel.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.5. Drying Unit"
+    },
+    {
+      "id": "WHS-DRY-PIPE",
+      "type": "other",
+      "cabinet": "PUW",
+      "description": "Flexible pipes for tunnel connection in drying unit. Connect drying unit sub-components to drying tunnel.",
+      "configType": "ARAD",
+      "sourceSection": "4.1.5. Drying Unit"
+    },
+    {
+      "id": "MAIN_BLOWER",
+      "type": "fan",
+      "cabinet": "PUW-DryingUnit",
+      "description": "Responsible for air circulation within the drying unit.",
+      "sourceSection": "4.1.5.1. Main Blower"
+    },
+    {
+      "id": "HEATER_DU",
+      "type": "other",
+      "cabinet": "PUW-DryingUnit",
+      "description": "Heats the air before it is blown over the substrate in the drying unit.",
+      "sourceSection": "4.1.5.2. Heater"
+    },
+    {
+      "id": "EXHAUST_BLOWER",
+      "type": "fan",
+      "cabinet": "PUW-DryingUnit",
+      "description": "Suction of 15–20% fresh air for cooling process in the drying unit.",
+      "sourceSection": "4.1.5.3. Exhaust Blower"
+    },
+    {
+      "id": "AIR_KNIFE_UNIT",
+      "type": "other",
+      "cabinet": "PUW-DryingUnit",
+      "description": "Provides efficient hot air blowing over the substrate in the drying unit.",
+      "sourceSection": "4.1.5.4. Air Knife Unit"
+    },
+    {
+      "id": "SUCTION_BOX",
+      "type": "other",
+      "cabinet": "PUW-DryingUnit",
+      "description": "Suction box component of the drying unit.",
+      "sourceSection": "4.1.5.5. Suction Box"
+    },
+    {
+      "id": "WEB_GUIDE",
+      "type": "other",
+      "cabinet": "PUW-DryingUnit",
+      "configType": "Arad",
+      "description": "Web guide assembly (Arad Press Machine Only). Centers the substrate before it enters the printing engine; corrects center while substrate is in motion. Uses a unique control panel at the UI. Same activation as at the UW input.",
+      "sourceSection": "4.1.6. Web Guide – Arad Press Machine Only"
+    },
+    {
+      "id": "WEB_GUIDE_SENSOR",
+      "type": "sensor",
+      "cabinet": "PUW-DryingUnit",
+      "configType": "Arad",
+      "description": "Sensor component of the web guide (Arad only). Centers the substrate before it enters the printing engine; corrects center when substrate is in motion.",
+      "sourceSection": "4.1.6.1. Web Guide Sensor"
+    },
+    {
+      "id": "PUW_ELEC_CONTROLLERS",
+      "type": "other",
+      "cabinet": "PUW",
+      "description": "PUW electrical controllers assembly.",
+      "sourceSection": "4.1.7. PUW Electrical Controllers"
+    },
+    {
+      "id": "RW_CAST_IRON_ARMS",
+      "type": "other",
+      "cabinet": "Re-winder",
+      "description": "Cast iron arms of the re-winder, part of the film-reel support structure.",
+      "sourceSection": "4.2.1. Cast Iron Arms"
+    },
+    {
+      "id": "RW_BUTTERFLY_DANCER",
+      "type": "other",
+      "cabinet": "Re-winder",
+      "description": "Butterfly dancer used for tension control in the re-winder. Movement performed by low-friction pneumatic cylinders connected to the dancer.",
+      "sourceSection": "4.2.2. Butterfly Dancer"
+    },
+    {
+      "id": "WHS_FI",
+      "type": "other",
+      "cabinet": "Engine-WHS",
+      "description": "Feed Input (FI) — first NIP in the press. Delivers substrate from the PUW to the Internal Buffer System (IBS) at controlled constant velocity per motion profile (MP). Part of tension control system; maintains web tension within a specific range under variable motion parameters. Nip safety handled by safety sensors acting as screen guards. Both rollers common to other rubber and motorized rollers.",
+      "sourceSection": "4.3.1. Feed Input (FI)"
+    },
+    {
+      "id": "WHS_IBS",
+      "type": "other",
+      "cabinet": "Engine-WHS",
+      "description": "Internal Buffer System (IBS) — linear motion system capable of maintaining required stroke, accelerations, velocities, and dynamic response.",
+      "sourceSection": "4.3.2. Internal Buffer System (IBS)"
+    },
+    {
+      "id": "WHS_BCU",
+      "type": "other",
+      "cabinet": "Engine-WHS",
+      "configType": "Negev",
+      "description": "Buffer Control Unit (BCU) — Negev Only. Buffers substrate between Engine #1 and Engine #2. Reverses substrate orientation (front to back). Maintains substrate tension between Engine #1 and Engine #2. Presents the print to the operator (inspection area). Aligns substrate laterally via web guide.",
+      "sourceSection": "4.3.3. Buffer Control Unit (BCU) – Negev Only"
+    },
+    {
+      "id": "WHS_FEED",
+      "type": "other",
+      "cabinet": "Engine-WHS",
+      "description": "Feed unit — feeds substrate accurately through the printing process between the IBS buffer and the 2nd transfer (IMP Drum) per machine motion profiles. Measures web tension before the 2nd transfer for tension control using a Strain Gauge.",
+      "sourceSection": "4.3.4. Feed"
+    },
+    {
+      "id": "WHS_IMP",
+      "type": "other",
+      "cabinet": "Engine-WHS",
+      "description": "Impression (IMP) unit — designed to lift substrate towards the ITM drum to allow 2nd transfer to take place. Receives substrate from the feed unit and forwards it to the drive unit.",
+      "sourceSection": "4.3.5. Impression (IMP)"
+    },
+    {
+      "id": "WHS_IMP_DRUM_MOTOR",
+      "type": "motor-driver",
+      "cabinet": "Engine-WHS",
+      "connectedTo": "WHS_IMP",
+      "description": "IMP drum motor — rotates the IMP drum. IMP roller is driven due to high roller inertia.",
+      "sourceSection": "4.3.5.1. Impression (IMP) Drum Motor"
+    },
+    {
+      "id": "WHS_ENGAGE_DISENGAGE_MOTOR",
+      "type": "motor-driver",
+      "cabinet": "Engine-WHS",
+      "connectedTo": "WHS_IMP",
+      "description": "Engage/Disengage motor — controls the engagement status/position of the 2nd transfer against the ITM drum.",
+      "sourceSection": "4.3.5.2. Engage/Disengage Motor"
+    },
+    {
+      "id": "WHS_DRIVE_UNIT",
+      "type": "other",
+      "cabinet": "Engine-WHS",
+      "description": "Drive unit — subsystem within WHS. Drives the web between IBS buffers and supports all motion profiles. Controls web movement inside the press engine. Maintains uniform predefined temperature in the web to allow accurate control of image placement and scaling on the web.",
+      "sourceSection": "4.3.6. Drive Unit"
+    },
+    {
+      "id": "WHS_PEELER_ROLLER",
+      "type": "roller",
+      "cabinet": "Engine-WHS",
+      "connectedTo": "WHS_DRIVE_UNIT",
+      "description": "Peeler Roller — part of Peeler Temperature Control (PTC) in the Drive Unit. Cools substrate to room temperature to eliminate stretch effects. Temperature control is CWS (Closed Water System) based.",
+      "sourceSection": "4.3.6.1. Peeler Roller"
+    },
+    {
+      "id": "WHS_FE",
+      "type": "other",
+      "cabinet": "Engine-WHS",
+      "description": "Feed Exit (FE) — delivers substrate from the printing engine to the re-winder at controlled constant velocity per motion profile. Together with FI, belongs to the tension control system; maintains web tension within a defined range under variable motion parameters defined by different press motion profiles.",
+      "sourceSection": "4.3.7. Feed Exit (FE)"
+    },
+    {
+      "id": "BCS",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Blanket Cleaning Station. Cleans ITM blanket using BCS foil (PET 10) with minimum interference to printing process. Comprises motorized UnWinder and ReWinder rollers plus a non-motorized pressure roller engaged via cylinder/piston. Cleaning stage engages ITM with BCS foil before engaging job substrate.",
+      "sourceSection": "4.3.8. Blanket Cleaning Station (BCS)"
+    },
+    {
+      "id": "BCS_UNWINDER",
+      "type": "roller",
+      "cabinet": "Engine",
+      "description": "Motorized BCS UnWinder roller. Rolls BCS foil during print.",
+      "connectedTo": "BCS",
+      "sourceSection": "4.3.8. Blanket Cleaning Station (BCS)"
+    },
+    {
+      "id": "BCS_REWINDER",
+      "type": "roller",
+      "cabinet": "Engine",
+      "description": "Motorized BCS ReWinder roller. Provides foil tensioning during print.",
+      "connectedTo": "BCS",
+      "sourceSection": "4.3.8. Blanket Cleaning Station (BCS)"
+    },
+    {
+      "id": "BCS_PRESSURE_ROLLER",
+      "type": "roller",
+      "cabinet": "Engine",
+      "description": "Non-motorized BCS pressure roller. Engages ITM blanket at required cleaning timing. Position changed by BCS_CYLINDER.",
+      "connectedTo": "BCS_CYLINDER",
+      "sourceSection": "4.3.8. Blanket Cleaning Station (BCS)"
+    },
+    {
+      "id": "BCS_CYLINDER",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Pneumatic cylinder (piston) that changes relative position of BCS pressure roller to achieve BCS-to-ITM engagement.",
+      "connectedTo": "BCS_PRESSURE_ROLLER",
+      "sourceSection": "4.3.8. Blanket Cleaning Station (BCS)"
+    },
+    {
+      "id": "BCS_FOIL",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "BCS foil consumable (PET 10). Used during blanket cleaning instead of regular job substrate. Replaced via BCS foil replacement wizard.",
+      "sourceSection": "4.3.8. Blanket Cleaning Station (BCS)"
+    },
+    {
+      "id": "OLS",
+      "type": "other",
+      "cabinet": "Engine",
+      "configType": "ARAD",
+      "description": "Object Length Scaling system. Performs scaling calibration and correction for ARAD machine (flexible/stretchy web substrate). Two optical sensors at engine exit measure Eye Mark distances and compare with encoder readings. Supports CSC (Continuous Scaling Calibration) to correct RL (Repeat Length) and IL (Image Length) drift during job run. Requires location/offset calibration per substrate width.",
+      "sourceSection": "4.3.9. Object Length Scaling (OLS)"
+    },
+    {
+      "id": "OLS_OPTICAL_SENSOR_1",
+      "type": "sensor",
+      "cabinet": "Engine",
+      "configType": "ARAD",
+      "description": "OLS optical sensor at engine exit (1 of 2). Measures distance between Eye Marks for RL/IL scaling correction.",
+      "connectedTo": "OLS",
+      "sourceSection": "4.3.9. Object Length Scaling (OLS)"
+    },
+    {
+      "id": "OLS_OPTICAL_SENSOR_2",
+      "type": "sensor",
+      "cabinet": "Engine",
+      "configType": "ARAD",
+      "description": "OLS optical sensor at engine exit (2 of 2). Measures distance between Eye Marks for RL/IL scaling correction.",
+      "connectedTo": "OLS",
+      "sourceSection": "4.3.9. Object Length Scaling (OLS)"
+    },
+    {
+      "id": "PILE_FEEDER",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Pile feeder sub-system. Enables feeding paper directly from a pile (supports fork-lift insertion). Includes Side-Blowers enhanced ventilation to keep top substrates separated.",
+      "connectedTo": "FEEDER",
+      "sourceSection": "5.1.1. Pile Feeder"
+    },
+    {
+      "id": "SIDE_BLOWERS",
+      "type": "fan",
+      "cabinet": "PE-Feed",
+      "description": "Enhanced ventilation system in pile feeder. Keeps top substrates separated to prevent multi-feed.",
+      "connectedTo": "PILE_FEEDER",
+      "sourceSection": "5.1.1. Pile Feeder"
+    },
+    {
+      "id": "TORNADO_MODULE",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Tornado feed module in pile feeder. Creates negative pressure area to attract substrate; two belts per unit drive substrate toward paper path.",
+      "connectedTo": "PILE_FEEDER",
+      "sourceSection": "5.1.1.1. Tornado feed module"
+    },
+    {
+      "id": "X_MECHANISM",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "X-Mechanism in pile feeder. Responsible for centering pile horizontally.",
+      "connectedTo": "PILE_FEEDER",
+      "sourceSection": "5.1.1.2. X-Mechanism"
+    },
+    {
+      "id": "ANTI_CRASH_INTERLOCK_1",
+      "type": "switch",
+      "cabinet": "PE-Feed",
+      "description": "Anti-crash interlock (1 of 2) in pile feeder. Prevents pile crash when pile is pushed up by elevator.",
+      "connectedTo": "PILE_FEEDER",
+      "sourceSection": "5.1.1.3. 2 anti-crash interlocks"
+    },
+    {
+      "id": "ANTI_CRASH_INTERLOCK_2",
+      "type": "switch",
+      "cabinet": "PE-Feed",
+      "description": "Anti-crash interlock (2 of 2) in pile feeder. Prevents pile crash when pile is pushed up by elevator.",
+      "connectedTo": "PILE_FEEDER",
+      "sourceSection": "5.1.1.3. 2 anti-crash interlocks"
+    },
+    {
+      "id": "PILE_TRANSPORT_MODULE",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Transport module in pile feeder. Moves substrate along the substrate path.",
+      "connectedTo": "PILE_FEEDER",
+      "sourceSection": "5.1.1.4. Transport Module"
+    },
+    {
+      "id": "PILE_ELECTRONICS",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Pile feeder electronics assembly (main components).",
+      "connectedTo": "PILE_FEEDER",
+      "sourceSection": "5.1.1.5. Pile Electronics"
+    },
+    {
+      "id": "DRAWER_FEEDER",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Drawer feeder sub-system. Loads substrate and transports it to feed head.",
+      "connectedTo": "FEEDER",
+      "sourceSection": "5.1.2. Drawer Feeder"
+    },
+    {
+      "id": "DRAWER_LIFT",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Drawer lift mechanism. Lifts paper towards top-of-stack sensor.",
+      "connectedTo": "DRAWER_FEEDER",
+      "sourceSection": "5.1.2.1. Drawer Lift"
+    },
+    {
+      "id": "DRAWER_SUBSTRATE_TRANSPORT",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Drawer substrate transport module. Transports substrate within drawer feeder.",
+      "connectedTo": "DRAWER_FEEDER",
+      "sourceSection": "5.1.2.2. Substrate Transport"
+    },
+    {
+      "id": "MULTIPICK_SENSOR",
+      "type": "sensor",
+      "cabinet": "PE-Feed",
+      "description": "MultiPick sensor. Ultrasonic technology. Detects double-feed by measuring different acoustic response between uniform single substrate and two layers with air gap. Not sensitive to substrate thickness — can produce false jams. Sheets flagged by this sensor are routed to waste bin.",
+      "connectedTo": "DRAWER_FEEDER, SUBSTRATE_PATH",
+      "sourceSection": "5.1.2.3. MultiPick Sensor"
+    },
+    {
+      "id": "SUBSTRATE_PATH",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Substrate path. Collects paper from drawers or pile and transports to ejection/acceleration module. Routes suspected multi-pick sheets to waste bin.",
+      "connectedTo": "DRAWER_FEEDER, PILE_FEEDER, EJECTION_ACCEL_MODULE, WASTE_BIN",
+      "sourceSection": "5.1.3. Substrate Path"
+    },
+    {
+      "id": "WASTE_BIN",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Waste bin. Receives sheets diverted from substrate path when MultiPick sensor indicates suspected picking problem.",
+      "connectedTo": "SUBSTRATE_PATH",
+      "sourceSection": "5.1.3. Substrate Path"
+    },
+    {
+      "id": "EJECTION_ACCEL_MODULE",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Ejection and acceleration module. Accelerates substrate velocity to meet feeder bridge (finger belt) at correct timing.",
+      "connectedTo": "SUBSTRATE_PATH, FEEDER_BRIDGE",
+      "sourceSection": "5.1.4. Ejection and Acceleration Module"
+    },
+    {
+      "id": "FEEDER_BRIDGE",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Feeder bridge (finger belt). Receives substrate from ejection/acceleration module and feeds to print engine. Performs 3 alignments: (1) center alignment of substrate with impression drum, (2) skew alignment of substrate, (3) skew alignment of feeder to press position.",
+      "connectedTo": "EJECTION_ACCEL_MODULE",
+      "sourceSection": "5.1.5. Feeder Bridge"
+    },
+    {
+      "id": "MTC",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Drawer and Media Transport Controller (MTC). Electronics controller for drawer feeder and media transport sub-systems.",
+      "connectedTo": "DRAWER_FEEDER, DRAWER_SUBSTRATE_TRANSPORT",
+      "sourceSection": "5.1.6.1. Drawer and Media Transport Controller (MTC) Electronics"
+    },
+    {
+      "id": "FMC",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Feed Management Controller (FMC). Top-level feeder management controller.",
+      "connectedTo": "FEEDER",
+      "sourceSection": "5.1.6.2. Feed Management Controller (FMC)"
+    },
+    {
+      "id": "FEEDER_PS",
+      "type": "power-supply",
+      "cabinet": "PE-Feed",
+      "description": "Feeder power supplies.",
+      "connectedTo": "FEEDER",
+      "sourceSection": "5.1.6.3. Feeder Power Supplies"
+    },
+    {
+      "id": "ACCEL_MODULE_ELEC",
+      "type": "other",
+      "cabinet": "PE-Feed",
+      "description": "Acceleration module electronics (feeder sub-system).",
+      "connectedTo": "EJECTION_ACCEL_MODULE",
+      "sourceSection": "5.1.6.4. Acceleration Module"
+    },
+    {
+      "id": "STACKER_BRIDGE",
+      "type": "other",
+      "cabinet": "Stacker",
+      "description": "Transports substrate from press to stacker sub-components. Stepper motor adjusts for sheet width. Vacuum fans create jog offset toward stacking side per job definition.",
+      "sourceSection": "5.3.1. Stacker Bridge"
+    },
+    {
+      "id": "STACKER_BRIDGE_STEPPER",
+      "type": "motor-driver",
+      "cabinet": "Stacker",
+      "connectedTo": "STACKER_BRIDGE",
+      "description": "Stepper motor on stacker bridge. Moves to fit sheet width per substrate definition.",
+      "sourceSection": "5.3.1. Stacker Bridge"
+    },
+    {
+      "id": "STACKER_BRIDGE_FANS",
+      "type": "fan",
+      "cabinet": "Stacker",
+      "connectedTo": "STACKER_BRIDGE",
+      "description": "Vacuum fans on stacker bridge. Power level determines jog offset to stacking side per job definition.",
+      "sourceSection": "5.3.1. Stacker Bridge"
+    },
+    {
+      "id": "STACKER_DIVERTER_1",
+      "type": "other",
+      "cabinet": "Stacker",
+      "connectedTo": "STACKER_BRIDGE (upstream), STACKER_OVERPASS or STACKER_PILE (downstream)",
+      "description": "First diverter. Routes substrate from stacker bridge to either overpass or pile.",
+      "sourceSection": "5.3.2. Diverters and Overpass"
+    },
+    {
+      "id": "STACKER_DIVERTER_2",
+      "type": "other",
+      "cabinet": "Stacker",
+      "connectedTo": "STACKER_OVERPASS (upstream), PROOF_TRAY or Waste (downstream)",
+      "description": "Second diverter. Routes substrate from overpass to either proof tray or waste.",
+      "sourceSection": "5.3.2. Diverters and Overpass"
+    },
+    {
+      "id": "STACKER_OVERPASS",
+      "type": "other",
+      "cabinet": "Stacker",
+      "connectedTo": "STACKER_DIVERTER_1 (upstream), STACKER_DIVERTER_2 (downstream)",
+      "description": "Overpass path within stacker. Substrate enters from diverter 1; diverter 2 routes onward to proof tray or waste.",
+      "sourceSection": "5.3.2. Diverters and Overpass"
+    },
+    {
+      "id": "DEPOSITING_MODULE",
+      "type": "other",
+      "cabinet": "Stacker",
+      "connectedTo": "STACKER_BRIDGE (upstream), STACKER_PILE (downstream)",
+      "description": "Guides substrate from bridge and places it on top of the pile.",
+      "sourceSection": "5.3.3. Depositing Module"
+    },
+    {
+      "id": "STACKER_PILE",
+      "type": "other",
+      "cabinet": "Stacker",
+      "connectedTo": "DEPOSITING_MODULE (upstream), ELEVATOR_MODULE (below), POSITIONING_MAGNETS",
+      "description": "Stacks printed sheets one on top of the other on a pallet.",
+      "sourceSection": "5.3.4. Stacker Pile"
+    },
+    {
+      "id": "ELEVATOR_MODULE",
+      "type": "other",
+      "cabinet": "Stacker",
+      "connectedTo": "STACKER_PILE, POSITIONING_MAGNETS",
+      "description": "Keeps stack at constant top position. Starts fully raised; lowers as pile height increases. Requires calibration of dully-down position.",
+      "sourceSection": "5.3.4.1. Elevator Module"
+    },
+    {
+      "id": "POSITIONING_MAGNETS",
+      "type": "other",
+      "cabinet": "Stacker",
+      "connectedTo": "ELEVATOR_MODULE, STACKER_PILE pallet, rear wall",
+      "description": "Push pallet flush against rear wall for improved stack alignment. Work with elevator and aligner to ensure substrate alignment as sheets reach the top.",
+      "sourceSection": "5.3.4.2. Positioning Magnets"
+    },
+    {
+      "id": "PROOF_TRAY",
+      "type": "other",
+      "cabinet": "Stacker",
+      "connectedTo": "STACKER_DIVERTER_2",
+      "description": "Collects samples, special jobs, and waste-path output. Replaced by ILF_ADAPTER when ILF unit is installed.",
+      "sourceSection": "5.3.5. Proof Tray"
+    },
+    {
+      "id": "STACKER_MOTORS",
+      "type": "motor-driver",
+      "cabinet": "Stacker",
+      "description": "Drive the stacker sub-modules.",
+      "sourceSection": "5.3.6. Stacker Motors"
+    },
+    {
+      "id": "ILP_CLEANING_STATION",
+      "type": "other",
+      "cabinet": "ILP",
+      "configType": "ARAVA",
+      "description": "ILP cleaning station on ARAVA press. Currently disabled due to malfunctions discovered during development.",
+      "sourceSection": "5.3. Stacker (intro note)"
+    },
+    {
+      "id": "ILF_ADAPTER",
+      "type": "other",
+      "cabinet": "Stacker",
+      "connectedTo": "ILF unit (downstream), replaces PROOF_TRAY",
+      "description": "Connects ILF unit to stacker; replaces normal proof tray. Has 3 exits: proof, trash, ILF. Adds 3 nip rollers and one additional diverter.",
+      "sourceSection": "5.3.8. In-Line Finisher (ILF)"
+    },
+    {
+      "id": "ILF_ADAPTER_M5",
+      "type": "motor-driver",
+      "cabinet": "Stacker",
+      "connectedTo": "ILF_ADAPTER nip rollers (x3)",
+      "description": "Additional servo motor designated M5. Drives the 3 nip rollers in the ILF adapter.",
+      "sourceSection": "5.3.8. In-Line Finisher (ILF)"
+    },
+    {
+      "id": "ILF_EILAT_SMART_STACKER",
+      "type": "other",
+      "cabinet": "Stacker",
+      "configType": "Eilat",
+      "connectedTo": "ILF_ADAPTER",
+      "description": "In-Line Finisher for Eilat press variant. Smart stacker (TBD). Connected to stacker via ILF adapter.",
+      "sourceSection": "5.3.8. In-Line Finisher (ILF)"
+    },
+    {
+      "id": "ILF_ARAVA_ICOAT3000",
+      "type": "other",
+      "cabinet": "Stacker",
+      "configType": "ARAVA",
+      "connectedTo": "ILF_ADAPTER",
+      "description": "In-Line Finisher for ARAVA press: TRESU coater, also called iCoat 3000 or In Line Coater. Connected to stacker via ILF adapter.",
+      "sourceSection": "5.3.8. In-Line Finisher (ILF)"
+    },
+    {
+      "id": "IFR",
+      "type": "roller",
+      "cabinet": "Engine",
+      "connectedTo": "Feeder alignment bridge (upstream), IMPRESSION_DRUM grippers (downstream), X_ALIGN_SENSOR",
+      "description": "Input Feed Roller. Moves pages from feeder alignment bridge to impression drum grippers using precision timing and speed. Hosts X-align sensor; X-offset mechanism at bridge adjusts registration before sheet enters IFR.",
+      "sourceSection": "5.4.1. Input Feed Roller (IFR)"
+    },
+    {
+      "id": "X_ALIGN_SENSOR",
+      "type": "sensor",
+      "cabinet": "Engine",
+      "connectedTo": "IFR",
+      "description": "Located on IFR. Scans sheet rear-edge distance from impression drum edge. Triggers X-offset mechanism at bridge to adjust registration before sheet passes through IFR.",
+      "sourceSection": "5.4.1.1. X-Align"
+    },
+    {
+      "id": "IMPRESSION_DRUM",
+      "type": "drum",
+      "cabinet": "Engine",
+      "connectedTo": "Blanket/ITM, IFR (upstream), EVR (downstream), GDU",
+      "description": "Presses substrate against blanket to transfer ink. Has 2 gripper shafts holding the sheet during printing to maintain color registration and cross-run registration.",
+      "sourceSection": "5.4.2. Impression Drum"
+    },
+    {
+      "id": "GDU",
+      "type": "other",
+      "cabinet": "Engine",
+      "connectedTo": "IMP-DRUM, GDU-CAM-FOLLOWER, GDU-GRIPPER-SHAFT, GDU-SPRING",
+      "description": "Grippers Driver Unit. Controls gripper open/close via cam follower on cam. Upper cam position: follower compresses spring, shaft rotates CW, grippers close. Lower position: spring rotates shaft CCW, grippers open. Cam accelerates/decelerates to move follower to lower part to open grippers.",
+      "sourceSection": "6.4.2. Grippers Driver Unit (GDU)"
+    },
+    {
+      "id": "EVR",
+      "type": "other",
+      "cabinet": "Engine",
+      "connectedTo": "IMPRESSION_DRUM (upstream), DUPLEX_CONVEYOR or EXIT_CONVEYOR (downstream)",
+      "description": "Exit Vacuum Rotor. Receives substrate from impression drum; transfers to next station per operation mode (Duplex or Exit conveyor). Uses suction cups to hold/release paper. Requires SCM (Suction Cup Margin) calibration. No duplex mode on ARAVA (30000).",
+      "sourceSection": "5.4.3. Exit Vacuum Rotor (EVR)"
+    },
+    {
+      "id": "DUPLEX_CONVEYOR",
+      "type": "other",
+      "cabinet": "Engine",
+      "configType": "non-ARAVA",
+      "connectedTo": "EVR (upstream), IMPRESSION_DRUM (downstream)",
+      "description": "N/A for ARAVA (30000). In duplex mode receives substrate from EVR; returns it to impression drum with unprinted side up. Supports adaptive scaling for simplex-duplex alignment on substrates typically up to 170 gsm.",
+      "sourceSection": "5.4.4. Duplex Conveyor"
+    },
+    {
+      "id": "EXIT_CONVEYOR",
+      "type": "other",
+      "cabinet": "Engine",
+      "connectedTo": "EVR (upstream), Stacker (downstream)",
+      "description": "Conveys printed sheet (simplex or duplex) from EVR to stacker.",
+      "sourceSection": "5.4.5. Exit Conveyor"
+    },
+    {
+      "id": "PIP_DRUM",
+      "type": "drum",
+      "cabinet": "Engine",
+      "description": "Photo Imaging Plate drum. Holds PIP foil, engages ITM drum (T1 transfer), transfers ink from BID to blanket.",
+      "connectedTo": "ITM drum, BID, Blanket (ITM)",
+      "configType": "all",
+      "sourceSection": "6.2.1. PIP Drum"
+    },
+    {
+      "id": "PIP_UNDERLAYER",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Attached to PIP drum beneath PIP foil. Absorbs small particles (dust) accumulating under foil to prevent foil damage.",
+      "connectedTo": "PIP_DRUM",
+      "configType": "all",
+      "sourceSection": "6.2.1. PIP underlayer"
+    },
+    {
+      "id": "PARS",
+      "type": "sensor",
+      "cabinet": "Engine",
+      "description": "Measurement/alignment device; can be bypassed via Bypass-on-devices (DON'T USE although installed).",
+      "connectedTo": "PIP_DRUM",
+      "configType": "all",
+      "sourceSection": "6.2.2. PIP Automatic Replacement System (PARS)"
+    },
+    {
+      "id": "PIP_IR_SENSOR",
+      "type": "temp-sensor",
+      "cabinet": "Engine",
+      "description": "IR sensor located over PIP drum. Stabilizes and controls PIP temperature.",
+      "connectedTo": "PIP_DRUM",
+      "configType": "all",
+      "sourceSection": "6.2.3. IR Sensor"
+    },
+    {
+      "id": "CHARGE_ROLLER",
+      "type": "roller",
+      "cabinet": "Engine",
+      "description": "Charges the PIP foil. Metal core roller covered with molded polyurethane. Engage mode: lies on PIP drum, rotates by friction (no additional drive). Disengage mode: does not contact balancing roller.",
+      "connectedTo": "PIP_DRUM, BALANCING_ROLLER, CR_JOS_MOTOR_L, CR_JOS_MOTOR_R",
+      "configType": "all",
+      "sourceSection": "6.2.4. Charge Roller"
+    },
+    {
+      "id": "BALANCING_ROLLER",
+      "type": "roller",
+      "cabinet": "Engine",
+      "description": "Balances current on charge roller to prevent deterioration of roller properties. Does not contact charge roller during disengage mode.",
+      "connectedTo": "CHARGE_ROLLER",
+      "configType": "all",
+      "sourceSection": "6.2.4. Charge Roller"
+    },
+    {
+      "id": "CR_JOS_MOTOR_L",
+      "type": "motor-driver",
+      "cabinet": "Engine",
+      "description": "Charge Roller Jump Over Seam motor — left side. Motor with cam follower. Cam stationary when charge roller in print area. When roller reaches seam area, cam activates and lifts roller to prevent charging seam and prevent bouncing.",
+      "connectedTo": "CHARGE_ROLLER",
+      "configType": "all",
+      "sourceSection": "6.2.4.1. CR Jump Over Seam (JOS)"
+    },
+    {
+      "id": "CR_JOS_MOTOR_R",
+      "type": "motor-driver",
+      "cabinet": "Engine",
+      "description": "Charge Roller Jump Over Seam motor — right side. Motor with cam follower. Cam stationary when charge roller in print area. When roller reaches seam area, cam activates and lifts roller to prevent charging seam and prevent bouncing.",
+      "connectedTo": "CHARGE_ROLLER",
+      "configType": "all",
+      "sourceSection": "6.2.4.1. CR Jump Over Seam (JOS)"
+    },
+    {
+      "id": "ELECTROMETER",
+      "type": "sensor",
+      "cabinet": "Engine",
+      "description": "Measures electrical voltage of PIP foil.",
+      "connectedTo": "PIP_DRUM",
+      "configType": "all",
+      "sourceSection": "6.2.5. Electrometer"
+    },
+    {
+      "id": "BID",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Binary Ink Developer. Two main assemblies: Base and Developer-Roller (DR), each replaceable at operator level. BID cycle: Develop (uniform ink layer on DR), Transfer (ink to PIP latent image), Clean (remove residual ink from DR).",
+      "connectedTo": "PIP_DRUM",
+      "configType": "all",
+      "sourceSection": "14. Print Quality Common Defects / 14.3, 14.5"
+    },
+    {
+      "id": "IFR_SENSORS",
+      "type": "sensor",
+      "cabinet": "Engine",
+      "description": "Sensors at IFR (Intermediate Feeder/Register) station for substrate location detection and jam identification.",
+      "configType": "all",
+      "sourceSection": "5.6. Paper Handling – Sensors Locations"
+    },
+    {
+      "id": "GRIPPER_SENSORS",
+      "type": "sensor",
+      "cabinet": "Engine",
+      "description": "Sensors at gripper station for substrate location detection and jam identification.",
+      "configType": "all",
+      "sourceSection": "5.6. Paper Handling – Sensors Locations"
+    },
+    {
+      "id": "EVC_SENSORS",
+      "type": "sensor",
+      "cabinet": "Engine",
+      "description": "Sensors at EVC (Exit Vacuum Conveyor) station for substrate location detection and jam identification.",
+      "configType": "all",
+      "sourceSection": "5.6. Paper Handling – Sensors Locations"
+    },
+    {
+      "id": "EVR_SENSORS",
+      "type": "sensor",
+      "cabinet": "Engine",
+      "description": "Sensors at EVR (Exit Vacuum Roller) station for substrate location detection and jam identification. Used in both standard and duplex configurations.",
+      "configType": "all",
+      "sourceSection": "5.6. Paper Handling – Sensors Locations"
+    },
+    {
+      "id": "BID_BASE",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Base assembly of BID. Replaceable at operator level. Requires dedicated calibration.",
+      "sourceSection": "6.2.6 Binary Ink Developer (BID)"
+    },
+    {
+      "id": "BID_DR",
+      "type": "roller",
+      "cabinet": "Engine",
+      "description": "Developer Roller (DR) — BID sub-assembly. Carries the ink layer formed by electrode and squeegee; transfers ink to PIP on latent image areas. Replaceable at operator level.",
+      "sourceSection": "6.2.6 Binary Ink Developer (BID)"
+    },
+    {
+      "id": "BID_ELECTRODE",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Electrode inside BID. Electric field between electrode and DR attracts ink particles to DR surface during Develop step.",
+      "sourceSection": "6.2.6.1.1 Develop"
+    },
+    {
+      "id": "BID_SQ",
+      "type": "roller",
+      "cabinet": "Engine",
+      "description": "Squeegee (SQ) inside BID. Electrically packs ink particles on DR; mechanically squeezes out excess imaging oil (IO) during Develop step.",
+      "sourceSection": "6.2.6.1.1 Develop"
+    },
+    {
+      "id": "BID_CL",
+      "type": "roller",
+      "cabinet": "Engine",
+      "description": "Cleaner Roller (CL) inside BID. Electric field between CL and DR attracts residual ink particles to CL after Transfer step. Scrubbed by sponge; excess ink scraped off by blade.",
+      "sourceSection": "6.2.6.1.3 Clean"
+    },
+    {
+      "id": "BID_ENGAGE_MTR",
+      "type": "motor-driver",
+      "cabinet": "Engine",
+      "description": "Motor-driven mechanism that engages/disengages BID to/from PIP. Four engagement levels: home, semi-engage, dis-engage, engaged.",
+      "sourceSection": "6.2.6.2 BID Engage Mechanism"
+    },
+    {
+      "id": "BID_REG_VALVE",
+      "type": "valve",
+      "cabinet": "Engine",
+      "description": "Regulating valve controlling ink flow rate to BID. Calibrated by turning ~15 times CCW from fully closed position. Target flow: 30 L/min. Ink flow calibration triggered automatically at every press Get-Ready event; manual re-calibration via pop-up if needed.",
+      "sourceSection": "6.2.6.3 Ink Flow Calibration"
+    },
+    {
+      "id": "PIP_CLEAN_STN",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "PIP Cleaning Station. Cools PIP foil and drum via imaging oil (8 L/min to maintain ~28°C); removes residual ink from PIP foil using imaging oil. ITM drum transfers ~2.5 KW heat to PIP drum.",
+      "sourceSection": "6.2.8 PIP Cleaning Station"
+    },
+    {
+      "id": "ITM_DRUM",
+      "type": "drum",
+      "cabinet": "Engine",
+      "description": "Intermediate Transfer Medium (ITM) drum. Transfers image from PIP to blanket (first transfer T1). Carries and electrically charges the blanket. Maintains uniform fixed temperature for itself and the blanket.",
+      "sourceSection": "6.3.1 ITM Drum"
+    },
+    {
+      "id": "ITM_BLANKET",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Multi-layer ITM blanket — acts as copier from PIP to substrate. First transfer: PIP to blanket via mechanical pressure and electrical charge. Second transfer: blanket to substrate via mechanical pressure and heat. Replaceable manually (easy blanket movement) or automatically (automated blanket replacement system).",
+      "sourceSection": "6.3.2 ITM Blanket"
+    },
+    {
+      "id": "ITM_LAMP_6KW_A",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "6 KW internal heating lamp A (upper position) inside ITM drum. One of two upper 6 KW lamps; maintains ITM drum temperature at 110°C.",
+      "sourceSection": "6.3.3 ITM Internal Heating Lamps"
+    },
+    {
+      "id": "ITM_LAMP_6KW_B",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "6 KW internal heating lamp B (upper position) inside ITM drum. One of two upper 6 KW lamps; maintains ITM drum temperature at 110°C.",
+      "sourceSection": "6.3.3 ITM Internal Heating Lamps"
+    },
+    {
+      "id": "ITM_LAMP_5KW",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "5 KW internal heating lamp (lower position) inside ITM drum. Located beneath the two 6 KW lamps forming triangle arrangement. Balances temperature profile to be uniform along drum length. Different construction than 6 KW lamps.",
+      "sourceSection": "6.3.3 ITM Internal Heating Lamps"
+    },
+    {
+      "id": "ITM_TF1",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "ITM thermal fuse #1. Prevents ITM drum from exceeding 130°C. Completes 24V electrical circuit between two slip rings (charged by carbon brushes). Opens circuit at 130°C; press transitions to Off state. Backed up by ITM_TF2.",
+      "sourceSection": "6.3.4 ITM Thermal Fuses"
+    },
+    {
+      "id": "ITM_TF2",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "ITM thermal fuse #2. Redundant backup to ITM_TF1. Same operation: opens 24V slip-ring circuit at 130°C; press transitions to Off state.",
+      "sourceSection": "6.3.4 ITM Thermal Fuses"
+    },
+    {
+      "id": "ITM_SLIP_RING",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Slip rings on ITM drum. Each charged to 24V by carbon brushes. ITM thermal fuses (TF1, TF2) complete electrical circuits between slip ring pairs; circuit opens when fuse trips.",
+      "sourceSection": "6.3.4 ITM Thermal Fuses"
+    },
+    {
+      "id": "PTE",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Pre Transfer Erase (PTE). Erases latent image on PIP before first transfer using LED array. Located at upper section of EBV assembly.",
+      "sourceSection": "6.3.5.1 Pre Transfer Erase (PTE)"
+    },
+    {
+      "id": "EBV",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "External Blanket Ventilation unit. Located next to ITM drum between T1 and T2. Dries ink layers on blanket via air knife and suction; removes IO vapors next to blanket and transfers them to utility cabinet for removal.",
+      "sourceSection": "6.3.5 Pre Transfer Erase (PTE) and External Blanket Ventilation (EBV)",
+      "connectedTo": "ITM drum, utility cabinet"
+    },
+    {
+      "id": "EBV-AIR-KNIFE",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Air knife component of EBV. Directs airflow onto blanket surface to dry ink layers.",
+      "connectedTo": "EBV",
+      "sourceSection": "6.3.5.2. External Blanket Ventilation (EBV)"
+    },
+    {
+      "id": "EBV-SUCTION",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Suction component of EBV. Removes IO vapors from next to blanket and routes them to utility cabinet.",
+      "connectedTo": "EBV, utility cabinet",
+      "sourceSection": "6.3.5.2. External Blanket Ventilation (EBV)"
+    },
+    {
+      "id": "EXT-HEAT-LAMPS",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Heating lamps for external heating system. Heat ambient air around the blanket. Hot air collected in hot air duct.",
+      "connectedTo": "EXT-HEAT-BLOWER, hot air duct",
+      "sourceSection": "6.3.6. External Heating"
+    },
+    {
+      "id": "EXT-HEAT-BLOWER",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Blower for external heating system. Sucks hot air from lamps hot air duct and blows it into the air knife at a flow rate of 80 l/sec.",
+      "connectedTo": "EXT-HEAT-LAMPS, EXT-HEAT-AIR-KNIFE",
+      "sourceSection": "6.3.6. External Heating"
+    },
+    {
+      "id": "EXT-HEAT-SUCTION-BLOWER",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Suction blower for external heating system. Sucks hot air through suction tunnel to the climate and VOC control system.",
+      "connectedTo": "suction tunnel, VOC control system",
+      "sourceSection": "6.3.6. External Heating"
+    },
+    {
+      "id": "EXT-HEAT-AIR-KNIFE",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Air knife for external heating system. Receives hot air from blower at 80 l/sec to heat blanket surface.",
+      "connectedTo": "EXT-HEAT-BLOWER",
+      "sourceSection": "6.3.6. External Heating"
+    },
+    {
+      "id": "EXT-HEAT-PLATE-HEATER",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Plate heaters operating at 55°C. Prevent vapor from condensing and dripping on the blanket. Equipped with thermistors.",
+      "connectedTo": "EXT-HEAT-THERMISTOR",
+      "sourceSection": "6.3.6. External Heating"
+    },
+    {
+      "id": "EXT-HEAT-THERMISTOR",
+      "type": "temp-sensor",
+      "cabinet": "Engine",
+      "description": "Thermistors mounted on plate heaters of the external heating system for temperature monitoring.",
+      "connectedTo": "EXT-HEAT-PLATE-HEATER",
+      "sourceSection": "6.3.6. External Heating"
+    },
+    {
+      "id": "IR-SENSOR-BLANKET",
+      "type": "temp-sensor",
+      "cabinet": "Engine",
+      "description": "IR sensor monitoring blanket temperature. Has compressed air inlet to prevent accumulation of imaging oil vapors on sensor glass. No calibration required.",
+      "connectedTo": "IR bridge, blanket",
+      "sourceSection": "6.3.7. IR Bridge"
+    },
+    {
+      "id": "IR-SENSOR-ITM",
+      "type": "temp-sensor",
+      "cabinet": "Engine",
+      "description": "IR sensor monitoring ITM drum temperature. Has compressed air inlet to prevent accumulation of imaging oil vapors on sensor glass. No calibration required.",
+      "connectedTo": "IR bridge, ITM drum",
+      "sourceSection": "6.3.7. IR Bridge"
+    },
+    {
+      "id": "IR-SENSOR-IMP",
+      "type": "temp-sensor",
+      "cabinet": "Engine",
+      "description": "IR sensor monitoring impression drum temperature. Has compressed air inlet to prevent accumulation of imaging oil vapors on sensor glass. No calibration required.",
+      "connectedTo": "IR bridge, impression drum",
+      "sourceSection": "6.3.7. IR Bridge"
+    },
+    {
+      "id": "IMP-DRUM",
+      "type": "drum",
+      "cabinet": "Engine",
+      "description": "Impression drum. Transfers image from blanket to substrate (2nd transfer) using engage pressure. Machine-specific: CutSheet/WEB or Flexibles/Paper substrate variants.",
+      "connectedTo": "blanket, substrate path, ITC, GDU",
+      "sourceSection": "6.4. Impression Drum (IMP) and Surroundings"
+    },
+    {
+      "id": "IMP-ENGAGE-MECH",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Engage mechanism on IMP drum. Engage distance depends on substrate thickness. Adapts on-the-fly to substrate thickness changes. Second transfer calibration performed automatically by wizard.",
+      "connectedTo": "IMP-DRUM",
+      "sourceSection": "6.4.1. Engage Mechanism"
+    },
+    {
+      "id": "GDU-CAM-FOLLOWER",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Cam follower in GDU. Rides on cam to control gripper open/close position.",
+      "connectedTo": "GDU",
+      "sourceSection": "6.4.2. Grippers Driver Unit (GDU)"
+    },
+    {
+      "id": "GDU-GRIPPER-SHAFT",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Gripper shaft in GDU. Rotates CW (close) or CCW (open) based on cam follower and spring force.",
+      "connectedTo": "GDU",
+      "sourceSection": "6.4.2. Grippers Driver Unit (GDU)"
+    },
+    {
+      "id": "GDU-SPRING",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Spring in GDU. Contracts when cam follower in upper position (grippers close); forces shaft CCW when follower in lower position (grippers open).",
+      "connectedTo": "GDU",
+      "sourceSection": "6.4.2. Grippers Driver Unit (GDU)"
+    },
+    {
+      "id": "ITC",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Impression Temperature Control system. Maintains impression drum temperature constant at 50°C via closed water circulation system with heaters and heat exchanger.",
+      "connectedTo": "IMP-DRUM, ITC-HEATER, ITC-HEAT-EXCHANGER",
+      "sourceSection": "6.4.3. Impression Temperature Control (ITC)"
+    },
+    {
+      "id": "ITC-HEATER",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Heater in ITC closed water circulation system. Heats water to maintain impression drum at 50°C.",
+      "connectedTo": "ITC",
+      "sourceSection": "6.4.3. Impression Temperature Control (ITC)"
+    },
+    {
+      "id": "ITC-HEAT-EXCHANGER",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Heat exchanger in ITC closed water circulation system. Part of temperature regulation loop for impression drum.",
+      "connectedTo": "ITC",
+      "sourceSection": "6.4.3. Impression Temperature Control (ITC)"
+    },
+    {
+      "id": "REG-CAMERA",
+      "type": "sensor",
+      "cabinet": "Engine",
+      "description": "Registration camera. Positioned near IMP drum. Captures images right after print for registration measurement. Present in multi-shot machines only (Eilat, Shani). Triggered by ECM synchronized to encoder angle at impression completion. Requires sheet width 670–720 mm for calibration. Measures: color registration marks, paper length deviation, buckle, skew, CPR, FTB, FTF.",
+      "connectedTo": "IMP-DRUM, ECM",
+      "configType": "multi-shot (Eilat, Shani)",
+      "sourceSection": "6.5. Registration Cameras"
+    },
+    {
+      "id": "WH",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Writing Head. Uses laser beams to write the image on the PIP foil.",
+      "sourceSection": "6.6. Writing Head (WH)"
+    },
+    {
+      "id": "WH-MLA",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Multi Laser Array — compound of optical mechanical components each with a specific role in the writing process",
+      "sourceSection": "6.6.1. WH beam stability procedure"
+    },
+    {
+      "id": "WH-Polygon",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "WH polygon — rotates to create the beam scan effect during the writing procedure",
+      "sourceSection": "6.6.1. WH beam stability procedure"
+    },
+    {
+      "id": "WHEL3",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Writing Head Electronics board — main electronics board of the writing head unit",
+      "sourceSection": "6.6.2. Writing Head Electronics (WHEL3)"
+    },
+    {
+      "id": "V-Corn",
+      "type": "other",
+      "cabinet": "Press-PC/DFE",
+      "description": "Imaging accelerator card installed at both Press-PC and DFE rack. Press-PC card writes RIP information to WH memory. Two-level image processing: (1) DFE-to-Press-Services SW interface via PAPI; (2) Press-Services-to-WH-electronics pipeline for separation, print pipeline, and management. Pipeline performs page composition per separation, ink coverage calculations, screening selection, and buffering to WH memory.",
+      "sourceSection": "6.6.3. V-Corn"
+    },
+    {
+      "id": "WH-FocusMechanism",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Motorized interface for WH focus adjustments: horizontal shift adjusts PIP-to-WH distance (general focus); rotation/tilt adjusts differential focus (WH tilted up-down in horizontal plane)",
+      "sourceSection": "6.6.4. Focus Adjustment"
+    },
+    {
+      "id": "WH-FoldingMirror",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "External folding mirror responsible for WH skew adjustment. Calibrated once manually on production line; can be recalibrated in field after disassembly/reassembly.",
+      "sourceSection": "6.6.5. Skew adjustment"
+    },
+    {
+      "id": "HDLA",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "High Definition Laser Array — supports imaging and pressing at 1600 DPI. Requires updated WH and V-Corn HW and FW on the press machine.",
+      "sourceSection": "6.6.10. HDLA – High Definition Laser Array"
+    },
+    {
+      "id": "GLS",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Gear Lubrication System — fully automated system responsible for lubricating IMP engage motors (front and rear) and the ITM gear",
+      "sourceSection": "6.7. Gear Lubrication System (GLS)"
+    },
+    {
+      "id": "GLS-OilPump",
+      "type": "pump",
+      "cabinet": "Engine",
+      "connectedTo": "GLS-Pinion",
+      "description": "Oil pump — delivers lubrication oil within Gear Lubrication System",
+      "sourceSection": "6.7. Gear Lubrication System (GLS)"
+    },
+    {
+      "id": "GLS-Pinion",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Lubrication pinion — delivers oil to gear teeth in GLS",
+      "sourceSection": "6.7. Gear Lubrication System (GLS)"
+    },
+    {
+      "id": "IDS",
+      "type": "other",
+      "cabinet": "Engine",
+      "configType": "ARAD",
+      "description": "Ink Drying System — ARAD press machines only, for food packaging health regulation compliance. Located at exit of print engine; dries wet ink after print. Max drying capability 76%; good drying uniformity across print. Handles extreme case: YMCK 66% and W 100% white on BOPP.",
+      "sourceSection": "6.8. Ink Drying System (IDS)"
+    },
+    {
+      "id": "IDS-DryingBox",
+      "type": "other",
+      "cabinet": "Engine",
+      "configType": "ARAD",
+      "description": "Drying box — enclosure component of IDS; cross-section shown in source figure",
+      "sourceSection": "6.8. Ink Drying System (IDS)"
+    },
+    {
+      "id": "UC-Chiller",
+      "type": "other",
+      "cabinet": "UC",
+      "description": "Chiller — cold water source; distributes to cleaning station HX, ink cabinet water system, CVC HX, and ITC HX",
+      "sourceSection": "7.1. Cold Water System"
+    },
+    {
+      "id": "UC-HX-CleaningStation",
+      "type": "other",
+      "cabinet": "UC",
+      "connectedTo": "UC-Chiller",
+      "description": "Cleaning station heat exchanger — receives cold water from chiller for cleaning station cooling",
+      "sourceSection": "7.1. Cold Water System"
+    },
+    {
+      "id": "UC-HX-InkCabinet",
+      "type": "other",
+      "cabinet": "Ink",
+      "connectedTo": "UC-Chiller",
+      "description": "Ink cabinet water system — receives cold water from chiller for ink cabinet cooling",
+      "sourceSection": "7.1. Cold Water System"
+    },
+    {
+      "id": "UC-HX-CVC",
+      "type": "other",
+      "cabinet": "UC",
+      "connectedTo": "UC-Chiller",
+      "description": "Climate and VOC Control (CVC) heat exchanger — receives cold water from chiller",
+      "sourceSection": "7.1. Cold Water System"
+    },
+    {
+      "id": "UC-HX-ITC",
+      "type": "other",
+      "cabinet": "UC",
+      "connectedTo": "UC-Chiller",
+      "description": "Impression Temperature Control (ITC) heat exchanger — receives cold water from chiller for ITM impression temperature regulation",
+      "sourceSection": "7.1. Cold Water System"
+    },
+    {
+      "id": "UC-MixingPump",
+      "type": "pump",
+      "cabinet": "UC",
+      "description": "Mixing pump — part of imaging oil / cold water circulation loop in Utility Cabinet",
+      "sourceSection": "7.1. Cold Water System"
+    },
+    {
+      "id": "UC-CirculationPumps",
+      "type": "pump",
+      "cabinet": "UC",
+      "description": "Multiple circulation pumps (P) on Dirty IO Reservoir, Clean IO Reservoir, Imaging Oil Buffer, and other IO paths within the cold water / IO system",
+      "sourceSection": "7.1. Cold Water System"
+    },
+    {
+      "id": "UC-PARSValve",
+      "type": "valve",
+      "cabinet": "UC",
+      "description": "PARS valve — part of imaging oil circulation / cold water system in Utility Cabinet",
+      "sourceSection": "7.1. Cold Water System"
+    },
+    {
+      "id": "UC-ReservoirRebuildValve",
+      "type": "valve",
+      "cabinet": "UC",
+      "description": "Reservoir rebuild valve — controls IO reservoir replenishment in Utility Cabinet",
+      "sourceSection": "7.1. Cold Water System"
+    },
+    {
+      "id": "UC-DrainValves",
+      "type": "valve",
+      "cabinet": "UC",
+      "description": "Drain valves — used to drain cold water / IO circuits in Utility Cabinet",
+      "sourceSection": "7.1. Cold Water System"
+    },
+    {
+      "id": "UC-DirtyIOReservoir",
+      "type": "other",
+      "cabinet": "UC",
+      "description": "Dirty IO reservoir — collects used/contaminated imaging oil before separation or waste routing",
+      "sourceSection": "7.1. Cold Water System"
+    },
+    {
+      "id": "UC-CleanIOReservoir",
+      "type": "other",
+      "cabinet": "UC",
+      "description": "Clean IO reservoir — stores filtered/clean imaging oil for press use",
+      "sourceSection": "7.1. Cold Water System"
+    },
+    {
+      "id": "UC-ImagingOilBuffer",
+      "type": "other",
+      "cabinet": "UC",
+      "description": "Imaging Oil Buffer — intermediate buffer in imaging oil circulation loop; has overflow path to waste",
+      "sourceSection": "7.1. Cold Water System"
+    },
+    {
+      "id": "UC-ColdWaterManifold",
+      "type": "other",
+      "cabinet": "UC",
+      "description": "Main cold water system manifold — distributes chilled water to all cooling subsystems",
+      "sourceSection": "7.1. Cold Water System"
+    },
+    {
+      "id": "ImagingOilReservoir",
+      "type": "other",
+      "cabinet": "Utility",
+      "description": "Buffer tank for cleaning station, heat exchanger, filter replacement, and PIP replacement. Separates dirty and clean imaging oil. Analyzes reservoir imaging oil (temperature, dirtiness level, conductivity). Allows imaging oil flow rate calibration test.",
+      "sourceSection": "7.2.1. Reservoir"
+    },
+    {
+      "id": "ImagingOilSensorBoard",
+      "type": "sensor",
+      "cabinet": "Utility",
+      "description": "Board mounted on imaging oil reservoir containing: imaging oil level float sensors, temperature sensor, dirtiness level sensor, and conductivity sensor.",
+      "sourceSection": "7.2.1.1. Imaging Oil Sensor Board"
+    },
+    {
+      "id": "LevelContinuousSensorBoard",
+      "type": "sensor",
+      "cabinet": "Utility",
+      "description": "Board providing continuous (non-float) imaging oil level measurement in the reservoir.",
+      "sourceSection": "7.2.1.2. Level Continuous Sensor Board"
+    },
+    {
+      "id": "ImagingOilValvesPumps",
+      "type": "pump",
+      "cabinet": "Utility",
+      "description": "Valves and pumps that: supply imaging oil to ink cabinet from buffer tank and reservoir; direct imaging oil overflow from reservoir to waste tank and bottles; direct imaging oil waste from BID catch tray to waste tank and bottles; supply imaging oil to cleaning station, automated PIP foil replacement system, mechanical filters, and silica filters.",
+      "sourceSection": "7.2.2. Valves and Pumps"
+    },
+    {
+      "id": "RecyclingSystem",
+      "type": "other",
+      "cabinet": "Utility",
+      "description": "Renews imaging oil for ink tank rebuild. Separates water and imaging oil. Converts distilled imaging oil to useable imaging oil by adding recycling agent (RA). Stores imaging oil in buffers for ink rebuild, reservoir rebuild, automated PIP foil replacement system, and filling station bottle. New imaging oil refill is performed only through the recycling system.",
+      "sourceSection": "7.2.3. Recycling System"
+    },
+    {
+      "id": "MechanicalFilters",
+      "type": "other",
+      "cabinet": "Utility",
+      "description": "Remove solid residue after the first transfer. Minimize quantity of particles larger than 2 microns reaching the cleaning station (to minimize PIP scratches). Keep dirtiness level below 0.01% NVS (color consistency requirement).",
+      "sourceSection": "7.2.4. Mechanical Filters"
+    },
+    {
+      "id": "SilicaFilters",
+      "type": "other",
+      "cabinet": "Utility",
+      "description": "Remove dissolved materials such as imaging agent and other salts from the imaging oil stream to reduce conductivity, thereby reducing PIP scratches on the print.",
+      "sourceSection": "7.2.5. Silica Filters"
+    },
+    {
+      "id": "WasteTank",
+      "type": "other",
+      "cabinet": "Utility",
+      "description": "Collects waste imaging oil drained or pumped from the imaging oil system. Located at the bottom of the utility cabinet. When full, waste imaging oil is pumped to the waste bottle.",
+      "sourceSection": "7.2.6. Waste System"
+    },
+    {
+      "id": "WasteBottle",
+      "type": "other",
+      "cabinet": "Utility",
+      "description": "Receives waste imaging oil pumped from the waste tank when the waste tank is full.",
+      "sourceSection": "7.2.6. Waste System"
+    },
+    {
+      "id": "CVCEconomizer",
+      "type": "other",
+      "cabinet": "Utility",
+      "description": "Air-to-air cross flow heat exchanger. Recovers heat from incoming hot air stream to preheat the cold air stream. Allows low dew point. Sets press temperature by working in conjunction with the damper. Helps prevent mist by gradual cooling.",
+      "sourceSection": "7.3.1. Economizer and Damper"
+    },
+    {
+      "id": "CVCDamper",
+      "type": "valve",
+      "cabinet": "Utility",
+      "description": "Regulates outlet air temperature from the economizer, ranging from approximately 30°C to approximately 23°C, by allowing additional cold air flow into the economizer.",
+      "sourceSection": "7.3.1. Economizer and Damper"
+    },
+    {
+      "id": "WaterAirHeatExchanger",
+      "type": "other",
+      "cabinet": "Utility",
+      "description": "Cools saturated hot air to its dew point, causing condensation of water and imaging oil vapors. Drains condensed water and imaging oil drops to the recycling system. Drains waste water and imaging oil drops from the catch tray to the waste tank. Dissipates press heat and sets press VOC concentration. Impacts humidity level.",
+      "sourceSection": "7.3.2. Water-Air Heat-Exchanger"
+    },
+    {
+      "id": "CVCHumidifier",
+      "type": "other",
+      "cabinet": "Utility",
+      "description": "Provides humidity control by spraying water drawn from the recycling system into the press air flow to increase relative humidity. Spraying is achieved using air pressure supplied from the manifold on the rear of the engine. Sensor distance: 30 mm.",
+      "sourceSection": "7.3.3. Humidifier"
+    },
+    {
+      "id": "CVCBlower",
+      "type": "fan",
+      "cabinet": "Utility",
+      "description": "Blows circulated air from the Climate and VOC control system towards the writing head and press top.",
+      "sourceSection": "7.3.4. CVC Blower and Shutter"
+    },
+    {
+      "id": "CVCShutter",
+      "type": "valve",
+      "cabinet": "Utility",
+      "description": "Blocks air flow from the engine block to the utility cabinet during press shutdown to prevent climate-controlled air from escaping to the press surroundings.",
+      "sourceSection": "7.3.4. CVC Blower and Shutter"
+    },
+    {
+      "id": "CVCSensor_PressTemp_Engine",
+      "type": "temp-sensor",
+      "cabinet": "Engine",
+      "description": "Press temperature sensor located in the printing engine. One of six CVC sensors monitoring press temperature and relative humidity; samples every 10 seconds.",
+      "sourceSection": "7.3.5. CVC Sensors"
+    },
+    {
+      "id": "CVCSensor_PressHumidityControl_Engine",
+      "type": "sensor",
+      "cabinet": "Engine",
+      "description": "Press humidity control sensor located in the printing engine. One of six CVC sensors sampling every 10 seconds.",
+      "sourceSection": "7.3.5. CVC Sensors"
+    },
+    {
+      "id": "CVCSensor_DewPoint_Utility",
+      "type": "temp-sensor",
+      "cabinet": "Utility",
+      "description": "Dew point temperature sensor located in the utility cabinet. One of six CVC sensors sampling every 10 seconds.",
+      "sourceSection": "7.3.5. CVC Sensors"
+    },
+    {
+      "id": "CVCSensor_PressHumidity_Duct",
+      "type": "sensor",
+      "cabinet": "Utility",
+      "description": "Press humidity sensor located inside the duct in the utility cabinet. One of six CVC sensors sampling every 10 seconds.",
+      "sourceSection": "7.3.5. CVC Sensors"
+    },
+    {
+      "id": "CVCSensor_SiteHumidity_Utility",
+      "type": "sensor",
+      "cabinet": "Utility",
+      "description": "Site humidity sensor located in the utility cabinet. One of six CVC sensors sampling every 10 seconds.",
+      "sourceSection": "7.3.5. CVC Sensors"
+    },
+    {
+      "id": "CVCSensor_OutletTemp_Utility",
+      "type": "temp-sensor",
+      "cabinet": "Utility",
+      "description": "Utility cabinet outlet temperature sensor located next to the exit blower. One of six CVC sensors sampling every 10 seconds.",
+      "sourceSection": "7.3.5. CVC Sensors"
+    },
+    {
+      "id": "InkCabinet",
+      "type": "other",
+      "cabinet": "Ink",
+      "description": "Contains seven ink stations: one each for YMCK colors and three for special colors. Each station includes: Solid Add System (SAS), pumps and valves, ink tank, and imaging agent add system. Station interfaces: pneumatic system, temperature control system, control system, and imaging oil manifold.",
+      "sourceSection": "8. Ink Cabinet"
+    },
+    {
+      "id": "BUFFER-PUMP",
+      "type": "pump",
+      "cabinet": "Ink",
+      "description": "Pumps imaging oil from the reservoir into the SAS tank.",
+      "sourceSection": "8.1. Solid add system (SAS)"
+    },
+    {
+      "id": "GEAR-PUMP",
+      "type": "pump",
+      "cabinet": "Ink",
+      "description": "Dual-direction pump. Backflow: pumps imaging oil to the ink drive unit mixer. Flow: pumps mixed ink (15% NVS) to the ink tank. In normal operation uses diluted ink from the tank instead of pure imaging oil.",
+      "sourceSection": "8.1. Solid add system (SAS)"
+    },
+    {
+      "id": "LEAD-SCREW",
+      "type": "other",
+      "cabinet": "Ink",
+      "description": "Pushes solid ink cartridge into the mixer.",
+      "sourceSection": "8.1. Solid add system (SAS)"
+    },
+    {
+      "id": "CUTTER",
+      "type": "other",
+      "cabinet": "Ink",
+      "description": "Slices a chunk of solid ink pushed by the lead screw into the mixer.",
+      "sourceSection": "8.1. Solid add system (SAS)"
+    },
+    {
+      "id": "LOAD-CELL",
+      "type": "sensor",
+      "cabinet": "Ink",
+      "description": "Weighs imaging oil and ink during the solid add process.",
+      "sourceSection": "8.1. Solid add system (SAS)"
+    },
+    {
+      "id": "INK-DRIVE-UNIT-MIXER",
+      "type": "other",
+      "cabinet": "Ink",
+      "description": "Receives ink chunks and imaging oil; mixes them until the concentration reaches approximately 15% NVS.",
+      "sourceSection": "8.1. Solid add system (SAS)"
+    },
+    {
+      "id": "INK-TANK",
+      "type": "other",
+      "cabinet": "Ink",
+      "description": "Contains the ink mixture (15% NVS) supplied to the BIDs. Receives mixed ink from the gear pump.",
+      "sourceSection": "8.3. Ink Tank"
+    },
+    {
+      "id": "IA-ADD-SYSTEM",
+      "type": "other",
+      "cabinet": "Ink",
+      "description": "Imaging Agent Add System. Adds 1–10 ml of imaging agent (IA) into ink tanks to meet ink conductivity requirements. Can add to all 7 ink tanks simultaneously.",
+      "sourceSection": "8.4. Imaging Agent Add System"
+    },
+    {
+      "id": "DUAL-WHITE-STATION",
+      "type": "other",
+      "cabinet": "Ink",
+      "configType": "Arad",
+      "description": "Dual white tube ink station for high white coverage presses. Holds two white ink tubes with one IDS and one ink tank. Higher white ink volume reduces frequency of tube replacement during jobs.",
+      "sourceSection": "8.5. Dual white station"
+    },
+    {
+      "id": "ITS-BOARD",
+      "type": "sensor",
+      "cabinet": "Ink",
+      "description": "Ink Tank Sensor board. One per ink tank. Contains Optical Density Sensor (ODS) and Conductivity Sensor. MR2: same board also pairs with a separate pressure sensor.",
+      "sourceSection": "8.7.1. Ink Tank Sensors"
+    },
+    {
+      "id": "ODS",
+      "type": "sensor",
+      "cabinet": "Ink",
+      "connectedTo": "ITS-BOARD",
+      "description": "Optical Density Sensor on the ITS board. YMCK calibration done by manufacturer; OVG calibration done with a wizard and a calibration can.",
+      "sourceSection": "8.7.1. Ink Tank Sensors"
+    },
+    {
+      "id": "CONDUCTIVITY-SENSOR",
+      "type": "sensor",
+      "cabinet": "Ink",
+      "connectedTo": "ITS-BOARD",
+      "description": "Active Conductivity Sensor (ACS) on the ITS board. Applies sine voltage to upper plate; current between plates is linear to ink conductivity, enabling resistance/conductivity calculation. Sinus amplitude adjustment calibrates for production tolerances. Calibration performed on press via SysTab with an external conductivity measurement device.",
+      "sourceSection": "8.7.1.2.3. Conductivity Sensor Calibration"
+    },
+    {
+      "id": "LCS-BOARD",
+      "type": "sensor",
+      "cabinet": "Ink",
+      "configType": "MR1",
+      "description": "Continuous Level Sensor board (MR1 only). Carries the continuous ink level sensor. Requires cleaning once a week to remove ink residue. No calibration.",
+      "sourceSection": "8.7.1.1. MR1"
+    },
+    {
+      "id": "CONTINUOUS-LEVEL-SENSOR",
+      "type": "sensor",
+      "cabinet": "Ink",
+      "connectedTo": "LCS-BOARD",
+      "configType": "MR1",
+      "description": "Continuous ink level sensor on the LCS board (MR1). No calibration. Clean weekly for ink residue.",
+      "sourceSection": "8.7.1.1. MR1"
+    },
+    {
+      "id": "PRESSURE-SENSOR",
+      "type": "sensor",
+      "cabinet": "Ink",
+      "configType": "MR2",
+      "description": "Replaces the LCS board in MR2 presses. Located inside every ink tank. Level is read by compressing air inside the sensor. Silver cap at sensor tip prevents ink from dripping in and disrupting readings. Calibrated via wizard: remove sensor from liquid, run wizard to set zero-liquid air pressure baseline.",
+      "sourceSection": "8.7.1.2.1. Pressure Sensor"
+    },
+    {
+      "id": "ITEC",
+      "type": "other",
+      "cabinet": "Ink",
+      "description": "Low-level electronic board at the engine. Pre-burned with proper SW; performs power-on and SW loading during engine startup. Participates in Element Manager managed wake-up sequence.",
+      "sourceSection": "11.1.7. Press SW Boot (Re Element Manager)"
+    },
+    {
+      "id": "BIM",
+      "type": "other",
+      "cabinet": "Ink",
+      "configType": "MR1",
+      "description": "Low-level electronic board at the engine. Pre-burned with proper SW; performs power-on and SW loading during engine startup. Participates in Element Manager managed wake-up sequence.",
+      "sourceSection": "11.1.7. Press SW Boot (Re Element Manager)"
+    },
+    {
+      "id": "BID-HV",
+      "type": "other",
+      "cabinet": "Ink",
+      "configType": "MR2",
+      "description": "BID High Voltage control board. Located in the ink cabinet. MR2 configuration, replaces BIM.",
+      "sourceSection": "8.7. Ink Control System"
+    },
+    {
+      "id": "ECM",
+      "type": "other",
+      "cabinet": "Electronics",
+      "description": "Engine Control Module; CBA-type board; main processing unit of FW hierarchy; manages all cards and sub-systems (logic, timings, communications with upper SW layers/services); incorporates PCM (Paper Control Module) logic previously on a separate board",
+      "sourceSection": "11.1.7. Press SW Boot (Re Element Manager)",
+      "connectedTo": "All press sub-systems, upper SW services"
+    },
+    {
+      "id": "INK-CTRL-BOARD-1-7",
+      "type": "other",
+      "cabinet": "Ink",
+      "description": "Ink tank electric control boards #1 through #7. Each controls ink properties (conductivity, density, level, temperature) for a single ink station. Reports to BID Ink Manager (BIM).",
+      "connectedTo": "BIM",
+      "sourceSection": "8.7.4. BID Ink Manager"
+    },
+    {
+      "id": "INK-CTRL-BOARD-8",
+      "type": "other",
+      "cabinet": "Ink",
+      "description": "Ink tank electric control board #8. Controls the temperature control system.",
+      "connectedTo": "BIM",
+      "sourceSection": "8.7.4. BID Ink Manager"
+    },
+    {
+      "id": "BIM-MR1",
+      "type": "other",
+      "cabinet": "Ink",
+      "description": "BID Ink Manager for MR1 presses. One per ink station. Receives PIP encoder from ECM. Receives Ethernet from Ethernet switch. Controls BID engage system. CANbus communication with ITEC. Hardware ID. BID IN PLACE recognition. Controls ink level, density, conductivity, and temperature via ITEC.",
+      "connectedTo": "ECM (PIP encoder), Ethernet switch, ITEC (CANbus), BID engage system",
+      "configType": "MR1",
+      "sourceSection": "8.7.4.1. BIM (MR1 presses)"
+    },
+    {
+      "id": "BIM-HV-MR2",
+      "type": "other",
+      "cabinet": "Ink",
+      "description": "BID Ink Manager High Voltage for MR2 presses. Manages all ink and BID operations, reports to ECM. Provides high voltage supply to BID elements (developer, squeegee, cleaner, sponge). Receives PIP encoder from ECM. Receives Ethernet from Ethernet switch. Controls BID engage system. CANbus communication with ITEC. Hardware ID. BID IN PLACE recognition.",
+      "connectedTo": "ECM (PIP encoder, reporting), Ethernet switch, ITEC (CANbus), BID elements (developer, squeegee, cleaner, sponge)",
+      "configType": "MR2",
+      "sourceSection": "8.7.4.2. BIM High Voltage (BIM HV - MR2 presses)"
+    },
+    {
+      "id": "IDU-WEIGHT-SENSOR",
+      "type": "sensor",
+      "cabinet": "Ink",
+      "description": "Load cell weight sensor at the bottom of the IDU (Ink Delivery Unit). Measures IDU weight for ink weight initialization and calibration. Initialization requires removing IDU for no-load baseline measurement. Full calibration performed against predefined known weights placed in IDU position.",
+      "sourceSection": "8.7.5.3. Ink Weight Initialization"
+    },
+    {
+      "id": "INK-FLOW-REGULATING-VALVE",
+      "type": "valve",
+      "cabinet": "Ink",
+      "description": "Regulating valve controlling ink flow from ink tank to BID. Calibrated by turning approximately 15 times counterclockwise from fully closed position to achieve target flow rate of 30 liters per minute.",
+      "sourceSection": "8.7.5.2. Ink Flow Calibration"
+    },
+    {
+      "id": "IMS",
+      "type": "other",
+      "cabinet": "External",
+      "description": "Ink Mixing System. Independent of HP Indigo press machines. Mixes special colors per Pantone or other standards. User selects target color; system mixes inks to achieve closest match. Only mechanical interface with HP Indigo press machines.",
+      "sourceSection": "9.1. Ink Mixing System (IMS)"
+    },
+    {
+      "id": "MEGA-WHITE-CABINET",
+      "type": "other",
+      "cabinet": "Mega-White",
+      "description": "Separate cabinet (not part of standard press machine) for high-coverage white ink, primarily in WEB presses. Contains two (master/slave) ink mixing units (piles) with high volume of ink particles. Reduces frequency of cartridge replacement compared to standard ink station with ink tube and tank.",
+      "sourceSection": "9.2. Mega-White"
+    },
+    {
+      "id": "OFIR",
+      "type": "pump",
+      "cabinet": "External",
+      "description": "External ink station cleaner machine. Pumps IO from the press machine and circulates IO through all ink stations including pipes leading to BID. Does not support BID internal cleaning.",
+      "sourceSection": "9.3. Ink station cleaner - Ofir"
+    },
+    {
+      "id": "DIP",
+      "type": "other",
+      "cabinet": "Ink",
+      "description": "Digital Ink Primer. Primer ink used on substrates requiring extra adhesion for better 2nd transfer. Installed as one of the inks and defined at substrate properties. Requires authorization to use.",
+      "sourceSection": "9.4. Digital Ink Primer (DIP)"
+    },
+    {
+      "id": "CIRCUIT-BREAKER-BASIC",
+      "type": "circuit-breaker",
+      "description": "Automatically operated electrical switch protecting circuits from damage caused by overload or short circuit. Detects fault condition and interrupts current flow. Resettable manually or automatically; unlike a fuse which must be replaced after single operation.",
+      "sourceSection": "10.1. Basic electronics equipment"
+    },
+    {
+      "id": "RELAY-BASIC",
+      "type": "relay",
+      "description": "Electrically operated switch. Typically uses electromagnet to mechanically operate a switch. Other operating principles also used (e.g., solid-state relays).",
+      "sourceSection": "10.1. Basic electronics equipment"
+    },
+    {
+      "id": "SSR-BASIC",
+      "type": "relay",
+      "description": "Solid-State Relay. Electronic switching device that switches states when external voltage is applied across its n-type and p-type junctions. Small control signal controls larger load current or voltage. Can switch either AC or DC to load. No moving parts. Serves same function as electromechanical relay.",
+      "sourceSection": "10.1. Basic electronics equipment"
+    },
+    {
+      "id": "CONTACTOR-BASIC",
+      "type": "contactor",
+      "description": "Electrically controlled switch for switching power circuits. Similar to relay but with higher current ratings. Controlled by a circuit with much lower power level than the switched circuit.",
+      "sourceSection": "10.1. Basic electronics equipment"
+    },
+    {
+      "id": "DIMMER-BASIC",
+      "type": "other",
+      "description": "Device used to vary brightness of a light by decreasing or increasing RMS voltage and mean power to the lamp, varying light output intensity.",
+      "sourceSection": "10.1. Basic electronics equipment"
+    },
+    {
+      "id": "BOARD-TYPE-A",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Type A electronics board. Powerful CPU for running high-level press applications. Primary communication: Ethernet. Example: ECM (Engine Control Manager).",
+      "sourceSection": "10.2. Electronic Board Types"
+    },
+    {
+      "id": "BOARD-TYPE-B",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Type B electronics board. Standard CPU for running medium-range press applications. Primary communications: Ethernet and CAN (Controller Area Network).",
+      "sourceSection": "10.2. Electronic Board Types"
+    },
+    {
+      "id": "BOARD-TYPE-C",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Type C electronics board. Low-level CPU for controlling distributed input/output.",
+      "sourceSection": "10.2. Electronic Board Types"
+    },
+    {
+      "id": "MOTOR_DC",
+      "type": "other",
+      "description": "DC motor; electromagnetic field generated by current-carrying coil; field direction switched 180° by reversing current; selected to cover full operational range with margin; overcurrent is a failure condition",
+      "sourceSection": "10.4. Motors"
+    },
+    {
+      "id": "MOTOR_AC",
+      "type": "other",
+      "description": "AC motor; stationary stator coils supplied with AC produce rotating magnetic field; inside rotor attached to output shaft receives torque from rotating field",
+      "sourceSection": "10.4. Motors"
+    },
+    {
+      "id": "MOTOR_SERVO",
+      "type": "other",
+      "description": "Servomotor; rotary actuator for precise control of angular position, velocity, and acceleration; motor coupled with position-feedback sensor and dedicated controller module",
+      "sourceSection": "10.4. Motors"
+    },
+    {
+      "id": "ENC_IMP",
+      "type": "sensor",
+      "description": "Rotary encoder on IMP drum; measures angular movement; reports to ECM via pulse-coded analog interface",
+      "connectedTo": "ECM",
+      "sourceSection": "10.5. Encoders"
+    },
+    {
+      "id": "ENC_ITM",
+      "type": "sensor",
+      "description": "Rotary encoder on ITM drum; measures angular movement; reports to ECM via pulse-coded analog interface",
+      "connectedTo": "ECM",
+      "sourceSection": "10.5. Encoders"
+    },
+    {
+      "id": "IDX_SENSOR",
+      "type": "switch",
+      "description": "Index sensor (micro-switch) installed at 0° drum degree; calibrates encoder drift; indicates cycle start to ECM",
+      "connectedTo": "ECM",
+      "sourceSection": "10.5. Encoders"
+    },
+    {
+      "id": "PLC_CPU",
+      "type": "other",
+      "cabinet": "PLC",
+      "description": "B&R PLC CPU / Industrial PC; main controller running press application; programmed via Automation Studio software environment",
+      "sourceSection": "10.6.1.1"
+    },
+    {
+      "id": "ACOPOS_MULTI",
+      "type": "motor-driver",
+      "description": "B&R ACOPOS Multi; servo controller unit; dual or single axis",
+      "sourceSection": "10.6.1.2"
+    },
+    {
+      "id": "ACOPOS_MICRO_SERVO",
+      "type": "motor-driver",
+      "description": "B&R ACOPOS Micro servo; servo controller 80V DC dual axis",
+      "sourceSection": "10.6.1.3"
+    },
+    {
+      "id": "ACOPOS_MICRO_STEPPER",
+      "type": "motor-driver",
+      "description": "B&R ACOPOS Micro stepper; stepper controller dual axis",
+      "sourceSection": "10.6.1.4"
+    },
+    {
+      "id": "X20_MODULES",
+      "type": "other",
+      "description": "B&R X20 product range; includes digital I/O, analog I/O, stepper motor driver, and DC motor driver modules",
+      "sourceSection": "10.6.1.5"
+    },
+    {
+      "id": "SAFETY_PLC",
+      "type": "other",
+      "description": "B&R Safety PLC; controls safety-related press functions using safety-approved components",
+      "sourceSection": "10.6.1.6"
+    },
+    {
+      "id": "BRAKE_RESISTOR",
+      "type": "other",
+      "description": "Braking resistors; load resistors in press power subsystem; protect power supply bus from over-voltage during drum deceleration movements",
+      "sourceSection": "10.6.4. Braking resistors"
+    },
+    {
+      "id": "RFID_UNIT",
+      "type": "other",
+      "description": "RFID unit; reads and writes data (serial number, life-span impressions) from 7 developer rollers and 1 CR via RFID; supports CR stepper motors, ITM HV module interface, Electrometer interface, PTE interface, CAN Bus (type CBC, Board ID)",
+      "sourceSection": "10.7. RFID Unit"
+    },
+    {
+      "id": "PDU",
+      "type": "other",
+      "description": "Power Distribution Unit; distributes power from main power inlet to multiple consumers",
+      "sourceSection": "10.9. Power Distribution Unit (PDU)"
+    },
+    {
+      "id": "MainPowerSwitch",
+      "type": "switch",
+      "description": "Main Power-Switch; when OFF press is fully unpowered; turning ON initiates Init state with 24VDC and 48VDC distribution to control boards",
+      "sourceSection": "11.1.2.1. Main Power Off / 11.1.2.2. Init"
+    },
+    {
+      "id": "PressBuzzer",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Buzzer activated as protective signal prior to get-ready start; stops after a few seconds; traffic light continues blinking",
+      "sourceSection": "11.1.2.5. Get Ready"
+    },
+    {
+      "id": "TrafficLight",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Traffic lights activated prior to get-ready start as protective concept; continue blinking after buzzer stops",
+      "sourceSection": "11.1.2.5. Get Ready"
+    },
+    {
+      "id": "PIPMotor",
+      "type": "motor-driver",
+      "cabinet": "Engine",
+      "description": "Main motor (PIP motor); cannot be activated during standby-maintenance state",
+      "sourceSection": "11.1.2.4. Standby and Service"
+    },
+    {
+      "id": "ITM",
+      "type": "drum",
+      "cabinet": "Engine",
+      "description": "Intermediate Transfer Medium drum; temperature stabilized during pre-print; ITM-to-PIP engagement in pre-print; ITM cleaning in post-print; 'keep ITM hot' mechanism preserves thermal state across ready→standby transitions to shorten subsequent get-ready",
+      "sourceSection": "11.1.2.5. Get Ready / 11.1.2.7.1. Pre-print processes / 11.1.2.7.2. Post-print processes"
+    },
+    {
+      "id": "PIP",
+      "type": "drum",
+      "cabinet": "Engine",
+      "description": "Photo Imaging Plate foil drum. Participates in Transfer #0. Subject to dent defects from mechanical impact, dirt, or foil cracks causing holes in separation layout. Also subject to fused-ink defects from dry ink left-overs stuck to foil after 1st transfer failure, which enlarges during subsequent image development. PIP physical condition and foil degradation contribute to Auto Bias and memory defects.",
+      "sourceSection": "11.1.2.2. Init / 11.1.2.7.2. Post-print processes / 11.1.2.8. Pause"
+    },
+    {
+      "id": "Blanket",
+      "type": "drum",
+      "cabinet": "Engine",
+      "description": "Transfer blanket used in Transfer #2. Physical condition (old, wet, dry, or dirty) is a primary cause of memory defects. Also subject to dent defects from rolled paper sticking to its surface (cut-sheet presses only).",
+      "sourceSection": "14. Print Quality Common Defects / 14.1, 14.3"
+    },
+    {
+      "id": "MainPowerRelay",
+      "type": "relay",
+      "cabinet": "Engine",
+      "description": "Main power relay; turned OFF when FATAL-ERROR (#99) state is entered",
+      "sourceSection": "11.1.2.10. FATAL-ERROR (#99)"
+    },
+    {
+      "id": "InkControlSystem",
+      "type": "other",
+      "cabinet": "Ink",
+      "description": "Ink control system; can be activated for testing at standby-maintenance; INK temperature stabilized during pre-print; 'keep Ink hot' mechanism preserves thermal state across ready→standby transitions",
+      "sourceSection": "11.1.2.4. Standby and Service / 11.1.2.5. Get Ready / 11.1.2.7.1. Pre-print processes"
+    },
+    {
+      "id": "CR",
+      "type": "roller",
+      "cabinet": "Engine",
+      "description": "CR (Charge Roller); engaged during pre-print processes",
+      "sourceSection": "11.1.2.7.1. Pre-print processes"
+    },
+    {
+      "id": "CS",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Cleaning System; CS first clean performed during pre-print processes",
+      "sourceSection": "11.1.2.7.1. Pre-print processes"
+    },
+    {
+      "id": "PowerOnButton",
+      "type": "switch",
+      "cabinet": "Engine",
+      "description": "Power-On button pressed by operator to trigger Off→Standby state transition",
+      "sourceSection": "11.1.2.4. Standby and Service"
+    },
+    {
+      "id": "PressPc",
+      "type": "other",
+      "cabinet": "UC",
+      "description": "Host PC that must complete its OS boot before press SW is launched. Runs UI layer, Services layer, and provides FTP image download service for ECM firmware loading.",
+      "sourceSection": "11.1.7. Press SW Boot (Re Element Manager)"
+    },
+    {
+      "id": "ControlBoards",
+      "type": "other",
+      "cabinet": "Engine",
+      "description": "Electronic control boards; powered by 24VDC and 48VDC during Init; remain powered in Off state; firmware loaded from Press PC",
+      "sourceSection": "11.1.2.2. Init / 11.1.2.3. Off"
+    },
+    {
+      "id": "ElementManager",
+      "type": "other",
+      "description": "PC-Service infrastructure module responsible for managing the press shutdown and power-up sequences; synchronizes all FW subsystem wake-up processes and dependencies. Includes the software watchdog. Selectively reacts to wake-up failures: non-critical failures are tolerated; critical failures halt the wake-up process and report an error to the user.",
+      "sourceSection": "11.1.7. Press SW Boot (Re Element Manager); 11.2.1.5. Element Manager"
+    },
+    {
+      "id": "PEX",
+      "type": "other",
+      "description": "Press Explorer. Infrastructure utility allowing authorized users direct read/write access to the embedded software database, bypassing software logic and restrictions.",
+      "sourceSection": "11.2.1.1. PEX (Press Explorer)"
+    },
+    {
+      "id": "EventBroker",
+      "type": "other",
+      "description": "Infrastructure module managing all press events. Applications register for specific events; the broker notifies all registered subscribers when an event is issued or changes state. Used for uplink communication from Services to UI layer.",
+      "sourceSection": "11.2.1.2. Event Broker"
+    },
+    {
+      "id": "ServiceBusHost",
+      "type": "other",
+      "description": "Infrastructure module enabling the UI layer to discover and bind to service-layer interfaces at runtime (analogous to QueryInterface in COM). Supports downward UI-to-Services communication.",
+      "sourceSection": "11.2.1.3. Service Bus & Host"
+    },
+    {
+      "id": "ManagedData",
+      "type": "other",
+      "description": "Advanced data-structure pairing data values with metadata (units, min/max, etc.). Two subtypes: Business Entity (class-like, multiple distinct instances) and Composed Data (static-class-like, all instantiations share the same object).",
+      "sourceSection": "11.2.1.4. Managed Data"
+    },
+    {
+      "id": "DataSchemaDbDal",
+      "type": "other",
+      "description": "Handles the press Database (DB) and Database Access Layer (DAL); intermediates between the Services layer and the actual DB. Also responsible for FW SysTab loading during system boot.",
+      "sourceSection": "11.2.1.6. Data Schema, DB and DAL"
+    },
+    {
+      "id": "LoggingIflow",
+      "type": "other",
+      "description": "Provides log-keeping services for all SW layers. iFlow adds advanced log filtering and cross-thread flow tracing using FlowID and ParentFlowID fields, enabling per-activity duration analysis across threads and processes.",
+      "sourceSection": "11.2.1.7. Logging & iFlow"
+    },
+    {
+      "id": "Middleware",
+      "type": "other",
+      "description": "SW module acting as interface between Services layer and Firmware layer. Uses proxy-stub / client-server architecture: each server exposes a proxy (dummy) function; each client implements the stub (actual) function.",
+      "sourceSection": "11.2.1.8. Middleware (MW)"
+    },
+    {
+      "id": "UI",
+      "type": "other",
+      "description": "Top software layer; graphical interface rendered on the press monitor using WPF (Windows Presentation Foundation). No business logic. Communicates downward to Services via WCF; receives uplink notifications via Event Broker. Supports three interaction patterns: Entity Management (CRUD), Commands as State Change, and Start-Stop operations (calibrations, wizards).",
+      "sourceSection": "11.2.2. User Interface (UI) layer"
+    },
+    {
+      "id": "ServicesLayer",
+      "type": "other",
+      "description": "Business logic layer (SOA). Intermediates between UI and Firmware. Responsibilities: FW abstraction (PLC, Engine, sensors, WH), data management, print process management, offline logic, and interfaces with outbound units (DFE, Cloud).",
+      "sourceSection": "11.2.3. Services layer"
+    },
+    {
+      "id": "PLC",
+      "type": "plc-ups",
+      "description": "Programmable Logic Controller. Controls most machine motion (some exceptions exist). Built on COTS units with built-in servo control. Architecture: 1 main centralized PLC connected to many motor drivers. Can be programmed to suit specific machine requirements.",
+      "sourceSection": "11.2.4.1. Programmable Logic Control (PLC)"
+    },
+    {
+      "id": "SLC",
+      "type": "plc-ups",
+      "description": "Safety Programmable Logic Controller. Controls precautionary subsystems (imaging oil pump, silica pump, PSTB upper suction hood sensors, AC power phase verification) and safety subsystems (main motor and controller). On safety event, SLC commands PLC to stop drum rolling and validates PLC compliance within a safety-standard-defined timeout; if drums are still rolling after timeout, SLC executes a predefined motor power shortcut sanction. Requires EMS tests and interlock calibrations/self-tests supported by services and UI.",
+      "sourceSection": "11.2.4.2. Safety Programmable Logic Control (SLC)",
+      "cabinet": "Engine"
+    },
+    {
+      "id": "ITM_ThermalFuse",
+      "type": "temp-sensor",
+      "description": "Safety sensor on the press: ITM thermal fuse. Sampled and monitored by the SLC.",
+      "sourceSection": "11.2.4.2. Safety Programmable Logic Control (SLC)"
+    },
+    {
+      "id": "EBV_AirFlowSensor",
+      "type": "sensor",
+      "description": "Safety sensor: EBV air flow sensor. Sampled and monitored by the SLC.",
+      "sourceSection": "11.2.4.2. Safety Programmable Logic Control (SLC)"
+    },
+    {
+      "id": "ExternalHoodSensor",
+      "type": "sensor",
+      "description": "Safety sensor: external hood in-place sensor. Sampled and monitored by the SLC.",
+      "sourceSection": "11.2.4.2. Safety Programmable Logic Control (SLC)"
+    },
+    {
+      "id": "ITM_AirFlowSensor",
+      "type": "sensor",
+      "description": "Safety sensor: ITM air flow sensor. Sampled and monitored by the SLC.",
+      "sourceSection": "11.2.4.2. Safety Programmable Logic Control (SLC)"
+    },
+    {
+      "id": "ImagingOilPump",
+      "type": "pump",
+      "cabinet": "Engine",
+      "description": "Imaging oil pump; precautionary subsystem connected and controlled by SLC despite having a non-safety-related function.",
+      "sourceSection": "11.2.4.2. Safety Programmable Logic Control (SLC)"
+    },
+    {
+      "id": "SilicaPump",
+      "type": "pump",
+      "cabinet": "Engine",
+      "description": "Silica pump; precautionary subsystem connected and controlled by SLC despite having a non-safety-related function.",
+      "sourceSection": "11.2.4.2. Safety Programmable Logic Control (SLC)"
+    },
+    {
+      "id": "PSTB_UpperSuctionHoodSensors",
+      "type": "sensor",
+      "cabinet": "Engine",
+      "description": "PSTB sensors at the upper suction hood; precautionary subsystem connected and controlled by SLC despite having a non-safety-related function.",
+      "sourceSection": "11.2.4.2. Safety Programmable Logic Control (SLC)"
+    },
+    {
+      "id": "MainMotor",
+      "type": "motor-driver",
+      "cabinet": "Engine",
+      "description": "Main motor; safety subsystem communicating with SLC via safety communications. SLC controls motor enable, maximum speed, jog speed, and motor emergency stop events.",
+      "connectedTo": "SLC via safety communications",
+      "sourceSection": "11.2.4.2. Safety Programmable Logic Control (SLC)"
+    },
+    {
+      "id": "MotorController",
+      "type": "motor-driver",
+      "cabinet": "Engine",
+      "description": "Main motor controller; safety subsystem that functions to control the safety PLC via safety communications.",
+      "connectedTo": "SLC via safety communications",
+      "sourceSection": "11.2.4.2. Safety Programmable Logic Control (SLC)"
+    },
+    {
+      "id": "JMP",
+      "type": "other",
+      "description": "Job Management Proxy (SW service). Allocates Print Job Manager instances to different DFEs. Contains the Job Manager Façade module.",
+      "sourceSection": "11.3.2. Print Management and Job Manager"
+    },
+    {
+      "id": "JobManagerFacade",
+      "type": "other",
+      "description": "Module within JMP (SW). Translates DFE requests to the job manager service.",
+      "sourceSection": "11.3.2. Print Management and Job Manager"
+    },
+    {
+      "id": "JobOptimizer",
+      "type": "other",
+      "description": "SW service that processes job queue and job properties to define optimal print order for high utilization. Outputs three job groups: ready for print, proof required, retained (missing properties or parameters from DFE).",
+      "sourceSection": "11.3.5. Job Optimizer"
+    },
+    {
+      "id": "PrintPipeline",
+      "type": "other",
+      "description": "SW service responsible for continuous job processing while maintaining step timing order. Receives spread and separations requirements from DFE, calibration services, and user-initiated calibration. Manages stations covering paper handling, Engine, V-corn, and DFE communication; each station has Entry, Processing, and Exit queues enabling asynchronous execution independent of real-time performance. Two independent pipelines are instantiated when two PEs are active (Negev configuration); the idle PE pipeline handles paper rolling only. DFE-to-printing-service communication is critical — unstable or low-bandwidth links can stall the pipeline waiting for separation data.",
+      "sourceSection": "11.3.6. Print Pipeline"
+    },
+    {
+      "id": "HW-DONGLE",
+      "type": "other",
+      "cabinet": "UC",
+      "description": "USB-based HASP dongle used to identify and authorize user level (Operator, CE, Integrator, Developer). UI views, screens and actions enabled/disabled per level.",
+      "sourceSection": "11.3.14. User Level"
+    },
+    {
+      "id": "DFE",
+      "type": "other",
+      "description": "Digital Front End — responsible for all pre-press job preparation: editing images/text/graphics, adding cut marks and finishing sync marks, file creation (standard structure/extension e.g. PDF).",
+      "sourceSection": "11.3.16. Digital Front End (DFE)"
+    },
+    {
+      "id": "VCORN",
+      "type": "other",
+      "description": "Image processing card in the Services layer imaging pipeline; receives processed image from Services layer and outputs to WHEL for press imaging",
+      "connectedTo": "WHEL",
+      "sourceSection": "11.3.19. Imaging"
+    },
+    {
+      "id": "WHEL",
+      "type": "other",
+      "description": "Target interface of V-Corn card image processing output; receives imaging data from V-Corn card",
+      "connectedTo": "V-Corn card",
+      "sourceSection": "11.3.19. Imaging"
+    },
+    {
+      "id": "FBI-SENSOR",
+      "type": "sensor",
+      "configType": "Negev",
+      "description": "Front to Back Inspection sensors located to measure eye-mark correlation on both image sides after 2nd engine impression; enables continuous post-print front-to-back registration calibration; HP Indigo 50000 (Negev) only",
+      "sourceSection": "11.3.20. Front to Back Inspection (FBI)"
+    },
+    {
+      "id": "CBC",
+      "type": "other",
+      "description": "Low-level electronic card with internal firmware memory; FW is burnt to internal memory during press SW installation via MSI mechanism",
+      "sourceSection": "11.5.1. Released SW"
+    },
+    {
+      "id": "IMP_DRUM",
+      "type": "drum",
+      "description": "Impression (IMP) drums. Dry ink accumulation on IMP drums is a suspected cause of imprint defects.",
+      "sourceSection": "14. Print Quality Common Defects / 14.2"
+    },
+    {
+      "id": "PIP_CS",
+      "type": "other",
+      "description": "PIP Cleaning Station. Condition of the PIP Cleaning Station is a factor in Transfer #0 memory defects. PIP cleaning issues also cause or exacerbate the Auto Bias phenomenon (ink remains over PIP).",
+      "sourceSection": "14. Print Quality Common Defects / 14.3, 14.4"
+    },
+    {
+      "id": "PH_ROLLERS",
+      "type": "roller",
+      "description": "Paper Handling rollers. Dirt accumulation on PH rollers is a suspected cause of imprint defects.",
+      "sourceSection": "14. Print Quality Common Defects / 14.2"
+    },
+    {
+      "id": "GPU",
+      "type": "other",
+      "description": "CUDA-based processing unit used in the Series 6 iDO pipeline (e.g., GPU halftoning at iDO-3).",
+      "sourceSection": "5.5 S4/5 vs S6 iDO Comparison",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    },
+    {
+      "id": "FPGA",
+      "type": "other",
+      "description": "Used for template match and tier copy operations in the Series 6 iDO pipeline (iDO-4).",
+      "sourceSection": "5.5 S4/5 vs S6 iDO Comparison",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    },
+    {
+      "id": "Hummingbird NIC (ConnectX-6)",
+      "type": "other",
+      "connectedTo": "Spark cards",
+      "description": "Imaging link NIC connecting the Series 6 iDO pipeline to Spark cards.",
+      "sourceSection": "5.5 S4/5 vs S6 iDO Comparison",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    },
+    {
+      "id": "Spark cards",
+      "type": "other",
+      "connectedTo": "LPH",
+      "description": "Receive imaging data via Hummingbird NIC and drive the LPH per ME.",
+      "sourceSection": "5.5 S4/5 vs S6 iDO Comparison",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    },
+    {
+      "id": "LPH",
+      "type": "other",
+      "description": "Output device per ME in Series 6, driven via Spark cards (replaces single WH/LED array in Series 4/5).",
+      "sourceSection": "5.5 S4/5 vs S6 iDO Comparison",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    },
+    {
+      "id": "DSP boards",
+      "type": "other",
+      "description": "Dedicated processing units used in the Series 4/5 iDO pipeline, superseded by GPU + FPGA in Series 6.",
+      "sourceSection": "5.5 S4/5 vs S6 iDO Comparison",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    },
+    {
+      "id": "WH (LED array)",
+      "type": "other",
+      "description": "Single write-head LED array output device in Series 4/5, superseded by LPH per ME in Series 6.",
+      "sourceSection": "5.5 S4/5 vs S6 iDO Comparison",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    }
+  ],
+  "monitors": [
+    {
+      "component": "SPM",
+      "prerequisites": [],
+      "filtering": "CCC reads several dozen spreads containing edge-of-format patch strips, computes averages, and performs sanity checks before applying corrections to solids and gray targets.",
+      "configType": "all"
+    },
+    {
+      "component": "SPM",
+      "filtering": "SPM ceramic tile self-calibration triggered as a job inserted every X impressions. Interval X set by DFE preplanning or user definitions. SPM images ceramic tile to correct measurements against known expected values."
+    },
+    {
+      "component": "SECURITY-DONGLE",
+      "prerequisites": [
+        "PC SW services layer active"
+      ],
+      "filtering": "S/N on dongle compared to S/N in PC secured storage at each SW services-layer activity toward dongle. Mismatch triggers user alert; press function may be blocked per management policy."
+    },
+    {
+      "component": "ImagingOilSensorBoard",
+      "filtering": "Monitors temperature, dirtiness level, and conductivity of imaging oil in the reservoir via dedicated sensors on the sensor board.",
+      "configType": "all"
+    },
+    {
+      "component": "LevelContinuousSensorBoard",
+      "filtering": "Provides continuous imaging oil level monitoring in the reservoir.",
+      "configType": "all"
+    },
+    {
+      "component": "CVCSensor_PressTemp_Engine",
+      "filtering": "Samples press temperature every 10 seconds as part of the six-sensor CVC monitoring array.",
+      "configType": "all"
+    },
+    {
+      "component": "CVCSensor_PressHumidityControl_Engine",
+      "filtering": "Samples press humidity every 10 seconds as part of the six-sensor CVC monitoring array.",
+      "configType": "all"
+    },
+    {
+      "component": "CVCSensor_DewPoint_Utility",
+      "filtering": "Samples dew point temperature every 10 seconds as part of the six-sensor CVC monitoring array.",
+      "configType": "all"
+    },
+    {
+      "component": "CVCSensor_PressHumidity_Duct",
+      "filtering": "Samples press humidity inside the duct every 10 seconds as part of the six-sensor CVC monitoring array.",
+      "configType": "all"
+    },
+    {
+      "component": "CVCSensor_SiteHumidity_Utility",
+      "filtering": "Samples site humidity every 10 seconds as part of the six-sensor CVC monitoring array.",
+      "configType": "all"
+    },
+    {
+      "component": "CVCSensor_OutletTemp_Utility",
+      "filtering": "Samples utility cabinet outlet temperature every 10 seconds as part of the six-sensor CVC monitoring array.",
+      "configType": "all"
+    },
+    {
+      "component": "INK-FLOW-REGULATING-VALVE",
+      "prerequisites": [
+        "Press Get Ready event triggered"
+      ],
+      "errorEvents": [],
+      "pressStateOnError": "No state change",
+      "filtering": "Ink flow to BID test runs automatically at every press Get Ready event. If flow is out of specification, a pop-up message prompts the operator to manually recalibrate the flow.",
+      "configType": "all"
+    },
+    {
+      "component": "MOTOR_DC",
+      "filtering": "Overcurrent detected by motor driver; driver enters error state; PLC reads driver error state; PLC reports to ECM; ECM translates to event that changes machine state",
+      "pressStateOnError": "Machine state change (event-driven via ECM)"
+    },
+    {
+      "component": "MOTOR_AC",
+      "filtering": "Overcurrent detected by motor driver; driver enters error state; PLC reads driver error state; PLC reports to ECM; ECM translates to event that changes machine state",
+      "pressStateOnError": "Machine state change (event-driven via ECM)"
+    },
+    {
+      "component": "MOTOR_SERVO",
+      "filtering": "Overcurrent detected by motor driver; driver enters error state; PLC reads driver error state; PLC reports to ECM; ECM translates to event that changes machine state",
+      "pressStateOnError": "Machine state change (event-driven via ECM)"
+    },
+    {
+      "component": "SLC",
+      "prerequisites": [
+        "SLC safety event detected",
+        "SLC drum-stop command issued to PLC"
+      ],
+      "errorDelayParam": "SLC safety-standard drum-stop timeout (safety standard defined)",
+      "errorEvents": [
+        "SLC_DRUM_STOP_TIMEOUT_EXCEEDED"
+      ],
+      "pressStateOnError": "Motor power shortcut (predefined SLC sanction)",
+      "filtering": "SLC validates that PLC stops drum rolling within the safety-standard-defined timeout after receiving the drum-stop command; if drums are still rolling after timeout, sanction is executed"
+    },
+    {
+      "component": "CalibrationService",
+      "prerequisites": [],
+      "errorEvents": [
+        "CRITICAL_CALIBRATION_REQUIRED"
+      ],
+      "pressStateOnError": "No state change — blocks job availability only",
+      "filtering": "Triggers when: (a) number of separations exceeds threshold for a part/consumable, or (b) operator replaced a part/consumable and calibration has not been performed. Non-critical calibrations are recommendations only and do not block jobs.",
+      "configType": "all"
+    }
+  ],
+  "events": [
+    {
+      "name": "JAM_FEEDER",
+      "swLayer": "PLC",
+      "type": "Error",
+      "description": "Substrate jam at Feeder station.",
+      "stateBehavior": "All cut-sheets behind jam point routed to trash bin.",
+      "whatToDo": "Locate and remove jam; return to printing.",
+      "trigger": "Jam sensor detection at Feeder station"
+    },
+    {
+      "name": "JAM_ILP",
+      "swLayer": "PLC",
+      "type": "Error",
+      "description": "Substrate jam at ILP station. Special handling required per ILP sub-system to enable safe user access.",
+      "stateBehavior": "All cut-sheets behind jam point routed to trash bin.",
+      "whatToDo": "Each ILP sub-system requires specific jam handling procedure. Safely locate and remove jam; return to printing in short time.",
+      "trigger": "Jam sensor detection at ILP station"
+    },
+    {
+      "name": "JAM_IF",
+      "swLayer": "PLC",
+      "type": "Error",
+      "description": "Substrate jam at IF (Intermediate Feeder) station.",
+      "stateBehavior": "All cut-sheets behind jam point routed to trash bin.",
+      "whatToDo": "Locate and remove jam; return to printing.",
+      "trigger": "Jam sensor detection at IF station"
+    },
+    {
+      "name": "JAM_IMP",
+      "swLayer": "PLC",
+      "type": "Error",
+      "description": "Substrate jam at IMP (Impression) station. May influence blanket cleaning process.",
+      "stateBehavior": "All cut-sheets behind jam point routed to trash bin.",
+      "whatToDo": "Locate and remove jam; return to printing. If cut-sheet available in feeder, it will be pressed to clean blanket; otherwise IMP sheet used.",
+      "trigger": "Jam sensor detection at IMP station"
+    },
+    {
+      "name": "JAM_EXIT",
+      "swLayer": "PLC",
+      "type": "Error",
+      "description": "Substrate jam at Exit station.",
+      "stateBehavior": "All cut-sheets behind jam point routed to trash bin.",
+      "whatToDo": "Locate and remove jam; return to printing.",
+      "trigger": "Jam sensor detection at Exit station"
+    },
+    {
+      "name": "JAM_DUPLEX",
+      "swLayer": "PLC",
+      "type": "Error",
+      "description": "Substrate jam at Duplex station.",
+      "stateBehavior": "All cut-sheets behind jam point routed to trash bin.",
+      "whatToDo": "Locate and remove jam; return to printing.",
+      "trigger": "Jam sensor detection at Duplex station"
+    },
+    {
+      "name": "JAM_STACKER",
+      "swLayer": "PLC",
+      "type": "Error",
+      "description": "Substrate jam at Stacker station.",
+      "stateBehavior": "All cut-sheets behind jam point routed to trash bin.",
+      "whatToDo": "Locate and remove jam; return to printing.",
+      "trigger": "Jam sensor detection at Stacker station"
+    },
+    {
+      "name": "ITM_THERMAL_FUSE_OPEN",
+      "swLayer": "PLC",
+      "type": "Error",
+      "description": "ITM drum temperature reached 130°C; thermal fuse (ITM_TF1 or ITM_TF2) opened, disconnecting 24V slip-ring electrical circuit.",
+      "stateBehavior": "go to off",
+      "suspectedCause": "ITM drum overtemperature — exceeded 130°C thermal fuse trip threshold",
+      "trigger": "ITM_TF1 or ITM_TF2 opens when ITM drum temperature reaches 130°C",
+      "sourceSection": "6.3.4 ITM Thermal Fuses"
+    },
+    {
+      "name": "FATAL_ERROR_99",
+      "swLayer": "PLC",
+      "type": "Error",
+      "description": "Press halted; system detected a failure presenting hazard to machine or human safety; hardware and software must both be reset; main power relay is turned off",
+      "stateBehavior": "Turn off main power relay; full hardware and software reset required",
+      "suspectedCause": "Failure presenting hazard to machine or human safety",
+      "trigger": "System detection of safety-critical failure during any operational state",
+      "sourceSection": "11.1.2.10. FATAL-ERROR (#99)"
+    },
+    {
+      "name": "MOTOR_EMERGENCY_STOP",
+      "swLayer": "SLC",
+      "type": "Error",
+      "description": "Emergency stop event generated by the main motor or motor controller via safety communications to the SLC.",
+      "stateBehavior": "SLC initiates drum stop sequence; commands PLC to stop drum rolling",
+      "trigger": "Safety event detected by main motor or motor controller",
+      "sourceSection": "11.2.4.2. Safety Programmable Logic Control (SLC)"
+    },
+    {
+      "name": "SLC_DRUM_STOP_TIMEOUT_EXCEEDED",
+      "swLayer": "SLC",
+      "type": "Error",
+      "description": "PLC failed to stop drum rolling within the safety-standard required timeout after SLC drum-stop command was issued.",
+      "stateBehavior": "SLC performs predefined motor power shortcut sanction",
+      "suspectedCause": "PLC did not comply with drum-stop command within the safety-standard timeout",
+      "whatToDo": "Inspect PLC drum-stop response logic, SLC-PLC safety communication path, and motor/drive health",
+      "trigger": "Drums still rolling after SLC drum-stop timeout expires",
+      "sourceSection": "11.2.4.2. Safety Programmable Logic Control (SLC)"
+    },
+    {
+      "name": "CRITICAL_CALIBRATION_REQUIRED",
+      "swLayer": "PLC",
+      "type": "Warning",
+      "description": "Critical calibration is required; influences job availability until calibration is performed.",
+      "params": [
+        "Part or consumable name",
+        "Reason (separation count exceeded | operator replacement)"
+      ],
+      "stateBehavior": "Blocks job start (job availability impacted); press state unchanged",
+      "suspectedCause": "Number of separations exceeded threshold for a part/consumable, or operator replaced a machine part/consumable without performing required calibration.",
+      "whatToDo": "Perform the indicated calibration before resuming production jobs.",
+      "trigger": "CalibrationService detects separation count threshold exceeded or consumable-replacement event without subsequent calibration"
+    },
+    {
+      "name": "ISERVE_EVENT_GENERIC",
+      "swLayer": "PLC",
+      "type": "Info|Warning|Error",
+      "description": "IServe database event. Contains unique ID, description text, severity level (Info/Warning/Error) and up to 5 optional parameters. Statistical events stored locally on press and synced to IServe global system on power-up or pre-defined schedule.",
+      "params": [
+        "UniqueID",
+        "Description",
+        "SeverityLevel",
+        "Param1",
+        "Param2",
+        "Param3",
+        "Param4",
+        "Param5"
+      ],
+      "stateBehavior": "None — used for statistical/billing/utilization tracking only",
+      "trigger": "Any monitored machine operation, maintenance action, or fault condition"
+    },
+    {
+      "name": "PQ_DEFECT_BLANKET_DENT",
+      "swLayer": "Operator/Service observation",
+      "type": "Warning",
+      "description": "Blanket dent defect caused by rolled paper stuck to blanket. Applies to cut-sheet configurations only. Usually self-resolves after several press cycles.",
+      "stateBehavior": "None",
+      "suspectedCause": "Rolled paper stuck to blanket surface",
+      "whatToDo": "Run several press cycles; defect typically disappears",
+      "trigger": "Visual print quality inspection"
+    },
+    {
+      "name": "PQ_DEFECT_IMPRINT",
+      "swLayer": "Operator/Service observation",
+      "type": "Warning",
+      "description": "Imprint defect caused by dry ink on IMP drums or dirt on PH rollers.",
+      "stateBehavior": "None",
+      "suspectedCause": "Dry ink accumulation on IMP drums; dirt on PH rollers",
+      "trigger": "Visual print quality inspection"
+    },
+    {
+      "name": "PQ_DEFECT_MEMORY",
+      "swLayer": "Operator/Service observation",
+      "type": "Warning",
+      "description": "Memory defect with multiple subtypes. Transfer #0 memory linked to PIP physical condition, BID physical condition, and PIP CS condition. Transfer #2 memory linked to blanket physical condition (old, wet, dry, or dirty).",
+      "stateBehavior": "None",
+      "suspectedCause": "Transfer #0: PIP condition, BID condition, PIP CS condition. Transfer #2: blanket condition",
+      "trigger": "Visual print quality inspection"
+    },
+    {
+      "name": "PQ_DEFECT_AUTO_BIAS",
+      "swLayer": "Operator/Service observation",
+      "type": "Warning",
+      "description": "Auto Bias phenomenon caused by ink remaining over the PIP. Caused by PIP cleaning issues or PIP foil degradation. Calibratable via Auto Bias Calibration wizard.",
+      "stateBehavior": "None",
+      "suspectedCause": "PIP cleaning failure; PIP foil degradation",
+      "whatToDo": "Run Auto Bias Calibration wizard (wizard #37)",
+      "trigger": "Visual print quality inspection"
+    },
+    {
+      "name": "PQ_DEFECT_LEADING_EDGE_INTENSITY",
+      "swLayer": "Operator/Service observation",
+      "type": "Warning",
+      "description": "Leading Edge Intensity phenomenon created by low BID voltage at the start of the developing cycle. Can be calibrated manually or automatically via Leading Edge Color Correction wizard (Arad configuration only; phenomenon likely exists across all press models with varying impact).",
+      "stateBehavior": "None",
+      "suspectedCause": "Low BID voltage at developing start",
+      "whatToDo": "Manual or automatic calibration via Leading Edge Color Correction wizard (#40). Note: wizard is Arad-only but phenomenon may occur on all models.",
+      "trigger": "Visual print quality inspection"
+    },
+    {
+      "name": "PQ_DEFECT_PIP_DENT",
+      "swLayer": "Operator/Service observation",
+      "type": "Warning",
+      "description": "PIP dent defect caused by scratch, mechanical impact, dirt, or foil cracks creating holes in separation layout over the PIP, propagating to spread.",
+      "stateBehavior": "None",
+      "suspectedCause": "Mechanical impact; dirt; PIP foil cracks",
+      "trigger": "Visual print quality inspection"
+    },
+    {
+      "name": "PQ_DEFECT_PIP_FUSED_INK",
+      "swLayer": "Operator/Service observation",
+      "type": "Warning",
+      "description": "PIP foil defect caused by dry ink left-overs stuck to PIP after 1st transfer failure. During PIP jobs, the residue enlarges during image development and causes significant defects.",
+      "stateBehavior": "None",
+      "suspectedCause": "1st transfer failure leaving dry ink on PIP foil",
+      "trigger": "Visual print quality inspection"
+    }
+  ],
+  "parameters": [
+    {
+      "name": "CccOccurrenceFrequency",
+      "scope": "import",
+      "description": "Frequency at which CCC (Continuous Color Calibration) executes within a long print run. Configured per job by DFE and user definitions.",
+      "referencedBy": [
+        "SPM"
+      ]
+    },
+    {
+      "name": "ColorCalibrationGrayLevels",
+      "scope": "metadata",
+      "unit": "%",
+      "defaultValue": "2,4,6,9,12,14,16,18,23,27,33,40,50,65,80",
+      "description": "15 fixed gray-level steps used by the Color Calibration wizard to measure dot gain and produce the machine LUT. Machine LUT is ink-dependent, screen-dependent, and substrate-dependent.",
+      "referencedBy": [
+        "SPM"
+      ]
+    },
+    {
+      "name": "MachineLUT",
+      "scope": "metadata",
+      "description": "Look-up table produced by Color Calibration wizard to compensate dot-gain. Ink-dependent, screen-dependent, substrate-dependent. Derived from OD measurements at 15 gray levels via SPM.",
+      "referencedBy": [
+        "SPM"
+      ]
+    },
+    {
+      "name": "ColorLUT",
+      "scope": "metadata",
+      "description": "Table mapping percentage of printed dot size vs. WH pixel dot intensity. Result of OD calibration; adapted per ink, substrate, and process to compensate dot-spreading phenomenon.",
+      "referencedBy": [
+        "SPM"
+      ]
+    },
+    {
+      "name": "SpmCalibrationIntervalImpressions",
+      "unit": "impressions",
+      "description": "Number of impressions between SPM ceramic tile self-calibration job insertions. Referred to as 'X' in documentation. Configured via DFE preplanning or user definitions.",
+      "referencedBy": [
+        "SPM"
+      ]
+    },
+    {
+      "name": "BlanketCleaningTiming",
+      "scope": "local",
+      "description": "Controls timing of blanket cleaning using substrate/cut-sheet merged during job processing. Set by Job process parameters.",
+      "referencedBy": [
+        "Blanket cleaning mechanism"
+      ]
+    },
+    {
+      "name": "BidInkFlowRate",
+      "scope": "local",
+      "unit": "L/min",
+      "defaultValue": "30",
+      "description": "Target ink flow rate to BID. Achieved by adjusting BID regulating valve ~15 turns CCW from fully closed (a priori).",
+      "referencedBy": [
+        "BID_REG_VALVE"
+      ]
+    },
+    {
+      "name": "BidRegValveTurnsApriori",
+      "scope": "local",
+      "unit": "turns",
+      "defaultValue": "15",
+      "description": "A priori counterclockwise turns from fully closed position for BID regulating valve during ink flow calibration.",
+      "referencedBy": [
+        "BID_REG_VALVE"
+      ]
+    },
+    {
+      "name": "PipCoolingOilFlowRate",
+      "scope": "local",
+      "unit": "L/min",
+      "defaultValue": "8",
+      "description": "Imaging oil flow rate required to cool PIP drum to ~28°C. Offsets ~2.5 KW heat transferred from ITM drum.",
+      "referencedBy": [
+        "PIP_CLEAN_STN"
+      ]
+    },
+    {
+      "name": "PipCoolingTargetTemp",
+      "scope": "local",
+      "unit": "°C",
+      "defaultValue": "28",
+      "description": "Target PIP drum temperature maintained by imaging oil cooling.",
+      "referencedBy": [
+        "PIP_CLEAN_STN"
+      ]
+    },
+    {
+      "name": "ItmHeatTransferToPip",
+      "scope": "local",
+      "unit": "KW",
+      "defaultValue": "2.5",
+      "description": "Approximate heat transferred from ITM drum to PIP drum during operation.",
+      "referencedBy": [
+        "PIP_CLEAN_STN",
+        "ITM_DRUM"
+      ]
+    },
+    {
+      "name": "ItmDrumTempSetpoint",
+      "scope": "local",
+      "unit": "°C",
+      "defaultValue": "110",
+      "description": "Target ITM drum operating temperature maintained by three internal heating lamps (2×6 KW + 1×5 KW).",
+      "referencedBy": [
+        "ITM_LAMP_6KW_A",
+        "ITM_LAMP_6KW_B",
+        "ITM_LAMP_5KW",
+        "ITM_DRUM"
+      ]
+    },
+    {
+      "name": "ItmThermalFuseTripTemp",
+      "scope": "local",
+      "unit": "°C",
+      "defaultValue": "130",
+      "description": "ITM drum temperature at which thermal fuses open, disconnecting slip-ring circuits and driving press to Off state.",
+      "referencedBy": [
+        "ITM_TF1",
+        "ITM_TF2"
+      ]
+    },
+    {
+      "name": "ItmSlipRingVoltage",
+      "scope": "local",
+      "unit": "V",
+      "defaultValue": "24",
+      "description": "Voltage applied to each ITM slip ring by carbon brushes. Thermal fuses complete circuit between slip ring pairs; loss of circuit indicates fuse open.",
+      "referencedBy": [
+        "ITM_TF1",
+        "ITM_TF2",
+        "ITM_SLIP_RING"
+      ]
+    },
+    {
+      "name": "FirstTransferInkTransferTarget",
+      "scope": "local",
+      "unit": "%",
+      "defaultValue": "75",
+      "description": "Target ink transfer percentage from PIP to blanket. Calibration locates this point then adds FirstTransferEngagementOffset to determine final engagement position.",
+      "referencedBy": [
+        "ITM_BLANKET",
+        "ITM_DRUM"
+      ]
+    },
+    {
+      "name": "FirstTransferEngagementOffset",
+      "scope": "local",
+      "unit": "μm",
+      "defaultValue": "250",
+      "description": "A priori offset added to the 75% ink-transfer calibration point to set final PIP-to-blanket engagement position.",
+      "referencedBy": [
+        "ITM_BLANKET",
+        "ITM_DRUM"
+      ]
+    },
+    {
+      "name": "VPipLight",
+      "scope": "local",
+      "unit": "V",
+      "defaultValue": "50",
+      "description": "PIP voltage on image areas after discharge by write head (WH). Creates attraction field pulling ink from DR to PIP.",
+      "referencedBy": [
+        "BID_DR"
+      ]
+    },
+    {
+      "name": "VPipDark",
+      "scope": "local",
+      "unit": "V",
+      "defaultValue": "1000",
+      "description": "PIP voltage on non-image areas, charged by charge roller. Creates rejection field preventing ink transfer from DR.",
+      "referencedBy": [
+        "BID_DR"
+      ]
+    },
+    {
+      "name": "BlanketTemperatureSetpoint",
+      "scope": "local",
+      "unit": "°C",
+      "defaultValue": "110",
+      "description": "Target blanket temperature maintained by external heating system. Also the threshold at which ink is fused prior to 2nd transfer and 97.5% of imaging oil is evaporated.",
+      "referencedBy": [
+        "EXT-HEAT-LAMPS",
+        "EXT-HEAT-BLOWER",
+        "EXT-HEAT-AIR-KNIFE"
+      ]
+    },
+    {
+      "name": "PlateHeaterTemperatureSetpoint",
+      "scope": "local",
+      "unit": "°C",
+      "defaultValue": "55",
+      "description": "Operating temperature of plate heaters in external heating system. Prevents vapor condensation and dripping on blanket.",
+      "referencedBy": [
+        "EXT-HEAT-PLATE-HEATER"
+      ]
+    },
+    {
+      "name": "ExternalHeatingBlowerFlowRate",
+      "scope": "local",
+      "unit": "l/sec",
+      "defaultValue": "80",
+      "description": "Flow rate at which the external heating blower blows hot air into the air knife.",
+      "referencedBy": [
+        "EXT-HEAT-BLOWER",
+        "EXT-HEAT-AIR-KNIFE"
+      ]
+    },
+    {
+      "name": "ImpDrumTemperatureSetpoint",
+      "scope": "local",
+      "unit": "°C",
+      "defaultValue": "50",
+      "description": "Target impression drum temperature maintained by ITC closed water circulation system.",
+      "referencedBy": [
+        "ITC"
+      ]
+    },
+    {
+      "name": "ImagingOilEvaporationPct",
+      "scope": "metadata",
+      "unit": "%",
+      "defaultValue": "97.5",
+      "description": "Percentage of imaging oil evaporated from ink by the external heating system during normal operation.",
+      "referencedBy": [
+        "EXT-HEAT-LAMPS"
+      ]
+    },
+    {
+      "name": "RegistrationCameraSheetWidthMin",
+      "scope": "local",
+      "unit": "mm",
+      "defaultValue": "670",
+      "description": "Minimum sheet width required for registration camera calibration.",
+      "referencedBy": [
+        "REG-CAMERA"
+      ]
+    },
+    {
+      "name": "RegistrationCameraSheetWidthMax",
+      "scope": "local",
+      "unit": "mm",
+      "defaultValue": "720",
+      "description": "Maximum sheet width required for registration camera calibration.",
+      "referencedBy": [
+        "REG-CAMERA"
+      ]
+    },
+    {
+      "name": "HDLAResolution",
+      "scope": "metadata",
+      "unit": "DPI",
+      "defaultValue": "1600",
+      "description": "HDLA target imaging resolution — 1600 DPI high-definition mode; requires updated WH and V-Corn HW/FW",
+      "referencedBy": [
+        "HDLA",
+        "V-Corn",
+        "WH-MLA"
+      ]
+    },
+    {
+      "name": "IDSMaxDryingCapability",
+      "scope": "metadata",
+      "unit": "%",
+      "defaultValue": "76",
+      "description": "Maximum drying capability of IDS on ARAD machines",
+      "referencedBy": [
+        "IDS"
+      ]
+    },
+    {
+      "name": "MinMotionProfileNegev",
+      "scope": "metadata",
+      "unit": "separations",
+      "defaultValue": "2",
+      "description": "Minimum motion profile (number of separations to create image) for Negev press machine",
+      "referencedBy": []
+    },
+    {
+      "name": "MinMotionProfileARAD",
+      "scope": "metadata",
+      "unit": "separations",
+      "defaultValue": "3",
+      "description": "Minimum motion profile (number of separations to create image) for ARAD press machine",
+      "referencedBy": []
+    },
+    {
+      "name": "WHOverlapPercentage",
+      "scope": "metadata",
+      "unit": "%",
+      "description": "Calibrated overlap percentage between WH laser lines. Set via Overlap Percentage Adjustment Wizard: init → 0% mapping → best O% selection → apply → confirm → terminate.",
+      "referencedBy": [
+        "WH-MLA"
+      ]
+    },
+    {
+      "name": "WHCornerXY",
+      "scope": "metadata",
+      "unit": "position",
+      "description": "Absolute (x, y) start position for WH writing relative to maximum substrate size. Calibrated per WH install or PIP drum replacement using cameras capturing corner image targets. Single value used for both PIP sides.",
+      "referencedBy": [
+        "WH-MLA",
+        "WH-FocusMechanism"
+      ]
+    },
+    {
+      "name": "PIPTemperatureTarget",
+      "unit": "°C",
+      "defaultValue": "28±2",
+      "description": "Target PIP (Photo Imaging Plate) temperature controlled by supplying cold imaging oil to the cleaning station.",
+      "referencedBy": [
+        "ImagingOilReservoir",
+        "ImagingOilValvesPumps"
+      ]
+    },
+    {
+      "name": "ImagingOilCleanlinessMax",
+      "unit": "%NVS",
+      "defaultValue": "0.01",
+      "description": "Maximum allowable Non Volatile Solid (NVS) concentration in imaging oil; required range 0–0.01% NVS.",
+      "referencedBy": [
+        "MechanicalFilters",
+        "ImagingOilSensorBoard"
+      ]
+    },
+    {
+      "name": "MechanicalFilterParticleSizeLimit",
+      "unit": "micron",
+      "defaultValue": "2",
+      "description": "Mechanical filters minimize particles larger than this size threshold from reaching the cleaning station to prevent PIP scratches.",
+      "referencedBy": [
+        "MechanicalFilters"
+      ]
+    },
+    {
+      "name": "PressClimateTemperatureRange",
+      "unit": "°C",
+      "defaultValue": "23–29",
+      "description": "Target press climate temperature range controlled by the CVC system.",
+      "referencedBy": [
+        "CVCEconomizer",
+        "CVCDamper",
+        "WaterAirHeatExchanger"
+      ]
+    },
+    {
+      "name": "PressRelativeHumidityRange",
+      "unit": "%RH",
+      "defaultValue": "28–36",
+      "description": "Target press relative humidity range controlled by the CVC system.",
+      "referencedBy": [
+        "CVCHumidifier",
+        "WaterAirHeatExchanger"
+      ]
+    },
+    {
+      "name": "CVCAirFlow",
+      "unit": "L/min",
+      "defaultValue": "300",
+      "description": "CVC system nominal air flow rate.",
+      "referencedBy": [
+        "CVCBlower"
+      ]
+    },
+    {
+      "name": "EconomizerOutletTempMax",
+      "unit": "°C",
+      "defaultValue": "~30",
+      "description": "Upper bound of economizer outlet air temperature before damper intervention.",
+      "referencedBy": [
+        "CVCEconomizer",
+        "CVCDamper"
+      ]
+    },
+    {
+      "name": "EconomizerOutletTempMin",
+      "unit": "°C",
+      "defaultValue": "~23",
+      "description": "Lower bound of economizer outlet air temperature after damper regulation.",
+      "referencedBy": [
+        "CVCEconomizer",
+        "CVCDamper"
+      ]
+    },
+    {
+      "name": "CVCSensorSamplingInterval",
+      "unit": "sec",
+      "defaultValue": "10",
+      "description": "Sampling period for all six CVC temperature and humidity sensors.",
+      "referencedBy": [
+        "CVCSensor_PressTemp_Engine",
+        "CVCSensor_PressHumidityControl_Engine",
+        "CVCSensor_DewPoint_Utility",
+        "CVCSensor_PressHumidity_Duct",
+        "CVCSensor_SiteHumidity_Utility",
+        "CVCSensor_OutletTemp_Utility"
+      ]
+    },
+    {
+      "name": "HumidifierSensorDistance",
+      "unit": "mm",
+      "defaultValue": "30",
+      "description": "Physical distance of the humidifier sensor.",
+      "referencedBy": [
+        "CVCHumidifier"
+      ]
+    },
+    {
+      "name": "InkFlowRateToBID",
+      "scope": "local",
+      "unit": "liters per minute",
+      "defaultValue": "30",
+      "description": "Target ink flow rate from ink tank to BID. Reference value used during ink flow calibration wizard and automatic Get Ready flow test.",
+      "referencedBy": [
+        "INK-FLOW-REGULATING-VALVE"
+      ]
+    },
+    {
+      "name": "InkFlowValveCalibrationTurns",
+      "scope": "local",
+      "unit": "turns counterclockwise from fully closed",
+      "defaultValue": "~15",
+      "description": "Number of counterclockwise turns of the regulating valve from fully closed position required to achieve the target ink flow rate to BID.",
+      "referencedBy": [
+        "INK-FLOW-REGULATING-VALVE"
+      ]
+    },
+    {
+      "name": "EthernetPowerlinkCycleTime",
+      "unit": "μs",
+      "defaultValue": "400",
+      "description": "Ethernet Powerlink communication cycle time; guarantees transfer of time-critical data",
+      "referencedBy": [
+        "PLC_CPU"
+      ]
+    },
+    {
+      "name": "EthernetPowerlinkTimePrecision",
+      "unit": "μs",
+      "defaultValue": "<1",
+      "description": "Ethernet Powerlink time-synchronization precision across all nodes in the network",
+      "referencedBy": [
+        "PLC_CPU"
+      ]
+    },
+    {
+      "name": "ReadyToStandbyTimer",
+      "scope": "local",
+      "unit": "sec",
+      "description": "Timer running in Ready state; upon expiration system automatically transfers to Standby",
+      "referencedBy": [
+        "Ready"
+      ]
+    },
+    {
+      "name": "PauseToReadyTimer",
+      "scope": "local",
+      "unit": "sec",
+      "description": "Timer running in Pause state; upon violation system automatically transfers to Ready",
+      "referencedBy": [
+        "Pause"
+      ]
+    },
+    {
+      "name": "HoldToOffTimer",
+      "scope": "local",
+      "unit": "sec",
+      "description": "Timer running in Hold state; upon violation system automatically transfers to Off",
+      "referencedBy": [
+        "Hold"
+      ]
+    },
+    {
+      "name": "ColdStartDuration",
+      "scope": "metadata",
+      "unit": "min",
+      "defaultValue": "20",
+      "description": "Nominal machine cold start (get-ready) duration; approximately 20 minutes",
+      "referencedBy": [
+        "GetReady"
+      ]
+    },
+    {
+      "name": "KeepITMHotEnabled",
+      "scope": "local",
+      "description": "Mechanism flag; when ready→standby transition occurs for reasons unrelated to ITM subsystem, allows abbreviated get-ready that skips ITM preparation; constrained by last-transition-time, temperature monitoring, and additional parameters",
+      "referencedBy": [
+        "GetReady",
+        "ITM"
+      ]
+    },
+    {
+      "name": "KeepInkHotEnabled",
+      "scope": "local",
+      "description": "Mechanism flag; when ready→standby transition occurs for reasons unrelated to Ink/BID subsystems, allows abbreviated get-ready that skips Ink/BID preparation; constrained by last-transition-time, temperature monitoring, and additional parameters",
+      "referencedBy": [
+        "GetReady",
+        "InkControlSystem",
+        "BID"
+      ]
+    },
+    {
+      "name": "OCBFlags",
+      "scope": "metadata",
+      "description": "Set of flags (also called Global Parameters) that identify the specific machine type and sub-type; make OCB code operate correctly for the installed machine; e.g. distinguishes web vs. sheet-fed, Eilat vs. Arad",
+      "referencedBy": [
+        "OCB"
+      ]
+    },
+    {
+      "name": "SysTab",
+      "scope": "metadata",
+      "description": "System Table database containing parameters required for Engine embedded SW (ECM); copied from PC to ECM RAM at system boot",
+      "referencedBy": [
+        "ECM",
+        "PressPc"
+      ]
+    },
+    {
+      "name": "MotorMaximumSpeed",
+      "scope": "local",
+      "description": "Maximum speed limit of the main motor; value set and enforced by SLC via safety communications.",
+      "referencedBy": [
+        "MainMotor",
+        "MotorController",
+        "SLC"
+      ],
+      "sourceSection": "11.2.4.2. Safety Programmable Logic Control (SLC)"
+    },
+    {
+      "name": "MotorJogSpeed",
+      "scope": "local",
+      "description": "Jog speed of the main motor; value set and enforced by SLC via safety communications.",
+      "referencedBy": [
+        "MainMotor",
+        "MotorController",
+        "SLC"
+      ],
+      "sourceSection": "11.2.4.2. Safety Programmable Logic Control (SLC)"
+    },
+    {
+      "name": "SecondTransferPressure",
+      "scope": "local",
+      "unit": "pressure units (unspecified)",
+      "description": "SPP parameter — adjusted per substrate, per press type, per application to improve PQ (transfer) and blanket performance.",
+      "referencedBy": [
+        "SPP"
+      ]
+    },
+    {
+      "name": "ExternalHeatingTemperature",
+      "scope": "local",
+      "unit": "°C",
+      "description": "SPP parameter — adjusted per substrate/press type/application to improve durability (peeling).",
+      "referencedBy": [
+        "SPP"
+      ]
+    },
+    {
+      "name": "CleaningFrequency",
+      "scope": "local",
+      "unit": "separations or cycles (unspecified)",
+      "description": "SPP parameter — adjusted per substrate/press type/application to enable wider media gamut.",
+      "referencedBy": [
+        "SPP"
+      ]
+    },
+    {
+      "name": "ScreenMatrix",
+      "scope": "local",
+      "description": "Ink file parameter — defines which screen matrix to use for a given ink/job combination.",
+      "referencedBy": [
+        "InkFile"
+      ]
+    },
+    {
+      "name": "LaserStress",
+      "scope": "local",
+      "description": "Ink file hardware parameter — stress level of the laser for the given ink.",
+      "referencedBy": [
+        "InkFile"
+      ]
+    },
+    {
+      "name": "LaserIntensity",
+      "scope": "local",
+      "description": "Ink file hardware parameter — intensity of the laser for the given ink.",
+      "referencedBy": [
+        "InkFile"
+      ]
+    },
+    {
+      "name": "CRVoltage",
+      "scope": "local",
+      "unit": "V",
+      "description": "Ink file parameter — CR voltage setting; ink-type-indifferent but kept in ink file for future flexibility.",
+      "referencedBy": [
+        "InkFile"
+      ]
+    },
+    {
+      "name": "VLight",
+      "scope": "local",
+      "description": "Ink file parameter — V-Light setting; ink-type-indifferent but kept in ink file for future flexibility.",
+      "referencedBy": [
+        "InkFile"
+      ]
+    },
+    {
+      "name": "SNTP_BroadcastFrequency",
+      "scope": "metadata",
+      "description": "Press-PC clock is broadcast via SNTP protocol at constant frequency to all SW components (Services, Infra, FW) to stamp events, logs, and dumps with accurate time and date",
+      "referencedBy": [
+        "Press-PC"
+      ]
+    },
+    {
+      "name": "Sampling rate",
+      "scope": "local",
+      "unit": "ms",
+      "defaultValue": "200",
+      "description": "Sampling frequency for real-time monitoring of iDO node processing rate.",
+      "referencedBy": [
+        "iDO Performance Analysis Framework"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    },
+    {
+      "name": "Moving window",
+      "scope": "local",
+      "unit": "sec",
+      "defaultValue": "3",
+      "description": "Moving-average window for node processing rate; must be shorter than the time to consume all buffered print-ready data (~5s Hummingbird + ~1.4s HT buffers).",
+      "referencedBy": [
+        "iDO Performance Analysis Framework"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    },
+    {
+      "name": "Success threshold",
+      "scope": "local",
+      "description": "Each iDO node's moving-average processing rate must be >= print speed to be considered compliant.",
+      "referencedBy": [
+        "iDO Performance Analysis Framework"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    },
+    {
+      "name": "Hummingbird output buffer",
+      "scope": "local",
+      "unit": "m / sec",
+      "defaultValue": "~11 m / ~5.11 sec",
+      "description": "Final staging buffer before the imaging link to Spark/LPH; contributes to pipeline resiliency.",
+      "referencedBy": [
+        "iDO Resiliency Model"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    },
+    {
+      "name": "Halftone-ready buffers",
+      "scope": "local",
+      "unit": "m / sec",
+      "defaultValue": "~3 m / ~1.4 sec",
+      "description": "Buffer between GPU halftoning (iDO-3) and FPGA template match (iDO-4).",
+      "referencedBy": [
+        "iDO Resiliency Model"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    },
+    {
+      "name": "Combined buffer depth",
+      "scope": "local",
+      "unit": "m / sec",
+      "defaultValue": "~14 m / ~6.5 sec",
+      "description": "Total pipeline depth available to absorb transient slowdowns before null revolutions (starvation) occur.",
+      "referencedBy": [
+        "iDO Resiliency Model"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    },
+    {
+      "name": "Latency budget (S6)",
+      "scope": "local",
+      "unit": "ms",
+      "defaultValue": "~33",
+      "description": "Per-slice processing latency budget for the Series 6 GPU+FPGA imaging pipeline (vs ~250 ms per separation for Series 4/5 DSP).",
+      "referencedBy": [
+        "5.5 S4/5 vs S6 iDO Comparison"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    },
+    {
+      "name": "Throughput",
+      "scope": "local",
+      "unit": "sheets/sec or slices/sec",
+      "defaultValue": "S4/5: ~4 sheets/sec; S6: ~30 slices/sec (web speed)",
+      "description": "Pipeline throughput comparison between Series 4/5 and Series 6.",
+      "referencedBy": [
+        "5.5 S4/5 vs S6 iDO Comparison"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369"
+    }
+  ],
+  "configTypes": {
+    "EILAT": {
+      "description": "HP Indigo 10000. Commercial cut-sheet. Media 510–750 x 330–530 mm, image area 740x510 mm, substrate 65–400 gsm. Multi-shot, Simplex/Duplex, 1 print engine. First Series 4 machine.",
+      "includes": [
+        "FEEDER-SHEET",
+        "PRINT-ENGINE",
+        "STACKER",
+        "BRIDGE-FEED",
+        "BRIDGE-STACK",
+        "WASTE-BIN",
+        "CAB-ELECTRONICS",
+        "CAB-UTILITY",
+        "CAB-INK"
+      ]
+    },
+    "SHANI": {
+      "description": "HP Indigo 12000. Commercial cut-sheet. EILAT upgraded HW. One & multi-shot, Simplex/Duplex, 1 print engine. Modified electronics HW vs EILAT; some features exclusive to SHANI due to additional sub-systems.",
+      "includes": [
+        "FEEDER-SHEET",
+        "PRINT-ENGINE",
+        "STACKER",
+        "BRIDGE-FEED",
+        "BRIDGE-STACK",
+        "WASTE-BIN",
+        "CAB-ELECTRONICS",
+        "CAB-UTILITY",
+        "CAB-INK"
+      ]
+    },
+    "BARAK": {
+      "description": "TBD press ID. Commercial cut-sheet. SHANI upgraded HW. Higher printing speed/utilization. One & multi-shot, Simplex/Duplex, 1 print engine.",
+      "includes": [
+        "FEEDER-SHEET",
+        "PRINT-ENGINE",
+        "STACKER",
+        "BRIDGE-FEED",
+        "BRIDGE-STACK",
+        "WASTE-BIN",
+        "CAB-ELECTRONICS",
+        "CAB-UTILITY",
+        "CAB-INK"
+      ]
+    },
+    "ARAD": {
+      "description": "ARAD web press machine configuration. Substrate is flexible and stretchy web. Requires OLS system for scaling calibration and correction of Repeat Length (RL) and Image Length (IL) during job run.",
+      "includes": [
+        "UNWINDER",
+        "PRINT-ENGINE",
+        "REWINDER",
+        "BRIDGE-FEED",
+        "BRIDGE-STACK",
+        "CAB-ELECTRONICS",
+        "CAB-UTILITY",
+        "CAB-INK",
+        "WHS-PUW",
+        "WHS-UW",
+        "WHS-DNC",
+        "WHS-COR",
+        "WHS-HFG",
+        "WHS-HVT",
+        "WHS-CDS",
+        "WHS-PRU",
+        "WHS-ANX",
+        "WHS-DBC",
+        "WHS-FLS",
+        "WHS-SNS-MNT",
+        "WHS-USS",
+        "WHS-USS-WST",
+        "WHS-TNK-BASE",
+        "WHS-DMP",
+        "WHS-V1",
+        "WHS-V2",
+        "WHS-V3",
+        "WHS-V4",
+        "WHS-DRY",
+        "WHS-DRY-MBL",
+        "WHS-DRY-HEG",
+        "WHS-DRY-EBL",
+        "WHS-DRY-AKN",
+        "WHS-DRY-SUC",
+        "WHS-DRY-PIPE",
+        "OLS",
+        "OLS_OPTICAL_SENSOR_1",
+        "OLS_OPTICAL_SENSOR_2",
+        "IDS",
+        "IDS-DryingBox"
+      ]
+    },
+    "ARAVA": {
+      "description": "HP Indigo 30000. Industrial cut-sheet (Labels & Packages / Folding Cartons). Media 510–750 x 330–530 mm, image area 740x510 mm, substrate thickness 200–600 microns. One-shot, Simplex only, 1 print engine.",
+      "includes": [
+        "FEEDER-SHEET",
+        "PRINT-ENGINE",
+        "STACKER",
+        "BRIDGE-FEED",
+        "BRIDGE-STACK",
+        "WASTE-BIN",
+        "CAB-ELECTRONICS",
+        "CAB-UTILITY",
+        "CAB-INK",
+        "ILF_ARAVA_ICOAT3000",
+        "ILP_CLEANING_STATION",
+        "EVR"
+      ]
+    },
+    "NEGEV": {
+      "description": "HP Indigo 50000. Commercial web. Substrate width 400–762 mm, max image length 1100x740 mm, repeat length 550–1140 mm. One-shot, Simplex/Duplex, 2 print engines.",
+      "includes": [
+        "UNWINDER",
+        "PRINT-ENGINE",
+        "REWINDER",
+        "BRIDGE-FEED",
+        "BRIDGE-STACK",
+        "CAB-ELECTRONICS",
+        "CAB-UTILITY",
+        "CAB-INK"
+      ]
+    },
+    "GEV": {
+      "description": "TBD future design. Commercial web. One-shot. Engine count TBD.",
+      "includes": []
+    },
+    "CUT-SHEET": {
+      "description": "Cut-sheet press configuration. Uses ILP (In-Line Priming) separately; no PUW.",
+      "includes": []
+    },
+    "Arad": {
+      "description": "Arad press model within the S4 family. Leading Edge Color Correction wizard (#40) is Arad-only. The underlying Leading Edge Intensity phenomenon likely exists on all press models with differing impact.",
+      "includes": [
+        "WEB_GUIDE",
+        "WEB_GUIDE_SENSOR",
+        "DUAL-WHITE-STATION"
+      ]
+    },
+    "Negev": {
+      "description": "Configuration specific to the Negev press variant. Negev ILP performs double-side priming with double priming units, liquid system, drying system, and all additive web handling system (nips and rollers). Includes BCU for dual-engine substrate buffering and orientation reversal.",
+      "includes": [
+        "WHS_BCU",
+        "FBI-SENSOR"
+      ]
+    },
+    "Arava": {
+      "description": "Arava press variant. Also requires Marcol ink tube installation block for food-industry compliance.",
+      "includes": [
+        "ILP"
+      ]
+    },
+    "Eilat": {
+      "description": "Machine type/configuration identified via OCB flags; specific S4 press hardware configuration",
+      "includes": [
+        "ILF_EILAT_SMART_STACKER"
+      ]
+    },
+    "non-ARAVA": {
+      "description": "Press variants that include duplex conveyor and duplex printing mode (excludes ARAVA/30000).",
+      "includes": [
+        "DUPLEX_CONVEYOR"
+      ]
+    },
+    "OneShot": {
+      "description": "Printing mode where all color separations are transferred to blanket one-by-one, then entire image transferred to substrate in a single impression. Used in WEB presses and ARAVA Cut-Sheet. Required when substrate cannot be wrapped around impression drum (continuous web or inelastic substrate).",
+      "includes": []
+    },
+    "MultiShot": {
+      "description": "Printing mode where each color separation leads to its own impression (color transferred to blanket then immediately to substrate before next color). Used in sheet-fed presses. Higher utilization and larger consumables life span, but vulnerable to CPR with light substrates (plastic, labels). For light substrates, OneShot preferred to prevent 2nd separation scaling distortion.",
+      "includes": []
+    },
+    "multi-shot": {
+      "description": "Multi-shot press configuration (Eilat, Shani). Includes registration cameras for inline color plane registration measurement. Different color separations have small vertical and horizontal displacement requiring CPR calibration.",
+      "includes": [
+        "REG-CAMERA"
+      ]
+    },
+    "CutSheet": {
+      "description": "Cut-sheet press configuration. Certain defects (Blanket Dent) and wizards (Leading Edge Color Correction #40, Simplex-Duplex Alignment #44, Adaptive Scaling For Simplex-Duplex Alignment #45, Simplex Image Squaring Calibration #46, Image Placement Alignment #69) are exclusive to or primarily affect cut-sheet variants.",
+      "includes": [
+        "IMP-DRUM",
+        "REG-CAMERA"
+      ]
+    },
+    "WEB": {
+      "description": "WEB press variant. Uses eye marks on each print for registration camera and registration process. Specific IMP variant per substrate type.",
+      "includes": [
+        "IMP-DRUM",
+        "REG-CAMERA"
+      ]
+    },
+    "MR1": {
+      "description": "First mechanical revision. Each ink tank has an ITS board (ODS + conductivity sensor) and a separate Continuous Level Sensor (LCS) board. Uses BIM control board.",
+      "includes": [
+        "ITS-BOARD",
+        "ODS",
+        "CONDUCTIVITY-SENSOR",
+        "LCS-BOARD",
+        "CONTINUOUS-LEVEL-SENSOR",
+        "BIM",
+        "BIM-MR1"
+      ]
+    },
+    "MR2": {
+      "description": "Second mechanical revision. Each ink tank has an ITS board (ODS + conductivity sensor) and a separate Pressure Sensor replacing the LCS board. Uses BID-HV instead of BIM.",
+      "includes": [
+        "ITS-BOARD",
+        "ODS",
+        "CONDUCTIVITY-SENSOR",
+        "PRESSURE-SENSOR",
+        "BID-HV",
+        "BIM-HV-MR2"
+      ]
+    },
+    "X2": {
+      "description": "X2 configuration uses a dual Solid Add System (SAS) dedicated to white ink.",
+      "includes": []
+    },
+    "AradMR1": {
+      "description": "Arad MR1 hardware configuration variant of the Series-4 press. HW configuration must be set using the configuration tool when installing updated press SW.",
+      "includes": []
+    },
+    "AradMR2": {
+      "description": "Arad MR2 hardware configuration variant of the Series-4 press. HW configuration must be set using the configuration tool when installing updated press SW.",
+      "includes": []
+    },
+    "AradMR2_MegaWhite": {
+      "description": "Arad MR2 hardware configuration with Mega-White unit installed. HW configuration must be set using the configuration tool when installing updated press SW.",
+      "includes": []
+    },
+    "AradMR2_NoMegaWhite": {
+      "description": "Arad MR2 hardware configuration without Mega-White unit. HW configuration must be set using the configuration tool when installing updated press SW.",
+      "includes": []
+    },
+    "Industrial": {
+      "description": "Arad/Arava press machines; DFE SW is ESKO",
+      "includes": []
+    },
+    "Commercial": {
+      "description": "Eilat/Shany/Negev press machines; DFE SW is Production Pro",
+      "includes": []
+    },
+    "Screen Commercial WEB": {
+      "description": "Screen Commercial WEB press variant, codename Negev. Supports calibrations: BID Engage, Dry BID, BID Roller Replacement, BID Base Validation, Charge Roller Leveling, Ink Flow, Ink Weight, Ink Weight Initialization, Ink Tank Level Sensor, Color Change, Ink Tube Replacement, Ink Rebuild, Recycling Tank Level Sensor, Conductivity Sensor, OLS Position, OLS Teach.",
+      "includes": []
+    },
+    "Commercial CutSheet": {
+      "description": "Commercial CutSheet press variant, codename Shani. Supports calibrations: BID Engage, Dry BID, BID Roller Replacement, BID Base Validation, Charge Roller Leveling, Ink Flow, Ink Weight, Ink Weight Initialization, Ink Tank Level Sensor, Color Change, Ink Tube Replacement, Ink Rebuild, Recycling Tank Level Sensor, Conductivity Sensor, Second Transfer (after blanket replacement), Substrate Positioning, EVR Suction Cup Margin, Duplex Suction Cap Margin, Duplex Feed Calibration, Misfeed Sensors, Gripper Blades Offset, Camera Tilt.",
+      "includes": []
+    },
+    "Industrial WEB": {
+      "description": "Industrial WEB press variant, codename Arad. Supports calibrations: BID Engage, Dry BID, BID Roller Replacement, BID Base Validation, Charge Roller Leveling, Ink Flow, Ink Weight, Ink Weight Initialization, Ink Tank Level Sensor, Color Change, Ink Tube Replacement, Ink Rebuild, Recycling Tank Level Sensor, Conductivity Sensor, Second Transfer, OLS Position, OLS Teach, Sensor Offset (OLS+SPM manual position), Misfeed Sensors, Gripper Blades Offset, Camera Tilt.",
+      "includes": []
+    },
+    "Industrial CutSheet": {
+      "description": "Industrial CutSheet press variant, codename Arava. Supports calibrations: BID Engage, Dry BID, BID Roller Replacement, BID Base Validation, Charge Roller Leveling, Ink Flow, Ink Weight, Ink Weight Initialization, Ink Tank Level Sensor, Color Change, Ink Tube Replacement, Ink Rebuild, Recycling Tank Level Sensor, Conductivity Sensor, Second Transfer, Substrate Positioning, EVR Suction Cup Margin, Misfeed Sensors, Gripper Blades Offset, Camera Tilt.",
+      "includes": []
+    }
+  },
+  "diagrams": [
+    {
+      "name": "iDoDataFlowSequence",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-10T19:56:37.530Z"
+    },
+    {
+      "name": "EndToEndJobFlowSequence",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-10T19:56:37.530Z"
+    },
+    {
+      "name": "PipelineFlow",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-10T19:56:37.530Z"
+    },
+    {
+      "name": "GeneralPrintingPipelineDiagram",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-10T19:56:37.530Z"
+    },
+    {
+      "name": "iDoArchitectureOverview",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-10T19:56:37.530Z"
+    },
+    {
+      "name": "PressPcContext",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-10T19:56:37.530Z"
+    },
+    {
+      "name": "PipelineDataObjects",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170369",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-10T19:56:37.530Z"
+    }
+  ],
+  "stateTransitions": [
+    {
+      "from": "any state below Standby",
+      "to": "Standby",
+      "trigger": "Valid Press Machine License present on Security Dongle",
+      "signals": [
+        "SafeNet dongle with valid license must be present; transition blocked if license absent"
+      ]
+    },
+    {
+      "from": "Standby",
+      "to": "Substrate Transport Active",
+      "trigger": "User activates Substrate Transport Adjustment from Print Care menu",
+      "signals": [
+        "Substrate transportation sub-system ready"
+      ]
+    },
+    {
+      "from": "Ready",
+      "to": "Substrate Transport Active",
+      "trigger": "User activates Substrate Transport Adjustment from Print Care menu",
+      "signals": [
+        "Substrate transportation sub-system ready"
+      ]
+    },
+    {
+      "from": "Any",
+      "to": "Off",
+      "trigger": "ITM thermal fuse opens (ITM_TF1 or ITM_TF2) at 130°C",
+      "signals": [
+        "24V slip-ring circuit open between fuse-paired slip rings"
+      ]
+    },
+    {
+      "from": "any",
+      "to": "Get Ready",
+      "trigger": "Press Get Ready event",
+      "signals": [
+        "Automatic ink flow to BID test initiated"
+      ]
+    },
+    {
+      "from": "Main Power Off",
+      "to": "Init",
+      "trigger": "Main Power-Switch turned ON",
+      "signals": [
+        "24VDC distributed to electronic control boards",
+        "48VDC distributed to electronic control boards",
+        "Press PC power-up begins"
+      ]
+    },
+    {
+      "from": "Init",
+      "to": "Off",
+      "trigger": "Successful completion of initialization (automatic)",
+      "signals": [
+        "PC booted",
+        "software loaded",
+        "communication with control boards established",
+        "firmware loaded from PC to control boards"
+      ]
+    },
+    {
+      "from": "Off",
+      "to": "Standby",
+      "trigger": "Power-On button press by operator (one of several conditions)",
+      "signals": []
+    },
+    {
+      "from": "Standby",
+      "to": "Service",
+      "trigger": "Operator requests maintenance or diagnostics with open doors (interlocks)",
+      "signals": []
+    },
+    {
+      "from": "Service",
+      "to": "Standby",
+      "trigger": "Maintenance or diagnostics complete; doors closed",
+      "signals": []
+    },
+    {
+      "from": "Standby",
+      "to": "Get Ready",
+      "trigger": "Operator initiates print readiness sequence",
+      "signals": [
+        "Buzzer activated (stops after few seconds)",
+        "Traffic lights activated (continue blinking)"
+      ]
+    },
+    {
+      "from": "Get Ready",
+      "to": "Ready",
+      "trigger": "Successful completion of all get-ready procedures (parallel where available)",
+      "signals": []
+    },
+    {
+      "from": "Get Ready",
+      "to": "Standby",
+      "trigger": "Failure during get-ready that does not require full shutdown",
+      "signals": []
+    },
+    {
+      "from": "Get Ready",
+      "to": "Off",
+      "trigger": "Critical failure during get-ready requiring full shutdown",
+      "signals": []
+    },
+    {
+      "from": "Ready",
+      "to": "Print",
+      "trigger": "Print job initiated; system traverses ~5 internal Pre-Print states",
+      "signals": [
+        "Motors and drums rolling",
+        "ITM to PIP engagement",
+        "ITM and INK temperature stabilization",
+        "CR engagement",
+        "CS first clean",
+        "feeder configuration",
+        "stacker configuration",
+        "ILP readiness confirmed"
+      ]
+    },
+    {
+      "from": "Print",
+      "to": "Ready",
+      "trigger": "Print job ends or is stopped; system traverses ~7 internal Post-Print states",
+      "signals": [
+        "Drums roll rated stop",
+        "temperature control turned off",
+        "PIP cleaning",
+        "ITM cleaning",
+        "paper handling stopped"
+      ]
+    },
+    {
+      "from": "Print",
+      "to": "Pause",
+      "trigger": "Certain events or conditions (e.g. missing paper in feeder) where prompt return to printing is possible",
+      "signals": [
+        "Limited essential disengages performed to preserve PIP and Blanket life-span"
+      ]
+    },
+    {
+      "from": "Pause",
+      "to": "Print",
+      "trigger": "Triggering condition resolved; almost immediate return to printing",
+      "signals": []
+    },
+    {
+      "from": "Pause",
+      "to": "Ready",
+      "trigger": "Pause timer violation",
+      "signals": []
+    },
+    {
+      "from": "Ready",
+      "to": "Standby",
+      "trigger": "Ready-state timer expiration",
+      "signals": []
+    },
+    {
+      "from": "Ready",
+      "to": "Hold",
+      "trigger": "Certain doors (interlocks) opened while press is at Ready state",
+      "signals": []
+    },
+    {
+      "from": "Hold",
+      "to": "Off",
+      "trigger": "Hold-state timer violation",
+      "signals": []
+    },
+    {
+      "from": "AnyState",
+      "to": "FATAL-ERROR-99",
+      "trigger": "System detects failure presenting hazard to machine or human safety",
+      "signals": [
+        "Main power relay turned OFF",
+        "Hardware reset required",
+        "Software reset required"
+      ]
+    },
+    {
+      "from": "Powered Off",
+      "to": "Press PC Boot",
+      "trigger": "Power on",
+      "signals": [
+        "Press PC completes OS boot"
+      ]
+    },
+    {
+      "from": "Press PC Boot",
+      "to": "SW Infrastructure Init",
+      "trigger": "Press SW launched",
+      "signals": [
+        "Infrastructure initializes all PC-SW components: UI, services, etc."
+      ]
+    },
+    {
+      "from": "SW Infrastructure Init",
+      "to": "Engine FW Init",
+      "trigger": "PC-SW components initialized",
+      "signals": [
+        "BIM and ITEC boards perform power-on and load pre-burned SW",
+        "ECM downloads FW image from Press PC via FTP, then resets and wakes up"
+      ]
+    },
+    {
+      "from": "Engine FW Init",
+      "to": "Element Manager Wake-up Sequence",
+      "trigger": "FW board power-on complete",
+      "signals": [
+        "Each FW subsystem enters managed sequence synchronized by Element Manager",
+        "Inter-unit communication tested",
+        "Machine readiness verified"
+      ]
+    },
+    {
+      "from": "Element Manager Wake-up Sequence",
+      "to": "Press Ready",
+      "trigger": "Ready indication received from each electronic board",
+      "signals": [
+        "All FW subsystems report Ready to Element Manager"
+      ]
+    },
+    {
+      "from": "Element Manager Wake-up Sequence",
+      "to": "Wake-up Halted / Error",
+      "trigger": "Critical failure detected during wake-up",
+      "signals": [
+        "Element Manager stops wake-up process",
+        "Error message reported to user"
+      ]
+    },
+    {
+      "from": "Press running (drums rolling)",
+      "to": "Drums stopped",
+      "trigger": "SLC safety event — SLC commands PLC to stop drum rolling",
+      "signals": [
+        "SLC drum-stop command to PLC",
+        "PLC executes and validates drum stop within safety-standard timeout"
+      ]
+    },
+    {
+      "from": "Drums rolling after SLC drum-stop command (timeout exceeded)",
+      "to": "Motor power shortcut active",
+      "trigger": "SLC drum-stop timeout exceeded — drums still rolling",
+      "signals": [
+        "SLC executes predefined motor power shortcut sanction"
+      ]
+    }
+  ],
+  "availabilities": [
+    {
+      "reasonId": "SECURITY_DONGLE_LICENSE_MISSING",
+      "trigger": "Security dongle license absent or invalid at state-change attempt",
+      "blocksTransition": "change state to Standby"
+    },
+    {
+      "reasonId": "SECURITY_DONGLE_SN_MISMATCH",
+      "trigger": "Dongle S/N does not match S/N stored in PC secured storage",
+      "blocksTransition": "press function (management policy dependent)"
+    },
+    {
+      "reasonId": "MULTIPICK_DETECTED",
+      "trigger": "MultiPick sensor detects suspected double-feed (two substrate layers with air gap between them)",
+      "blocksTransition": "substrate transport to print engine — sheet diverted to waste bin instead"
+    },
+    {
+      "reasonId": "SUBSTRATE_TRANSPORT_STATE_RESTRICTION",
+      "trigger": "Substrate Transport Adjustment requested while press not in Standby or Ready state",
+      "blocksTransition": "substrate transport adjustment"
+    },
+    {
+      "reasonId": "BLANKET_CLEANING_NO_CUTSHEET_FALLBACK",
+      "trigger": "Substrate jam occurs with no cut-sheet available in feeder",
+      "blocksTransition": "blanket cleaning via cut-sheet; IMP sheet used as fallback"
+    },
+    {
+      "reasonId": "STANDBY_MAINTENANCE_PIP_MOTOR_BLOCKED",
+      "trigger": "Press in standby-maintenance state",
+      "blocksTransition": "PIP motor (main motor) activation"
+    },
+    {
+      "reasonId": "HOLD_STATE_PRINT_BLOCKED",
+      "trigger": "Press in HOLD state (interlocks opened at Ready)",
+      "blocksTransition": "Ready to Print transition"
+    },
+    {
+      "reasonId": "FATAL_ERROR_ALL_OPERATIONS_HALTED",
+      "trigger": "FATAL-ERROR (#99) detected",
+      "blocksTransition": "All press operations; requires full hardware and software reset before recovery"
+    },
+    {
+      "reasonId": "SERVICE_STATE_SAFETY_RESTRICTED",
+      "trigger": "Press in Service state (standby with open interlocks)",
+      "blocksTransition": "Certain operations restricted for safety; specific allowed actions limited by press SW"
+    },
+    {
+      "reasonId": "JOB_UNAVAILABLE_PRESS_BUSY",
+      "trigger": "Press machine is currently performing printing or calibration",
+      "blocksTransition": "job start"
+    },
+    {
+      "reasonId": "JOB_UNAVAILABLE_SENSOR_INVALID",
+      "trigger": "Sensors are unavailable, invalid, or not yet calibrated",
+      "blocksTransition": "job start"
+    },
+    {
+      "reasonId": "JOB_UNAVAILABLE_CALIBRATION_FAILED",
+      "trigger": "Critical calibration has not been performed or has failed",
+      "blocksTransition": "job start"
+    },
+    {
+      "reasonId": "JOB_UNAVAILABLE_SAFETY_INVALID",
+      "trigger": "Press machine safety or validity check fails",
+      "blocksTransition": "job start"
+    },
+    {
+      "reasonId": "JOB_UNAVAILABLE_CONSUMABLES_FAULT",
+      "trigger": "Consumables status is not acceptable for job execution",
+      "blocksTransition": "job start"
+    },
+    {
+      "reasonId": "CRITICAL_CALIBRATION_REQUIRED_SEPARATION_THRESHOLD",
+      "trigger": "Number of separations for a part or consumable exceeds defined threshold",
+      "blocksTransition": "job start"
+    },
+    {
+      "reasonId": "CRITICAL_CALIBRATION_REQUIRED_CONSUMABLE_REPLACEMENT",
+      "trigger": "Operator replaced a machine part or consumable; required calibration not yet performed",
+      "blocksTransition": "job start"
+    }
+  ]
+}

@@ -1,0 +1,1863 @@
+{
+  "version": 1,
+  "series": "autonomous",
+  "ingestedAt": "2026-07-05T15:17:26.622Z",
+  "sourcePages": [
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AMC+Executer+-+Autonomous+-+SW+Requirements",
+      "title": "AMC Executer - Autonomous - SW Requirements",
+      "contentHash": "d0ab1e2c9fb9b785",
+      "ingestedAt": "2026-07-05T14:28:11.034Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AMR+Executer+-+Autonomous+-+SW+Requirements",
+      "title": "AMR Executer - Autonomous - SW Requirements",
+      "contentHash": "29b6ea750216c27b",
+      "ingestedAt": "2026-07-05T14:28:30.716Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+-+Hello+World+KB+Component+-+SW+Requirements",
+      "title": "AutoX - Hello World KB Component - SW Requirements",
+      "contentHash": "a20c85e9678ae42b",
+      "ingestedAt": "2026-07-05T14:29:17.318Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+Press+Orchestrator+-+Agenda++and+step+table+-+requirements",
+      "title": "AutoX Press Orchestrator - Agenda  and step table - requirements",
+      "contentHash": "f81c287606dcc644",
+      "ingestedAt": "2026-07-05T14:30:12.857Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+Press+Orchestrator+-+orchestration+engine+-+requirements",
+      "title": "AutoX Press Orchestrator - orchestration engine - requirements",
+      "contentHash": "d608d655bf8d16ab",
+      "ingestedAt": "2026-07-05T14:30:33.225Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Feeder+KB+-+Component+-+Autonomous+-+SW+Requirements",
+      "title": "Feeder KB - Component - Autonomous - SW Requirements",
+      "contentHash": "86b965ae21037420",
+      "ingestedAt": "2026-07-05T14:31:39.511Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/ISW-65447+-+User+Story+-+Job+printing+-+Gateway",
+      "title": "ISW-65447 - User Story - Job printing - Gateway",
+      "contentHash": "4504e792e7084aeb",
+      "ingestedAt": "2026-07-05T14:33:13.214Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Job+list+KB+Component+-+Autonomous+-+SW+Requirements",
+      "title": "Job list KB Component - Autonomous - SW Requirements",
+      "contentHash": "4456d57688cc6638",
+      "ingestedAt": "2026-07-05T14:33:32.071Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Job+print+availability+KB+-+Component+-+Autonomous+-+SW+Requirements",
+      "title": "Job print availability KB - Component - Autonomous - SW Requirements",
+      "contentHash": "40da70e0e49fa963",
+      "ingestedAt": "2026-07-05T14:34:48.227Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Job+print+KB+-+Component+-+Autonomous+-+SW+Requirements",
+      "title": "Job print KB - Component - Autonomous - SW Requirements",
+      "contentHash": "5b6d028665f3337b",
+      "ingestedAt": "2026-07-05T14:35:13.922Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/PQ+RCA+Autonomous+SW+Requirements",
+      "title": "PQ RCA Autonomous SW Requirements",
+      "contentHash": "ce4245585e92f008",
+      "ingestedAt": "2026-07-05T14:37:00.209Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644941457",
+      "title": "PQ TS (Print Quality Troubleshooting) — Autonomous — SW Requirements",
+      "contentHash": "8fe9b4a79f1b9af4",
+      "ingestedAt": "2026-07-05T14:39:05.250Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Press+Orchestrator+Blocks+definition",
+      "title": "Press Orchestrator Blocks definition",
+      "contentHash": "f40e287aa3c399d4",
+      "ingestedAt": "2026-07-05T14:39:16.252Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/RMS+Gateway+-+Autonomous+-+SW+Requirements",
+      "title": "RMS Gateway - Autonomous - SW Requirements",
+      "contentHash": "13f1c1fa554c3897",
+      "ingestedAt": "2026-07-05T14:43:02.692Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159",
+      "title": "State KB — Autonomous — SW Requirements",
+      "contentHash": "0db4b8441d531c40",
+      "ingestedAt": "2026-07-05T14:48:17.137Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Step+Mapper+KB+-+Autonomous+-+SW+Requirements",
+      "title": "Step Mapper KB - Autonomous - SW Requirements",
+      "contentHash": "0c6436ec1c1520e5",
+      "ingestedAt": "2026-07-05T14:49:47.703Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/UI+Operation+KB+-+Component+-+Autonomous+-+SW+Requirements",
+      "title": "UI Operation KB - Component - Autonomous - SW Requirements",
+      "contentHash": "9a3ccb0ac3ff8dce",
+      "ingestedAt": "2026-07-05T14:50:53.855Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710",
+      "title": "UI Process Executor — Autonomous — SW Requirements",
+      "contentHash": "8b1d0bdf5b8f872c",
+      "ingestedAt": "2026-07-05T14:52:14.009Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644943274",
+      "title": "AMR Executer - Component - Autonomous - SW Requirements",
+      "contentHash": "a19af1936664c8b2",
+      "ingestedAt": "2026-07-05T14:53:16.935Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351",
+      "title": "AMR Executer - Logic - Autonomous - SW Requirements",
+      "contentHash": "ec90520971a4d507",
+      "ingestedAt": "2026-07-05T14:56:48.706Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=646128621",
+      "title": "AutoX - Hello World KB Component - Hello_World_Request handling logic - SW Requirements",
+      "contentHash": "f21d335cd7c1d398",
+      "ingestedAt": "2026-07-05T14:57:11.297Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=646122464",
+      "title": "2026-05-17 Meeting notes",
+      "contentHash": "bddae9b45feada5d",
+      "ingestedAt": "2026-07-05T14:57:21.025Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=646133161",
+      "title": "Orchestrator Engine - SRR - 2026-05-20 Meeting notes",
+      "contentHash": "0b59f9e99684135f",
+      "ingestedAt": "2026-07-05T14:57:30.137Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654478115",
+      "title": "Feeder KB - Verify State Logic - Autonomous - Software Requirements",
+      "contentHash": "b178cfb66f5d1fad",
+      "ingestedAt": "2026-07-05T14:59:04.484Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644940552",
+      "title": "Feeder KB - Verify Substrate Logic - Autonomous - Software Requirements",
+      "contentHash": "487282e5c7bcdaaa",
+      "ingestedAt": "2026-07-05T15:01:14.328Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=648812541",
+      "title": "Substrate KB - Component - Autonomous - Pre SRR",
+      "contentHash": "28398f8c69d9eb1c",
+      "ingestedAt": "2026-07-05T15:01:23.591Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=650586679",
+      "title": "Substrate KB - Component - Autonomous - SRR",
+      "contentHash": "e2ea42aa0d338f07",
+      "ingestedAt": "2026-07-05T15:01:33.690Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872",
+      "title": "Job availability logic - Autonomous - SW Requirements",
+      "contentHash": "fa82b36d6b40302a",
+      "ingestedAt": "2026-07-05T15:02:33.229Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=641140203",
+      "title": "Job print & Job list KB - Logic - Autonomous - SW Requirements",
+      "contentHash": "13dc793cc76f562e",
+      "ingestedAt": "2026-07-05T15:04:06.731Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651892112",
+      "title": "JOB KB SRR meeting note - 18-06-26",
+      "contentHash": "bd7bd6cbd0a7732a",
+      "ingestedAt": "2026-07-05T15:04:17.438Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123014",
+      "title": "PQ RCA sequence diagram",
+      "contentHash": "27cf36be735d1ba8",
+      "ingestedAt": "2026-07-05T15:04:30.848Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644942787",
+      "title": "Press Orchestrator - Executer block Specifications",
+      "contentHash": "11c79e90fe51a348",
+      "ingestedAt": "2026-07-05T15:04:41.128Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644942811",
+      "title": "Press Orchestrator - Gateway block Specifications",
+      "contentHash": "22d93c413bfb2fcd",
+      "ingestedAt": "2026-07-05T15:04:51.164Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644942370",
+      "title": "Press Orchestrator - Knowledge block Specifications",
+      "contentHash": "7e17342de64b4072",
+      "ingestedAt": "2026-07-05T15:05:01.955Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172920",
+      "title": "Press Orchestrator Blocks definitions - Centralized",
+      "contentHash": "56a826742f8bd917",
+      "ingestedAt": "2026-07-05T15:05:11.051Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644942771",
+      "title": "Press Orchestrator Component Definition",
+      "contentHash": "bc3762161da5ac95",
+      "ingestedAt": "2026-07-05T15:05:20.876Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=647472480",
+      "title": "RMS Gateway - Autonomous - Meeting Notes",
+      "contentHash": "259885b411d0c866",
+      "ingestedAt": "2026-07-05T15:05:31.055Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=648811208",
+      "title": "Job printing (Press state mismatch) user story + State KB Requirements review 2026-06-02 Meeting notes",
+      "contentHash": "bdc2a8d2feec211f",
+      "ingestedAt": "2026-07-05T15:05:40.780Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644941139",
+      "title": "Custom Step KB - Autonomous - Pre SRR - Meeting Notes",
+      "contentHash": "84f63453f0c06bab",
+      "ingestedAt": "2026-07-05T15:05:50.747Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=647465493",
+      "title": "Step Mapper KB - Autonomous - SRR",
+      "contentHash": "a815d42a8c1a57aa",
+      "ingestedAt": "2026-07-05T15:06:00.553Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644943586",
+      "title": "Step Mapper Tool",
+      "contentHash": "8be8a66b0791da4d",
+      "ingestedAt": "2026-07-05T15:07:06.453Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=653231381",
+      "title": "PIP unload operation is unavailable - Autonomous - Pre SRR",
+      "contentHash": "f503fcf419770c3a",
+      "ingestedAt": "2026-07-05T15:07:19.663Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=650584290",
+      "title": "UI Operation KB - Logic - Autonomous - SW Requirements",
+      "contentHash": "4c13d0d627f741b2",
+      "ingestedAt": "2026-07-05T15:08:03.011Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/PIP+unload+operation+is+unavailable+-+Autonomous+-+USRD",
+      "title": "PIP unload operation is unavailable - Autonomous - USRD",
+      "contentHash": "081006ee1717ccc5",
+      "ingestedAt": "2026-07-05T15:10:22.109Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/AutoX+-+AMR+and+RMS+functional+requirements",
+      "title": "AutoX - AMR and RMS functional requirements",
+      "contentHash": "34e730d852aed4e4",
+      "ingestedAt": "2026-07-05T15:12:53.985Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/AutoX+-+Press+orchestrator+solution+-+functional+requirements",
+      "title": "AutoX - Press orchestrator solution - functional requirements",
+      "contentHash": "321486e619506ca4",
+      "ingestedAt": "2026-07-05T15:13:15.907Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/AutoX+Product%3A+System+Detailed+Description",
+      "title": "AutoX Product: System Detailed Description",
+      "contentHash": "1eb3c62d72485570",
+      "ingestedAt": "2026-07-05T15:13:26.577Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/DFE+Job+routing+requirements+-+Autonomous+Product",
+      "title": "DFE Job routing requirements - Autonomous Product",
+      "contentHash": "14c62a5ff14322a6",
+      "ingestedAt": "2026-07-05T15:13:48.670Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/Autonomous+-+Press+Orchestrator+System+architecture",
+      "title": "Autonomous - Press Orchestrator System architecture",
+      "contentHash": "9f76e9320febe0ec",
+      "ingestedAt": "2026-07-05T15:15:47.724Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/Autonomous+Press+Orchestration+-+SW+Architecture",
+      "title": "Autonomous Press Orchestration - SW Architecture",
+      "contentHash": "7d5b785be40b879d",
+      "ingestedAt": "2026-07-05T15:16:06.446Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=653230157",
+      "title": "Job routing requirements - alignment/brainstorm - 2026-06-21 Meeting notes",
+      "contentHash": "4a3c4946c3aee879",
+      "ingestedAt": "2026-07-05T15:16:16.309Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643171185",
+      "title": "Architectural bullets",
+      "contentHash": "ab0d3717222185e5",
+      "ingestedAt": "2026-07-05T15:16:46.518Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643170339",
+      "title": "Autonomous SW System Architecture Overview by Alon",
+      "contentHash": "a0dd3ab8ac1d6e4a",
+      "ingestedAt": "2026-07-05T15:16:58.002Z"
+    },
+    {
+      "url": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643171181",
+      "title": "System architecture",
+      "contentHash": "a75fbc8001e7754f",
+      "ingestedAt": "2026-07-05T15:17:26.621Z"
+    }
+  ],
+  "components": [],
+  "monitors": [],
+  "events": [
+    {
+      "name": "TBD",
+      "swLayer": "PQ RCA",
+      "type": "Warning",
+      "description": "PQ defect detected — {DefectType}, Severity: {Severity}",
+      "stateBehavior": "No state change",
+      "whatToDo": "Informational to PQ TS",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/PQ+RCA+Autonomous+SW+Requirements"
+    },
+    {
+      "name": "PQ_TS_DEFECT_RESOLVED",
+      "description": "Issued when PQ RCA validation of a corrective action returns PASS.",
+      "trigger": "PQ RCA returns Validation = PASS after corrective action; PQ TS marks defect resolved and notifies Orchestrator normal operation can resume.",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644941457"
+    },
+    {
+      "name": "PQ_TS_DEFECT_ESCALATED",
+      "description": "Issued when PQ RCA validation of a corrective action returns FAIL and PQ TS escalates to next corrective action in troubleshooting sequence.",
+      "trigger": "PQ RCA returns Validation = FAIL, escalation depth < PqTsMaxEscalationDepth.",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644941457"
+    },
+    {
+      "name": "PQ_TS_DEFECT_UNRESOLVED",
+      "description": "Issued when max escalation depth reached and defect persists.",
+      "suspectedCause": "Defect not resolved after PqTsMaxEscalationDepth (default 3) escalations.",
+      "whatToDo": "Flag defect for operator intervention; request press stop via Orchestrator if defect severity is Critical.",
+      "trigger": "Escalation depth reaches PqTsMaxEscalationDepth and PQ RCA validation still FAIL.",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644941457"
+    },
+    {
+      "name": "UNKNOWN_STATE",
+      "swLayer": "State KB",
+      "type": "Error",
+      "description": "Returned when an invalid/unrecognized state ID is supplied as input",
+      "trigger": "Invalid state input to a State KB query (e.g., computePath)",
+      "stateBehavior": "None",
+      "whatToDo": "Escalate to manual intervention",
+      "sourceSection": "Path Calculation",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "name": "TARGET_UNREACHABLE",
+      "swLayer": "State KB",
+      "type": "Error",
+      "description": "Returned when no valid path exists from current state to target state",
+      "trigger": "computePath finds no reachable path between current and target state",
+      "stateBehavior": "None",
+      "whatToDo": "Escalate to manual intervention",
+      "sourceSection": "Path Calculation",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "name": "UI_PROCESS_STEP_COMPLETED",
+      "swLayer": "",
+      "type": "Info",
+      "description": "",
+      "params": [],
+      "stateBehavior": "",
+      "suspectedCause": "",
+      "whatToDo": "",
+      "trigger": "Step successfully executed",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "name": "UI_PROCESS_STEP_FAILED",
+      "swLayer": "",
+      "type": "Warning",
+      "description": "",
+      "params": [],
+      "stateBehavior": "",
+      "suspectedCause": "",
+      "whatToDo": "",
+      "trigger": "Step execution failed",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "name": "UI_PROCESS_AVAILABILITY_BLOCKED",
+      "swLayer": "",
+      "type": "Warning",
+      "description": "",
+      "params": [],
+      "stateBehavior": "",
+      "suspectedCause": "",
+      "whatToDo": "",
+      "trigger": "Button click failed due to availability",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "name": "UI_PROCESS_CONTENT_MAP_MISMATCH",
+      "swLayer": "",
+      "type": "Error",
+      "description": "",
+      "params": [],
+      "stateBehavior": "",
+      "suspectedCause": "",
+      "whatToDo": "",
+      "trigger": "Expected UI element not found",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "name": "UI_PROCESS_WINDOW_OPEN_TIMEOUT",
+      "swLayer": "",
+      "type": "Error",
+      "description": "",
+      "params": [],
+      "stateBehavior": "",
+      "suspectedCause": "",
+      "whatToDo": "",
+      "trigger": "Window open exceeded timeout",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "name": "UI_PROCESS_BUZZER_REQUIRED",
+      "swLayer": "",
+      "type": "Info",
+      "description": "",
+      "params": [],
+      "stateBehavior": "",
+      "suspectedCause": "",
+      "whatToDo": "",
+      "trigger": "Button requires buzzer activation",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "name": "AMR_CLAIM_REQUESTED",
+      "swLayer": "AMR Executer",
+      "type": "Info",
+      "description": "AMR sends claim_request to RMS; RMS Gateway forwards to AE as claim-request indication. AE self-approves via CONTAINER STEP (CLAIM_APPROVAL) without involving Press Orchestrator/Press machine as approval decision-maker (though CLAIM_APPROVAL step itself is executed via Press Orchestrator broadcast).",
+      "trigger": "AMR sends claim_request to RMS",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "AMR_CLAIM_RESPONSE",
+      "swLayer": "AMR Executer",
+      "type": "Info",
+      "description": "Response to claim request, contains IsClaimed and ReasonCode.",
+      "params": [
+        "IsClaimed",
+        "ReasonCode"
+      ],
+      "trigger": "After CLAIM_APPROVAL container step completes, IsClaimed=true",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "AMR_CLAIM_TIMEOUT",
+      "swLayer": "AMR Executer",
+      "type": "Error",
+      "description": "Failure event when TimeoutThresholdSec elapses since claim request without a robot response.",
+      "stateBehavior": "None - not safety-critical, no operator call",
+      "whatToDo": "Mark relevant LOAD or UNLOAD task as failed with claim-timeout reason; no delegation to Press Orchestrator",
+      "trigger": "TimeoutThresholdSec elapses from ClaimRequestedTimestampUTC without AMR response",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "CLAIM_FAILURE_CALL_OPERATOR",
+      "swLayer": "AMR Executer",
+      "type": "Error",
+      "description": "Critical timeout after claim approved: AMR may still be physically inside press zone when timeout occurs.",
+      "params": [
+        "MachineID",
+        "DeviceID",
+        "ReasonCode = AMR_COMPLETION_TIMEOUT",
+        "TimestampUTC"
+      ],
+      "stateBehavior": "Block further AMR task dispatch for affected machine/device until resolved",
+      "whatToDo": "Do NOT release claim or resume press operations automatically; operator must physically verify AMR position and confirm safe state; claim release/task reset only after explicit operator acknowledgment",
+      "trigger": "TimeoutThresholdSec elapses after AMR_CLAIM_RESPONSE(IsClaimed=true) with no task completion report received",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "NOT_SUPPORTED_DRAWER_TYPE",
+      "swLayer": "AMR Executer",
+      "type": "Warning",
+      "description": "Logged for traceability when incoming step has DrawerType != PILE; AE is out of scope and does not answer the step.",
+      "params": [
+        "MachineID",
+        "DeviceID",
+        "DrawerType",
+        "StepType",
+        "TimestampUTC"
+      ],
+      "trigger": "Incoming Substrate KB step with DrawerType != PILE (applies to order, load, resupply, claim-related paths)",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "PHYS_SUBSTRATE_ORDER",
+      "swLayer": "AMR Executer/Press Orchestrator",
+      "type": "Info",
+      "description": "First step of two-step substrate replenishment flow; instructs AMR fleet to move substrate pallet from warehouse to feeder inbound staging before loading. Non-blocking for press production.",
+      "trigger": "Received from Press Orchestrator",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "ORDER_COMPLETED",
+      "swLayer": "RMS",
+      "type": "Info",
+      "description": "RMS confirms ORDER mission complete; sets LOAD precondition as met. AE does not wait for separate RMS_FEEDER_INBOUND_STAGING_STATUS confirmation. Does not imply LOAD will start automatically.",
+      "trigger": "RMS completes ORDER mission",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "RMS_FEEDER_INBOUND_STAGING_STATUS",
+      "swLayer": "RMS",
+      "type": "Info",
+      "description": "Informational status update on feeder inbound staging, non-blocking; emitted on ORDER_COMPLETED.",
+      "stateBehavior": "None - informational only",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "PHYS_SUBSTRATE_LOAD",
+      "swLayer": "AMR Executer/Press Orchestrator",
+      "type": "Info",
+      "description": "Load step; precondition is substrate present in feeder inbound staging for target machine/device. Standalone variant used when feeder confirmed empty (no UNLOAD move, single CLAIM cycle).",
+      "trigger": "Issued by Press Orchestrator after ORDER_COMPLETED",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "VERIFY_STAGING_STATUS",
+      "swLayer": "AMR Executer",
+      "type": "Info",
+      "description": "Emitted to Press Orchestrator to confirm correct substrate present in feeder inbound staging before LOAD execution.",
+      "stateBehavior": "If invalid status returned, do not proceed with LOAD; mark step blocked/failed with staging reason",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "PHYS_RESUPPLY_SUBSTRATE",
+      "swLayer": "AMR Executer",
+      "type": "Info",
+      "description": "Emitted to initiate resupply mission if replacement flow required.",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "PHYS_SUBSTRATE_UNLOAD",
+      "swLayer": "Press Orchestrator",
+      "type": "Info",
+      "description": "Standalone unload step (later phase). AE emits PHYS_UNLOAD_SUBSTRATE to RMS Gateway; RMS dispatches standalone UNLOAD-only mission. Single CLAIM cycle (#1 only) before UNLOAD move.",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "AMR_CLAIM_COMPLETED",
+      "swLayer": "AMR Executer",
+      "type": "Info",
+      "description": "Emitted per CLAIM cycle completion. On this event AE emits ENABLE_FEEDER_OPERATIONS and RESET_FEEDER_SAFETY_CURTAIN. After 2nd occurrence (post-LOAD, CLAIM #2), AE inserts ENABLE_FEEDER_OPERATIONS then VERIFY_FEEDER_STATE steps.",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "TASK_SUCCEEDED",
+      "swLayer": "AMR/RMS",
+      "type": "Info",
+      "description": "Reported to Press Orchestrator as completion of UNLOAD or LOAD task.",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "INSERT_CONTAINER_STEP(CLAIM_APPROVAL)",
+      "swLayer": "AMR Executer",
+      "type": "Info",
+      "description": "Issued to Press Orchestrator upon AMR_CLAIM_REQUESTED. Press Orchestrator broadcasts CLAIM_APPROVAL step to all registered step handlers; only AE expected to respond. Consists of 3 sequential sub-steps: VERIFY_FEEDER_STATE, DISABLE_FEEDER_OPERATIONS, APPROVE_CLAIM.",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "VERIFY_FEEDER_STATE",
+      "swLayer": "Press Orchestrator",
+      "type": "Info",
+      "description": "Sub-step 1 of CLAIM_APPROVAL: validate feeder readiness, confirm feeder in correct position before AMR entry (e.g. lower elevator, wait for positive elevator-down report). Also used post-operation to confirm feeder state after UNLOAD/LOAD complete (includes safety curtain reset).",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "DISABLE_FEEDER_OPERATIONS",
+      "swLayer": "Press Orchestrator",
+      "type": "Info",
+      "description": "Sub-step 2 of CLAIM_APPROVAL: locks FEEDER operations before claim approval to prevent concurrent feeder manipulations. Locked operations: substrate prepare, substrate load, substrate replace, manual feeder intervention actions. Executed on each CLAIM approval (#1 and #2 independently).",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "APPROVE_CLAIM",
+      "swLayer": "AMR Executer",
+      "type": "Info",
+      "description": "Sub-step 3 of CLAIM_APPROVAL: records claim approval and prepares AMR_CLAIM_RESPONSE(IsClaimed=true) as final sub-step in same container execution context.",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "ENABLE_FEEDER_OPERATIONS",
+      "swLayer": "Press Orchestrator",
+      "type": "Info",
+      "description": "Re-enables FEEDER operations; sent to Press Orchestrator on AMR_CLAIM_COMPLETED (each cycle), and inserted as sequential step after 2nd AMR_CLAIM_COMPLETED.",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "RESET_FEEDER_SAFETY_CURTAIN",
+      "swLayer": "Press Orchestrator",
+      "type": "Info",
+      "description": "Resets feeder safety curtain; performed as part of VERIFY_FEEDER_STATE post-operation step, and emitted with ENABLE_FEEDER_OPERATIONS on CLAIM completion.",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "PRESS_JOB_SUBSTRATE_REQUIRED",
+      "type": "Info",
+      "description": "Published step indicating a job requires substrate verification.",
+      "trigger": "Job published with substrate requirement",
+      "stateBehavior": "Component adds a verification step (Verify_Substrate) into the Orchestrator Agenda",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644940552"
+    },
+    {
+      "name": "VERIFY_SUBSTRATE",
+      "type": "Info",
+      "description": "Verification step inserted into Orchestrator Agenda for a job; added only to user jobs, not special jobs (Phase 1). Verification assessment status updated based on registered data triggers.",
+      "trigger": "PRESS_JOB_SUBSTRATE_REQUIRED published step",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644940552"
+    },
+    {
+      "name": "DRAWER_STATE_REQUIRED",
+      "type": "Info",
+      "description": "Step entered into agenda based on outcome of substrate verification state machine flow chart.",
+      "trigger": "Substrate Verification Logic state machine outcome",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644940552"
+    },
+    {
+      "name": "Assign_Substrate",
+      "type": "Info",
+      "description": "Step entered into agenda based on outcome of substrate verification state machine flow chart; mapped to concrete executable steps via step mapper KB.",
+      "trigger": "Substrate Verification Logic state machine outcome",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644940552"
+    },
+    {
+      "name": "JOB_PRINT_AVAILABILITY_REQUIRED",
+      "swLayer": "Orchestrator",
+      "type": "Info",
+      "description": "Published to indicate a job availability check is required for a JobID in the print queue.",
+      "trigger": "Raised for a JobID in print Q needing availability evaluation.",
+      "whatToDo": "Component shall issue a VERIFY_JOB_AVAILABILITY container step to the orchestrator agenda.",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "name": "AvailabilityID_Not_Found",
+      "swLayer": "Orchestrator",
+      "type": "Warning",
+      "description": "Sent when an availability code/mapping is unknown or unmapped, or mapping missing for a known code format.",
+      "params": [
+        "JobID",
+        "UIElementID",
+        "availabilityID"
+      ],
+      "trigger": "Unknown/unmapped availability code, or mapping missing for known code format.",
+      "whatToDo": "Inject CALL_OPERATOR fallback step (CALL_OPERATOR allowed only in this case).",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872",
+      "stateBehavior": "None"
+    }
+  ],
+  "parameters": [
+    {
+      "name": "maxRetries",
+      "scope": "local",
+      "defaultValue": "3",
+      "description": "Maximum number of retry attempts for a step's retry policy, executed by orchestrator engine if step execution results in FAILED",
+      "referencedBy": [
+        "Step schema (execution.retryPolicy)",
+        "ADD_STEP API"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+Press+Orchestrator+-+Agenda++and+step+table+-+requirements"
+    },
+    {
+      "name": "retryIntervalMs",
+      "scope": "local",
+      "unit": "msec",
+      "defaultValue": "60000",
+      "description": "Delay between retry attempts, part of step's retry policy",
+      "referencedBy": [
+        "Step schema (execution.retryPolicy)",
+        "ADD_STEP API"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+Press+Orchestrator+-+Agenda++and+step+table+-+requirements"
+    },
+    {
+      "name": "timeoutMs",
+      "scope": "local",
+      "unit": "msec",
+      "description": "Execution timeout for a step (future execution field)",
+      "referencedBy": [
+        "Step schema (execution)"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+Press+Orchestrator+-+Agenda++and+step+table+-+requirements"
+    },
+    {
+      "name": "AUTOX_PQ_RCA_FEATURE_FLAG",
+      "scope": "import",
+      "defaultValue": "TBD",
+      "description": "PQ RCA feature enable/disable configuration flag (Jira config issue to be created)",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/PQ+RCA+Autonomous+SW+Requirements"
+    },
+    {
+      "name": "PQ_RCA_SENSITIVITY_LEVEL",
+      "scope": "import",
+      "unit": "Enum",
+      "defaultValue": "Standard",
+      "description": "Sensitivity level override / global sensitivity level for defect detection. Possible values: Low / Standard / High / Custom",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/PQ+RCA+Autonomous+SW+Requirements"
+    },
+    {
+      "name": "PqRcaMaxLatencyMs",
+      "scope": "local",
+      "unit": "ms",
+      "defaultValue": "TBD",
+      "description": "Maximum latency from sensor acquisition to defect report. Target < 1 sheet cycle",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/PQ+RCA+Autonomous+SW+Requirements"
+    },
+    {
+      "name": "PqRcaValidationSheets",
+      "scope": "local",
+      "unit": "count",
+      "defaultValue": "10",
+      "description": "Number of sheets to monitor during validation mode",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/PQ+RCA+Autonomous+SW+Requirements"
+    },
+    {
+      "name": "PqRcaPersistenceThreshold",
+      "scope": "local",
+      "unit": "count",
+      "defaultValue": "3",
+      "description": "Number of consecutive sheets with same defect before escalating severity",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/PQ+RCA+Autonomous+SW+Requirements"
+    },
+    {
+      "name": "PqRcaEnhancedProofSensitivity",
+      "scope": "local",
+      "unit": "Factor",
+      "defaultValue": "1.5",
+      "description": "Sensitivity multiplier for enhanced proof mode, applied on top of standard thresholds",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/PQ+RCA+Autonomous+SW+Requirements"
+    },
+    {
+      "name": "PqTsMaxDiagnosticIterations",
+      "defaultValue": "5",
+      "description": "Max diagnostic iterations (isolate-step -> PQ RCA re-analyze cycle) before escalating when root cause unknown.",
+      "referencedBy": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644941457"
+    },
+    {
+      "name": "PqTsValidationSheets",
+      "defaultValue": "10",
+      "unit": "sheets",
+      "description": "Number of sheets to monitor during post-corrective validation mode.",
+      "referencedBy": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644941457"
+    },
+    {
+      "name": "PqTsMaxEscalationDepth",
+      "defaultValue": "3",
+      "description": "Max escalation depth for corrective action sequence per defect type/root cause before flagging PQ_TS_DEFECT_UNRESOLVED.",
+      "referencedBy": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644941457"
+    },
+    {
+      "name": "PipPartNumber",
+      "scope": "import",
+      "unit": "String",
+      "defaultValue": "Phase1: 2F313A | Q4428A. Phase2 (keyed by OCB flags - Wide/Narrow, Web/Sheet fed): Wide+Web=2F313A|Q4422A; Wide+SheetFed=2F313A|Q4428A; Narrow+Web=2F503A|Q4431A; Narrow+SheetFed=2F503A|Q4430A",
+      "description": "Pip part number, list type, selected per press configuration via OCB flags (width narrow/wide, web/sheet-fed via WebPaperHandlingSupport flag). Golden PIPs applicable to both web and sheet-fed presses.",
+      "referencedBy": [
+        "PHYS_FETCH_PIP"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Step+Mapper+KB+-+Autonomous+-+SW+Requirements"
+    },
+    {
+      "name": "Window open response time",
+      "scope": "local",
+      "unit": "msec",
+      "defaultValue": "500 ms",
+      "description": "Simulated press UI latency for window open response, range 100-5000 ms",
+      "referencedBy": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "name": "Button click response time",
+      "scope": "local",
+      "unit": "msec",
+      "defaultValue": "200 ms",
+      "description": "Simulated click latency for button click response, range 50-2000 ms",
+      "referencedBy": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "name": "Availability failure rate",
+      "scope": "local",
+      "unit": "%",
+      "defaultValue": "10%",
+      "description": "Simulated rate of availability issues occurring during button click, range 0-100%",
+      "referencedBy": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "name": "WindowOpenTimeout",
+      "scope": "",
+      "unit": "ms",
+      "defaultValue": "5000",
+      "description": "Max time to wait for window open response from Press UI GW",
+      "referencedBy": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "name": "ButtonClickTimeout",
+      "scope": "",
+      "unit": "ms",
+      "defaultValue": "2000",
+      "description": "Max time to wait for button click response from Press UI GW",
+      "referencedBy": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "name": "PageNavigationDelay",
+      "scope": "",
+      "unit": "ms",
+      "defaultValue": "500",
+      "description": "Minimum delay between consecutive page navigation actions",
+      "referencedBy": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "name": "MaxRetryOnAvailability",
+      "scope": "",
+      "unit": "count",
+      "defaultValue": "3",
+      "description": "Max number of retries for a step after availability resolution",
+      "referencedBy": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "name": "ContentMapVersion",
+      "scope": "",
+      "unit": "string",
+      "defaultValue": "",
+      "description": "Version identifier of the loaded content map",
+      "referencedBy": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "name": "TimeoutThresholdSec",
+      "scope": "local",
+      "unit": "sec",
+      "description": "Threshold for AMR claim timeout, measured from ClaimRequestedTimestampUTC (no-response case) or from AMR_CLAIM_RESPONSE(IsClaimed=true) (post-approval completion-timeout case).",
+      "referencedBy": [
+        "AMR_CLAIM_TIMEOUT",
+        "CLAIM_FAILURE_CALL_OPERATOR"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "ClaimRequestedTimestampUTC",
+      "scope": "local",
+      "unit": "timestamp",
+      "description": "Timestamp of original claim request, used as timeout reference and to match claim_response to claim_request (with MachineID, DeviceID) since no dedicated Claim ID exists.",
+      "referencedBy": [
+        "AMR_CLAIM_TIMEOUT"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "name": "SubstrateGapQuanity",
+      "scope": "local",
+      "description": "Calculated gap = (AccumulatedSubstrate + PageRemainingCount(J) - AvailableSubstrate) x SheetsFactor. Used to determine how many sheets are missing (Is Substrate Enough check).",
+      "referencedBy": [
+        "Is Substrate Enough"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644940552"
+    },
+    {
+      "name": "PageRemainingCount",
+      "scope": "local",
+      "description": "Remaining page count for a given jobID.",
+      "referencedBy": [
+        "Is Substrate Enough"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644940552"
+    },
+    {
+      "name": "AvailableSubstrate",
+      "scope": "local",
+      "description": "Substrate level read from all online drawers assigned to the required substrateID (or forced drawer).",
+      "referencedBy": [
+        "Is Substrate Enough"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644940552"
+    },
+    {
+      "name": "AccumulatedSubstrate",
+      "scope": "local",
+      "description": "Value received from press orchestrator, used in substrate gap calculation. Marked Phase 3.",
+      "referencedBy": [
+        "Is Substrate Enough"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644940552"
+    },
+    {
+      "name": "SheetsFactor",
+      "scope": "local",
+      "unit": "%",
+      "description": "Static percentage for ordering buffer, used as multiplier in substrate gap calculation.",
+      "referencedBy": [
+        "Is Substrate Enough",
+        "Verify_Substrate"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644940552",
+      "defaultValue": "1.05"
+    },
+    {
+      "name": "MaxTotalPendingQtySubstrate",
+      "scope": "local",
+      "unit": "sheets",
+      "description": "Cap on sum of quantities across all pending/in-flight ordering steps for a single consumable. If total pending qty >= cap, no new ordering step is created for that consumable regardless of remaining deficit.",
+      "referencedBy": [
+        "Phys_Order_Substrate"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644940552"
+    }
+  ],
+  "configTypes": {},
+  "diagrams": [
+    {
+      "name": "SW HL Topology",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+-+Hello+World+KB+Component+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:29:17.318Z"
+    },
+    {
+      "name": "orientation",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Feeder+KB+-+Component+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:31:39.511Z"
+    },
+    {
+      "name": "decision flow",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Feeder+KB+-+Component+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:31:39.511Z"
+    },
+    {
+      "name": "mermaid_0776b84a4308",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/ISW-65447+-+User+Story+-+Job+printing+-+Gateway",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:33:13.213Z"
+    },
+    {
+      "name": "mermaid_6f35555b0aff",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/ISW-65447+-+User+Story+-+Job+printing+-+Gateway",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:33:13.214Z"
+    },
+    {
+      "name": "mermaid_2323f51785f3",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/ISW-65447+-+User+Story+-+Job+printing+-+Gateway",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:33:13.214Z"
+    },
+    {
+      "name": "mermaid_e8d7e73222aa",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/ISW-65447+-+User+Story+-+Job+printing+-+Gateway",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:33:13.214Z"
+    },
+    {
+      "name": "mermaid_fb2696d6ed20",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/ISW-65447+-+User+Story+-+Job+printing+-+Gateway",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:33:13.214Z"
+    },
+    {
+      "name": "Job availability",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Job+print+availability+KB+-+Component+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:34:48.227Z"
+    },
+    {
+      "name": "Job av",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Job+print+availability+KB+-+Component+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:34:48.227Z"
+    },
+    {
+      "name": "high level",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/PQ+RCA+Autonomous+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:37:00.209Z"
+    },
+    {
+      "name": "SW high level",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/PQ+RCA+Autonomous+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:37:00.209Z"
+    },
+    {
+      "name": "PQ TS2",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644941457",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:39:05.249Z"
+    },
+    {
+      "name": "PQ TS",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644941457",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:39:05.249Z"
+    },
+    {
+      "name": "AutoX-Movigo base block diagram",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/RMS+Gateway+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:43:02.690Z"
+    },
+    {
+      "name": "Modi - Hand Shake (Claim)",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/RMS+Gateway+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:43:02.691Z"
+    },
+    {
+      "name": "Reconnection Protocol",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/RMS+Gateway+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:43:02.691Z"
+    },
+    {
+      "name": "Resupply With Substrate",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/RMS+Gateway+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:43:02.691Z"
+    },
+    {
+      "name": "RequestSubstrate",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/RMS+Gateway+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:43:02.691Z"
+    },
+    {
+      "name": "Task Life Cycle",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/RMS+Gateway+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:43:02.691Z"
+    },
+    {
+      "name": "Authentication",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/RMS+Gateway+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:43:02.692Z"
+    },
+    {
+      "name": "States and transition",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:48:17.136Z"
+    },
+    {
+      "name": "image-2026-6-2_15-17-27",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:48:17.136Z"
+    },
+    {
+      "name": "image-2026-6-2_15-16-0",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:48:17.137Z"
+    },
+    {
+      "name": "image-2026-6-2_15-15-16",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:48:17.137Z"
+    },
+    {
+      "name": "State exe",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:48:17.137Z"
+    },
+    {
+      "name": "UI flow",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Step+Mapper+KB+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:49:47.703Z"
+    },
+    {
+      "name": "High Level Schema",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Step+Mapper+KB+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:49:47.703Z"
+    },
+    {
+      "name": "HL Topology",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/Step+Mapper+KB+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:49:47.703Z"
+    },
+    {
+      "name": "HL topology",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/UI+Operation+KB+-+Component+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:50:53.854Z"
+    },
+    {
+      "name": "block diagram",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/UI+Operation+KB+-+Component+-+Autonomous+-+SW+Requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:50:53.855Z"
+    },
+    {
+      "name": "UI process exe",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:52:14.009Z"
+    },
+    {
+      "name": "AMR Executer HL flow chart",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644943274",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:53:16.935Z"
+    },
+    {
+      "name": "AMR Executer",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644943274",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:53:16.935Z"
+    },
+    {
+      "name": "Untitled Diagram",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:56:48.705Z"
+    },
+    {
+      "name": "Claim sequence",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:56:48.706Z"
+    },
+    {
+      "name": "Load sequence",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:56:48.706Z"
+    },
+    {
+      "name": "AMR Executer - Load Substrate",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:56:48.706Z"
+    },
+    {
+      "name": "SW HL Topology - AMR Executer",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:56:48.706Z"
+    },
+    {
+      "name": "state machine",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654478115",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:59:04.483Z"
+    },
+    {
+      "name": "forced_drawer",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654478115",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:59:04.484Z"
+    },
+    {
+      "name": "Claim Approval",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654478115",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T14:59:04.484Z"
+    },
+    {
+      "name": "7",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:02:33.228Z"
+    },
+    {
+      "name": "job print",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=641140203",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:04:06.730Z"
+    },
+    {
+      "name": "SW HL topology",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=641140203",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:04:06.730Z"
+    },
+    {
+      "name": "JOB KB",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=641140203",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:04:06.731Z"
+    },
+    {
+      "name": "test",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644943586",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:07:06.453Z"
+    },
+    {
+      "name": "steps",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=644943586",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:07:06.453Z"
+    },
+    {
+      "name": "availability Flow",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=650584290",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:08:03.011Z"
+    },
+    {
+      "name": "operation flow",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/PIP+unload+operation+is+unavailable+-+Autonomous+-+USRD",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:10:22.108Z"
+    },
+    {
+      "name": "participating blocks",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/PIP+unload+operation+is+unavailable+-+Autonomous+-+USRD",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:10:22.109Z"
+    },
+    {
+      "name": "Autonomous - AMR Block Diagram",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/AutoX+-+AMR+and+RMS+functional+requirements",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:12:53.985Z"
+    },
+    {
+      "name": "HL concept",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/Autonomous+-+Press+Orchestrator+System+architecture",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:15:47.723Z"
+    },
+    {
+      "name": "SysArch",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/Autonomous+-+Press+Orchestrator+System+architecture",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:15:47.723Z"
+    },
+    {
+      "name": "PressOrcFocus",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/Autonomous+-+Press+Orchestrator+System+architecture",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:15:47.724Z"
+    },
+    {
+      "name": "image-2026-4-11_17-29-21",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/Autonomous+-+Press+Orchestrator+System+architecture",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:15:47.724Z"
+    },
+    {
+      "name": "architecture",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/Autonomous+-+Press+Orchestrator+System+architecture",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:15:47.724Z"
+    },
+    {
+      "name": "image-2026-5-4_8-36-48-1",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643171185",
+      "summary": "",
+      "states": [],
+      "transitions": [],
+      "decisionPoints": [],
+      "signals": [],
+      "analyzedAt": "2026-07-05T15:16:46.518Z"
+    }
+  ],
+  "stateTransitions": [
+    {
+      "from": "Pending",
+      "to": "Idle",
+      "trigger": "Preconditions met / ready for execution",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+Press+Orchestrator+-+Agenda++and+step+table+-+requirements"
+    },
+    {
+      "from": "Idle",
+      "to": "Run",
+      "trigger": "Execution dispatched",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+Press+Orchestrator+-+Agenda++and+step+table+-+requirements"
+    },
+    {
+      "from": "Run",
+      "to": "Completed",
+      "trigger": "Execution finished successfully",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+Press+Orchestrator+-+Agenda++and+step+table+-+requirements"
+    },
+    {
+      "from": "Run",
+      "to": "Failed",
+      "trigger": "Execution failed / executor cannot handle step",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+Press+Orchestrator+-+Agenda++and+step+table+-+requirements"
+    },
+    {
+      "from": "Run",
+      "to": "On_Hold",
+      "trigger": "Interrupted (operator control or stopped step)",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+Press+Orchestrator+-+Agenda++and+step+table+-+requirements"
+    },
+    {
+      "from": "On_Hold",
+      "to": "Idle",
+      "trigger": "Resume execution",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+Press+Orchestrator+-+Agenda++and+step+table+-+requirements"
+    },
+    {
+      "from": "On_Hold",
+      "to": "Pending",
+      "trigger": "Conditions no longer met",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/SWSE/AutoX+Press+Orchestrator+-+Agenda++and+step+table+-+requirements"
+    },
+    {
+      "from": "Off",
+      "to": "Standby",
+      "trigger": "\"Go to Standby\" (UI Button, Direction: Up)",
+      "signals": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "Standby",
+      "to": "Off",
+      "trigger": "\"Go to Off\" (UI Button, Direction: Down)",
+      "signals": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "Standby",
+      "to": "Ready",
+      "trigger": "\"Get Ready\" (UI Button, Direction: Up)",
+      "signals": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "Ready",
+      "to": "Standby",
+      "trigger": "\"Go to Standby\" (UI Button, Direction: Down)",
+      "signals": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "Ready",
+      "to": "Print",
+      "trigger": "\"Print\" (UI Button, Direction: Up)",
+      "signals": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "Print",
+      "to": "Ready",
+      "trigger": "\"Stop\" (UI Button, Direction: Down)",
+      "signals": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "OFF",
+      "to": ">=STANDBY",
+      "trigger": "CHANGE_PRESS_STATE",
+      "signals": [
+        "Payload: OFF, STANDBY"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "STANDBY",
+      "to": "OFF",
+      "trigger": "CHANGE_PRESS_STATE",
+      "signals": [
+        "Payload: STANDBY, OFF"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "STANDBY",
+      "to": ">=READY",
+      "trigger": "CHANGE_PRESS_STATE",
+      "signals": [
+        "Payload: STANDBY, READY"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "READY",
+      "to": "<=STANDBY",
+      "trigger": "CHANGE_PRESS_STATE",
+      "signals": [
+        "Payload: READY, STANDBY"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "READY",
+      "to": "PRINT",
+      "trigger": "CHANGE_PRESS_STATE",
+      "signals": [
+        "Payload: READY, PRINT"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "PRINT",
+      "to": "<=RAPID READY",
+      "trigger": "CHANGE_PRESS_STATE",
+      "signals": [
+        "Payload: PRINT, READY"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "RAPID READY",
+      "to": "READY",
+      "trigger": "CHANGE_PRESS_STATE",
+      "signals": [
+        "Payload: RAPID READY, READY"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "RAPID READY",
+      "to": "PRINT",
+      "trigger": "CHANGE_PRESS_STATE",
+      "signals": [
+        "Payload: RAPID READY, PRINT"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "SERVICE",
+      "to": "STANDBY",
+      "trigger": "CHANGE_PRESS_STATE",
+      "signals": [
+        "Payload: SERVICE, STANDBY"
+      ],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "PRINT",
+      "to": "OFF",
+      "trigger": "FORBIDDEN - never allowed even if theoretical path exists; must go PRINT -> READY -> STANDBY -> OFF",
+      "signals": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "PRINT",
+      "to": "STANDBY",
+      "trigger": "FORBIDDEN - never allowed even if theoretical path exists; must go PRINT -> READY -> STANDBY",
+      "signals": [],
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "from": "Off",
+      "to": "Standby",
+      "trigger": "State KB receives Press_State_Required[standby] step (from availability resolution of Pars_Unload UI operation) and inserts Verify_state and Change_Press_state substeps to drive the press from OFF to STANDBY",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/PIP+unload+operation+is+unavailable+-+Autonomous+-+USRD"
+    }
+  ],
+  "availabilities": [
+    {
+      "reasonId": "ALL_COVERS_CLOSED",
+      "trigger": "All press covers/doors must be closed",
+      "blocksTransition": "STANDBY -> READY",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "reasonId": "JOB_LOADED",
+      "trigger": "A valid job must be loaded and substrate ready (struck-through/removed in source - deprecated requirement)",
+      "blocksTransition": "READY -> PRINT",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=643172159"
+    },
+    {
+      "reasonId": "READY_REQUIRED",
+      "trigger": "Button requires press to be in READY state which is not currently met, causing click failure with AvailabilityID",
+      "blocksTransition": "button click execution (e.g., Print button)",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=642123710"
+    },
+    {
+      "reasonId": "AMR_COMPLETION_TIMEOUT",
+      "trigger": "TimeoutThresholdSec elapses after claim approved (AMR_CLAIM_RESPONSE IsClaimed=true) with no task completion report received from AMR",
+      "blocksTransition": "further AMR task dispatch for affected machine/device until operator acknowledgment",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "reasonId": "NOT_SUPPORTED_DRAWER_TYPE",
+      "trigger": "Incoming step with DrawerType != PILE",
+      "blocksTransition": "AMR command decomposition and claim flow response generation for that step",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=651887351"
+    },
+    {
+      "reasonId": "CALIBRATIONS_ILS_NOT_CALIBRATED_FOR_SUBSTRATE",
+      "trigger": "The In-Line scanner is not calibrated for the selected substrate dimensions",
+      "blocksTransition": "ILS_SELF_CALIBRATION_REQUIRED",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "COLOR_SENSITIVE_JOB_NOT_AVAILABLE",
+      "trigger": "Job is defined as color sensitive. Automatic color calibration cannot run. Run color calibration in order to print the job.",
+      "blocksTransition": "COLOR_CALIBRATION_REQUIRED",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "DESTINATION_DOOR_IS_OPEN",
+      "trigger": "Destination door is open.",
+      "blocksTransition": "PHYS_CLOSE_DOOR",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "ESD_SUBSTRATE_NOT_IN_PILE",
+      "trigger": "In order to work with ESD system, the substrate should be in the pile",
+      "blocksTransition": "NOP",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "ILP_JOB_CORONA_BYPASSED",
+      "trigger": "Corona is bypassed. The job will be printed without corona.",
+      "blocksTransition": "NOP",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "JAP_APR_BYPASSED",
+      "trigger": "Auto Pallet Replacement is bypassed",
+      "blocksTransition": "NOP",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "JAP_CCC_MISSING_CALIBRATED_SUBSTRATE_ERROR",
+      "trigger": "Job requested Continuous Color Calibration while calibration substrate is not available.",
+      "blocksTransition": "PRESS_JOB_SUBSTRATE_REQUIRED",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "JAP_CCC_MISSING_CALIBRATED_SUBSTRATE_WARNING",
+      "trigger": "Job requested Continuous Color Calibration while calibration substrate is not available. Job will be printed but calibration will not be performed.",
+      "blocksTransition": "NOP",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "JAP_DYNAMIC_SPOT_EMULATION_NEEDED",
+      "trigger": "Spot Master emulation is needed.",
+      "blocksTransition": "SPOT_MASTER_REQUIRED",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "JAP_DYNAMIC_SPOT_EMULATION_UNSUPPORTED",
+      "trigger": "Spot Master emulation is not supported.",
+      "blocksTransition": "RE-RIP_WITHOUT_SPOT_MASTER",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "JAP_FINE_LINE_RIP_NOT_AVAILABLE",
+      "trigger": "This job is 800 dpi. Fine line RIP thickness control is recommended only for jobs with 1600 dpi.",
+      "blocksTransition": "NOP",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "JOB_AVAILABILITY_RUN_DUPLEX_FEED_CALIBRATION_FOR_SUBSTRATE",
+      "trigger": "(not found)",
+      "blocksTransition": "DUPLEX_FEED_CALIBRATION_REQUIRED",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "SAFETY_WARNING_METALLIZED_SUBSTRATE_WITH_MULTI_SHOT",
+      "trigger": "Print mode is Multi-Shot. It is recommended to use One-Shot print mode for this job, to avoid a static electrical charge build-up on metallic sheets during printing.",
+      "blocksTransition": "NOP",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "SUBSTRATE_DRAWER_NOT_ONLINE",
+      "trigger": "Drawer with job substrate is not online.",
+      "blocksTransition": "PRESS_JOB_SUBSTRATE_REQUIRED",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "SUBSTRATE_MISMATCH",
+      "trigger": "Substrate mismatch.",
+      "blocksTransition": "PRESS_JOB_SUBSTRATE_REQUIRED",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "SUBSTRATE_MISSING",
+      "trigger": "Substrate missing.",
+      "blocksTransition": "PRESS_JOB_SUBSTRATE_REQUIRED",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "SUBSTRATE_NOT_INSTALLED",
+      "trigger": "Substrate {0} is not installed",
+      "blocksTransition": "PRESS_JOB_SUBSTRATE_REQUIRED",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "reasonId": "DSE_WIZARD_JOB_LOCKED",
+      "trigger": "Job is currently being edited. Finish editing it and try again.",
+      "blocksTransition": "WAIT_FOR_COMPLETION",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/pages/viewpage.action?pageId=654477872"
+    },
+    {
+      "trigger": "Pars_Unload UI operation (PIP unload) requires press to be in STANDBY state, but press is currently in OFF state",
+      "blocksTransition": "UI_StartOperation[Pars_Unload] execution",
+      "sourceUrl": "https://v-indigo-confluence.inr.rd.hpicorp.net:6443/display/AP/PIP+unload+operation+is+unavailable+-+Autonomous+-+USRD"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "code": 25000,
+  "confluence": 40000,
+  "frs": 5000,
+  "brain": 15000,
+  "references": 10000,
+  "diagrams": 10000,
+  "jira": 5000,
+  "systemInstructions": 3000,
+  "totalBudget": 160000
+}

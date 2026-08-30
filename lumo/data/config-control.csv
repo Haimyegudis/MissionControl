@@ -1,0 +1,383 @@
+_sheet,NO.,ID,Cluster,Feature name,Feature descroption,Subsystem,WTL,LP1,LP2,LP3,LP4,P/N,Remarks,__EMPTY
+Sheet2,1,3462,C10,priming light,place light scourse beneeth the anilox roller for easy T1 calibration in the ILP,,"Fiksman, Tzvika",Done,Done,Done,Done,,,?
+Sheet2,2,3827,C10,cleaner sensor removal,removing cleaning solution sensor,,"Fiksman, Tzvika",Done,Done,Done,Done,,,
+Sheet2,3,3980,C10,T1/T2 calibration gap cancelation,T1/T2 calibration gap cancelation,,"Fiksman, Tzvika",Done,Done,Done,Done,,,
+Sheet2,4,4049,C10,T2 flow controller change,"Constant speed flow controller, nozzle dia.=0.6mm in order to synchronize between the T2 engage/disengage speed and the Overlap buffer",,"Fiksman, Tzvika",Done,Done,Done,Done,,,
+Sheet2,5,4051,C10,Rubber roller lateral movement and wear,"Three changes have been made to increase rear calibration clearance
+* Changing rubber roller rear pin shape to spherical
+* Mount bracket areas that are not functional but contributing to wear have been removed
+* Rubber roller lock bracket  changed from one side bearing support to two side support in order to set the roller axial position",,"Fiksman, Tzvika",Done,Done,Done,Done,,,
+Sheet2,6,4031,C10,Splice detector sensor,"Adding more functionality for  splice detector sensor
+PWS splice sensor update ",,"Haker, Ortal",Done,Done,Done,Done,,,
+Sheet2,7,4152,C10,EMC- PE Ferrites,"1. Add 2 ferrites
+2. Add 99 ferrites
+3. Add 4 ferrites",,"Haker, Ortal",N/A,N/A,N/A,Done,CA001-58840,,
+Sheet2,8,4153,C10,EMC- PE IMP + ITM,"1. Full Shield braid to each branch, Shield to EC entrance, Shield on the EJ side
+2.  Full Shield braid to each branch, 
+3. Shield to EC entrance, Shield on the EJ side.
+4. Full Shield braid to each branch, 
+5. Shield to EC entrance, Shield on the EJ side.",,"Haker, Ortal",N/A,N/A,N/A,Done,CA001-59610,,
+Sheet2,9,4158,C10,EMC- PWS ferrites,"1. Add 14 ferrites
+2. Add 4 ferrites",,"Haker, Ortal",N/A,N/A,N/A,Done,CA001-58870,,
+Sheet2,10,4159,C10,EMC- PWS motors cables,"1. New BRI  shielded cables 
+2. New BRO shielded cables 
+3. FP servo motor shielded cable",,"Haker, Ortal",?,?,?,Done,CA001-20070,קיים 24 יח' במלאי SCRAP(מחסן),
+Sheet2,11,4041,C10,RW covers - AVT,RW covers modification to support AVT & BST,,"Inbal, Noam",N/A,N/A,N/A,N/A,,לא נחוץ,
+Sheet2,12,4208,C10,PE Roof,Modify PE roof to prevent inerference with CVC,,"Inbal, Noam",N/A,N/A,N/A,N/A,,אין טעם - לא קריטי,
+Sheet2,13,4223,C10,PE Sealing C10,Modify cables sealing on PE frame,,"Inbal, Noam",N/A,N/A,N/A,N/A,,גומיות בין הקרונות - בחיבור הכבלים - לא קריטי - רק אם רוצים ךוודא איטום ISO,
+Sheet2,14,3879,C10,Heat exchanger IOS + LPHc alternative (PRE MR),Implement alternative Heat exchanger for the LPH cooling and IOS (supply shortage for Pre MR),,"Bentor, Anael",N/A,N/A,Done,N/A,,,
+Sheet2,15,4023,C10,waste bottle drain tube location FCO,waste bottle drain tube moving due to pump vibrations,,"Bentor, Anael",Done,Done,Done,Done,,,
+Sheet2,16,3430,C10,Ozone evacuation,Suction via CVC to remove ozone from CR housing - mechanical parts,,"Shani, Tal",Done,Done,Done,Done,,,
+Sheet2,17,3636,C10,Pad solution for early contamination,Delivery  of early contamination on aSid,,"Shani, Tal",Done,Done,Done,Done,,,
+Sheet2,18,4207,C10,Moving to plastic injection - PsTE,Replacing the PsTE protective cover to plastic,,"Shani, Tal",N/A,N/A,N/A,Done,,,
+Sheet2,19,3898,C10,USB HUB END of life,4 port USB hub replaced by another 4 port USB hub due to END of life,,"Sherman, Paul",N/A,Done,N/A,Done,,,
+Sheet2,20,4142,C10,RCDs replacements to UL ,Replace two Siemens RCDs with EATON RCD in UIC EC – UL issue,,"Sherman, Paul",N/A,Done,N/A,N/A,,,
+Sheet2,21,4151,C10,EMC- PE EC Feed cables,"1. Add a Shield clamps HPPN 1400-4220 to EC panel & attach the cable shield to it: IMP ENG FRNT/RR & ITM MTRs & ITM signal (4 cables)
+2. Change design for W02059 internal cable
+ CA001-60740",,"Sherman, Paul",N/A,N/A,N/A,N/A,,,
+Sheet2,22,4160,C10,EMC- IC TDK power supply,"Replacing TDK PS to Phoenix Contact (9100-6319)
+CA690-50940",,"Sherman, Paul",N/A,Done,N/A,N/A,,,
+Sheet2,23,3659,C10,ME Design improvement ,"Beta2 functional and reliabilty fix for Rev4 (Drive :coupling, cap roller, clutch), Roller rail, Thermal cutoff /heat saftey)
+on LP presses from model shop",,"Shkalim, Hagay",Stir 2.0,Stir 2.0,Stir 2.0,Stir 2.0,,,
+Sheet2,24,3996,C10,Manual steering roller adjustment,Replace DC motor with manual adjustment mechanism to reduce EMC noises,,"Shkalim, Hagay",Done,Done,Done,Done,,,
+Sheet2,25,3727,C10,LPH mechanical improvements  Ver.65,"LPH changes by Kyocera - rear wall ceiling + robustness Ver.65
+",,"Vladomirski, Haim",?,?,?,?,,לבדוק,
+Sheet2,26,3621,C10,aSiD interface binding solution,"Design solution for 15deg interface binding issue
+• Prerequsite (hole14 + tap hole M4) 
+• Ex-centric mechanism un-bind the sleeve from the cups",,"Yaacobov, Yossi",Done,Done,בוצע עמדה חמש לא תקינה ,Done,,יש להחליף קפיץ - הלאטש לא חוזר למקום - עופר בן אריה בדק,
+Sheet2,27,3925,C10,aSiD interface front bearing cover redesign ,"Change the bearing cover raw materiel
+• Delrin instead of PA12",,"Yaacobov, Yossi",Done,Done,Done,Done,,,
+Sheet2,28,4033,C10,MR manufacturability gaps package for Cl.10 (calibration gig),"Calibration jig changes 
+• increase hole diameter
+• remove material to avoid collision between jig and tirap base ",,"Yaacobov, Yossi",N/A,N/A,N/A,N/A,,,
+Sheet2,29,3830,C10,Web thread assistance - Add button on RW,Additional button on RW  to release substrate during web thread,,"Yaari, Ami",Done,Done,Done,Done,,,
+Sheet2,30,4082,C10,UW arm stopper screws,Prevent lifting arm from moving under load.,,"Yaari, Ami",Done,Done,Done,Done,,,
+Sheet2,31,4095,C10,NIP constant speed regulator,Replace the adjusttable speed regulator with constant speed regulator.,,"Yaari, Ami",Done,Done,Done,Done,,,
+Sheet2,32,4108,C10,RW gear shaft - avoid key falling,RW gear shaft - avoid key falling,,"Yaari, Ami",Done,Done,Done,Done,,,
+Sheet2,33,4109,C10,PWS front door safety solution phase1 ,"HW installation  (Safty drivers + safety motors +PLC configuration)
+",,"Yaari, Ami",Done,Done,Done,Done,,,
+Sheet2,34,4131,C10,IMP - ITC threading protection,IMP Drum - Temporary knob to protect the rotary joint threding from damage,,"Yaari, Ami",No,No,No,Done,,יש רק בLP4,
+Sheet2,35,4274,C10,RW coupling break solution,Rename the feature to : RW coupling break solution,,"Yaari, Ami",Done,Done,Done,Done,,,
+Sheet2,36,IPRG-1922,C11,MIRS wiring improvement for CL11,New design for MIRS adapter cables (adding nut & reinforce the soldering ),,"Haker, Ortal",SP,SP,SP,Done,,,
+Sheet2,37,3618,C11,ME - BDV cost reduction - H6 & UH conversion to sheetmetal,"convert all , H6 & UH extrusions & turning parts to sheetmetal
+est. cost reduction ~$1100",,"Eden, Boaz",Done,N/A,N/A,Done,,,
+Sheet2,38,4300,C11,Heating lamps connector heating prevention,Prevent heating lamps connector heating and/or elctrical issues,,"Eden, Boaz",Done,Done,Done,Done,,,
+Sheet2,39,3738,C11,Substrate on rubber roller wrapping shield,Substrate on rubber roller wrapping shield,,"Fiksman, Tzvika",Done,Done,Need to check,Done,,לבדוק LP3,
+Sheet2,40,3974,C11,ILP - Optimize priming location,"Minimize primer contamination - Fix the ILP rubber location, Narrow the priming width + check the Option to replace to Auto centering web guide",,"Fiksman, Tzvika",Done,Done,Done,Done,,,
+Sheet2,41,4173,C11,Bracket_Bearing_Anilox holder,Change the bracket holding the Anilox bearing to not be loose,,"Fiksman, Tzvika",Done,Done,Done,Done,,,
+Sheet2,42,4174,C11,Bracket holding the tubes tanks,"Update the bracket holding the tubes above the tanks, so it will not interfere",,"Fiksman, Tzvika",N/A,N/A,N/A,N/A,,,
+Sheet2,43,3455,C11,"additional requirements for CL7 (add content):
+","BDV & EH Safety Pressures analogy sensors removal - CL11
+",,"Haker, Ortal",Done,Done,Done,Done,,,
+Sheet2,44,3779,C11,Mechanical aids for wiring routing improvment ,"PE front central ducts improve cables routing & mounting the T_JC
+ITM RR adding mounting for routing the cables",,"Haker, Ortal",N/A,N/A,N/A,Done,,,
+Sheet2,45,3782,C11,"ITM ROS and MIRS cables removal
+support roller removal","Cables removal
+ROS - done in C9
+MIRS - for C11",,"Haker, Ortal",Done,Done,Done,Done,,,
+Sheet2,46,3856,C11,"EC's PT combi “Idiot proof"" cables design ","EC's PT combi “Idiot proof"" design",,"Haker, Ortal",N/A,N/A,N/A,N/A,,,
+Sheet2,47,3858,C11,Wiring design improvement,,,"Haker, Ortal",N/A,N/A,N/A,N/A,,,
+Sheet2,48,4000,C11,CL11  Additional requierments ,"CVC air pressure sensors EOL 
+PTE new interface design
+
+",,"Haker, Ortal",not instaled,not instaled,not instaled,Done,"CT990-04050(SERGIO)
+CA001-64570",קשור ל BDV לברר עם בועז עם תלוי בהודים,
+Sheet2,49,4133,C11,Asid MTR EMA ,Correction pinout at the Asid MTR EMA CA654-02261,,"Haker, Ortal",Done,Done,Done,Done,CA654-02261,,
+Sheet2,50,4155,C11,EMC- PE GND motors + Tensioner IO cable,"1. CS motors 1-6- add M5 serrated washer
+2. BID_DRV_MTR, A+B, 1-6 M5 serrated washer & M6 screw
+3. wire shielding",,"Haker, Ortal",N/A,N/A,N/A,Done,CA001-59771,,
+Sheet2,51,4192,C11,"1. Lateral encoder - spool raw material replacment(cost reduction $900)
+2. aSID encoder raw material molded replacement(reliability & cost reduction $250)","1. Lateral encoder - spool raw material replacment(cost reduction $900)
+2. aSID encoder raw material molded replacement(reliability & cost reduction $250)",,"Haker, Ortal",N/A,N/A,N/A,Done,"Ordered for 1 LP (LP4?). 
+CA660-06316, CA660-06326, CA660-06335, CA660-06345, CA660-06355, CA660-06365, CA661-96704, CA661-96714",,
+Sheet2,52,4195,C11,Edge sensor update key pin,Add key pin to amplifier cable CA661-96781 (Belt surrounding – edge sensor),,"Haker, Ortal",N/A,N/A,N/A,N/A,,,
+Sheet2,53,4241,C11,C11 Remove encoder wiring form revolver motor,"Remove encoder wiring form revolver motor, C.R $12",,"Haker, Ortal",N/A,N/A,N/A,N/A,,,
+Sheet2,54,4251,C11,Move PWS EMS button to UW,Move PWS side panel EMS button to UW covers,,"Haker, Ortal",N/A,N/A,N/A,N/A,,,
+Sheet2,55,4315,C11,LPH FIBER OPTIC GIBICs protection,Preventing fiber optic failure as part of IMO drip from the CS,,"Haker, Ortal",N/A,N/A,N/A,N/A,,,
+Sheet2,56,3473,C11,UIC Frame ,Integrate web tunnel,,"Inbal, Noam",N/A,N/A,?,N/A,UIC PreMR/MR (PE CABLE W00775 CA660-07773  & PE CABLE W00777  CA660-07753) ordered for LP3 press only,לבדוק LP3 (גלנד),
+Sheet2,57,3977,C11,Front covers manufacturabilty and cost reduction ,"Production process & changes to achieve stable visual quality - MR
+New industrial design. Systemless",,"Inbal, Noam",N/A,N/A,N/A,N/A,,החלפת כיסויים ל-MR - לא רלוונטי,
+Sheet2,58,4065,C11,PWS rear interlock improvement,Improve robustness of common rear interlock,,"Inbal, Noam",Done,Done,Done,Done,,בוצע במכונה אחת- אפשר להזמין חומר - רלוונטי! PWS ,
+Sheet2,59,4317,C11,Main door beam,Change main door beam screws to avoid getting loose,,"Inbal, Noam",Done,Done,Done,Done,,הוספת נורד לוק לברגים בדלת הראשית - בוצע,
+Sheet2,60,4394,C11,Corona roof outlet sealing,Close gap around Corona roof outlet,,"Inbal, Noam",No Need,No Need,No Need,No Need,,לא קריטי - ברקט של אייל כהן,
+Sheet2,62,3840,C11,MCN6v2 (Solve MCN6 AOS),Spartan6 FPGA in MCN6 has AOS issues. New deisgn with Spartan7 FPGA,,"Kessler, Dan",Done,Done,Done,Done,,,
+Sheet2,63,3595,C11,IT level SNS replacment,EOL for current ink tank pressure sensor - needs new press config . Pending sensors,,"Lavi, Yuval ",SP,SP,SP,ארבע יחידות מותקנות 1 2 3 12,,לא קריטי החליפו יצרן,
+Sheet2,65,4053,C11,ink station 12 to BID A,connect ink 12 to BID A when second rotation will be enabled (related to 3966),,"Lavi, Yuval ",Done,Done,Done,Done,,,
+Sheet2,66,3872,C11,CVC air pressure sensor EOL,Implement alternative air pressure sensor for CVC blower and Economizer ,,"Bentor, Anael",Done,Done,Done,Done,,,
+Sheet2,67,4024,C11,"IOS cost reduction (recycling, hoses)","recycling - remove window, hoses - use same as S5 uniflex",,"Bentor, anael",N/A,N/A,N/A,N/A,,,
+Sheet2,68,4026,C11,"CVC maza plate, BDV WPx orifice interface","fix maza plate position, add orifice interface for BDV",,"Bentor, Anael",Done,Done,Done,Done,,,
+Sheet2,69,3467,C11,CS HW improvements (Alpha/Beta fix cycle),"1. HW changes due to PQ top issues outcomes
+2. standalone wiper",,"Shani, Tal",N/A,N/A,N/A,N/A,,רק עבור מכונות PP,
+Sheet2,70,4203,C11,Changing connector bracket ,Changing the CR connector bracket to increase relability and prevent misalignment between the pulled unit and the connectr at the cage,,"Shani, Tal",Done,Done,Done,Done,,,
+Sheet2,71,4233,C11,Sponge with small squeezer,Sponge with small squeezer,,"Shani, Tal",Done,Done,Done,Done,,,
+Sheet2,72,4280,C11,CS connector bracket and service stopper,CS connector bracket and service stopper,,"Shani, Tal",partialy,partialy,?,Done,,לא קריטי מונע מהיחידה לצאת ללא לחיצה נוספת ,
+Sheet2,73,4282,C11,CR connector pneumatic connection reaplcement,CR connector pneumatic connection reaplcement,,"Shani, Tal",not instaled,not instaled,not instaled,Done,,לבדוק עם טל שני,
+Sheet2,74,4482,C11,Modied bracet for the CS sensors,Modified  CS sensors bracket to avoid collosion in station1 between the EH lamp and the bracket,,"Shani, Tal",Done,Done,Done,Done,,,
+Sheet2,75,3668,C11,ECs cooling optimization ( Cost reduction),"PE, UC, PWS ECs - Fans and sensors optimization ( Cost reduction)",,"Sherman, Paul",Done,N/A,N/A,Done,,לא קריטי ,
+Sheet2,76,3831,C11,MPCBs change to CBs ( Inverters),Cost reduction - Inverters MPCBs change to CBs (only ink tank motor),,"Sherman, Paul",N/A,N/A,N/A,Done,,ECO,
+Sheet2,77,3899,C11,UC EC for CL11,"Design improvements - PT Combi, HIPOT for 24V PSs
+ECs cooling optimization",,"Sherman, Paul",N/A,N/A,N/A,N/A,,Alpha,
+Sheet2,78,3900,C11,PE EC FEED for CL11,"Design improvements - PT Combi, HIPOT for 24V PSs
+ECs cooling optimization",,"Sherman, Paul",N/A,N/A,N/A,N/A,,Alpha,
+Sheet2,79,3901,C11,PE EC Exit for CL11,"Design improvements - PT Combi, HIPOT for 24V PSs
+ECs cooling optimization",,"Sherman, Paul",N/A,N/A,N/A,N/A,,Alpha,
+Sheet2,80,3902,C11,PWS EC EE for CL11,"Design improvements - PT Combi, HIPOT for 24V PSs
+",,"Sherman, Paul",N/A,N/A,N/A,N/A,,Alpha,
+Sheet2,81,3950,C11,HIPOT design for 24V PSs,"Replace the existing PSs circuit breakers( qty5) with a 2-pole circuit breaker ( PWS, PE Exit & Feed and UC ECs)",,"Sherman, Paul",N/A,N/A,N/A,Done,,N/A,
+Sheet2,82,3951,C11,"Change the Crydom SSRs
+",Rearranged the distribution of the SSRs according to the consumer's ampere to reduce the use of the problematic components,,"Sherman, Paul",N/A,N/A,N/A,Done,,N/A,
+Sheet2,83,4136,C11,Change 48V PWS Brake resistor to 3 ohm,Fix PS201/202 failures due to reverse voltages created in the PWS INT motors,,"Sherman, Paul",Done,Done,Done,Done,,,
+Sheet2,84,4154,C11,EMC- PE Lateral motor (Full  kit),"1. Tensiner RR FR Cable
+2. EMA for Exit
+3. Rear tensioner bracket
+4. Front tensioner bracket
+5. Screws
+6. EJ9001
+CA001-61571",,"Sherman, Paul",Done,Done,Done,Done,,,
+Sheet2,85,4157,C11,EMC- PWS SPM Z EJ,,,"Sherman, Paul",?,?,Done,Done,,לבדוקעם טוטיאן,
+Sheet2,86,4242,C11,Nidec ETHERCAT module with FW,"Upgrade Nidec ETHERCAT module to 2.00.00.08 FW ,this version supports FW download ",,"Sherman, Paul",Done,Done,Done,Done,,,
+Sheet2,87,4247,C11,UC EC power indication LEDs replacement,Replace power control LEDs (Siemens) that have a high burn-in rate with LEDs from another manufacturer (Schneider) ,,"Sherman, Paul",N/A,N/A,N/A,Done,,,
+Sheet2,88,4268,C11,Add EMC filter to UC EC,Add EMC filter to UC IOS Filtration Pump Inverter,,"Sherman, Paul",N/A,N/A,N/A,Done,,,
+Sheet2,89,4299,C11,Varistors qty reducing,Reduce internal varistors set in UC EC ( According to EMC test results),,"Sherman, Paul",N/A,N/A,N/A,N/A,,,
+Sheet2,90,3751,C11,Tensioner CR - Cast Stages,Cast instead of machined part,,"Shkalim, Hagay",N/A,N/A,Done,Done,,,
+Sheet2,91,3752,C11,Support rollers alternative manufacturers,Support rollers alternative manufacturers,,"Shkalim, Hagay",N/A,N/A,N/A,N/A,,שינויי יצרן,
+Sheet2,92,4057,C11,Tensioner EMC improvements,Add grounding connection to prevent EMC,,"Shkalim, Hagay",partialy,partialy,partialy,Done,,לבדוק עם גלעד דולן,
+Sheet2,93,4113,C11,BiS collision fix,Allow hoods lamp extraction with installed BiS,,"Shkalim, Hagay",Done,Done,Done,Done,,,
+Sheet2,94,4214,C11,Heater wires improvement  (waiver solution),Improve heater wires connecting (waiver solution),,"Shkalim, Hagay",Done,Done,Done,Done,,,
+Sheet2,95,4363,C11,T1 roller coating - redefine coating due to corosion malfunction,T1 roller coating - redefine coating due to corosion malfunction,,"Shkalim, Hagay",?,?,N/A,N/A,,לבדוק עם ירון יהב,
+Sheet2,96,4256,C11,Power Supply cable tie-mount,Adding tie mount to catch cable PS<->ENB(enable),,"Vladomirski, Haim",N/A,N/A,N/A,N/A,,,
+Sheet2,97,3767,C11,Improve BID locking mechanism,Improve BID locking mechanism (including  handle package),,"Weisblech, Haim",?,?,?,?,,לבדוק,
+Sheet2,98,4035,C11,New HV conctor braket,New HV conctor braket,,"Weisblech, Haim",?,?,?,?,,לבדוק עם יוני הרטשטיין,
+Sheet2,99,3594,C11,Extruded rollers,"Modify all WHS idler rollers to extruded roller, including the 4 white rollers in ILS. In parallel - take out the ILS rollers from the ILS BOM and add to WHS  BOM (eliminate tear 2 overhead)",,"Yaari, Ami",Done,not instaled,not instaled,not instaled,,החומר קיים להחליט עם פרדי,
+Sheet2,100,3787,C11,Remove PE Load cell,Remove PE Load cell,,"Yaari, Ami",Done,Done,Done,Done,,,
+Sheet2,101,4066,C11,UW safety roll lifting/lowering,UW safety roll lifting/lowering,,"Yaari, Ami",Done,Done,Done,Done,,לשאול את עמי יערי,
+Sheet2,102,4132,C11,IMP Motor Plastic cover - Design improvement,Avoid collision between the cover and the grounding screw,,"Yaari, Ami",?,Done,?,?,,לבדוק,
+Sheet2,103,4146,C11,PWS Bracket Connector Holder Loose,re design PWS Bracket Connector Holder Loose,,"Yaari, Ami",?,?,?,?,,,
+Sheet2,104,4185,C11,Hard stop addition at LC Dummy,Protect Dummy LC against impact,,"Yaari, Ami",N/A,N/A,N/A,N/A,,אלפא,
+Sheet2,105,4237,C11,IMP Bracket modification ,IMP Bracket modification (Colides with cage screw) + Mirs connector,,"Yaari, Ami",?,?,?,?,CA001-80900,לבדוק,
+Sheet2,106,IPRG-1492,C12,ILS homing sensor bracket update,ILS homing sensor bracket update,,"Yaari, Ami",N/A,N/A,N/A,Done,,ש לבצע - חיתוך בכיסוי של הILS - להחלטת המעבדה!,
+Sheet2,107,IPRG-638,C12,Pistons cost reduction,Alternative manufacturer,,"Yaari, Ami",N/A,N/A,N/A,Done,,,
+Sheet2,108,IPRG-2504,C12,New touch monitor due to EOL old PN,"Sanity Check and preparing of the raplacement for a new touch monitor (24"" local screen)",,"Iossifov, Andrey",N/A,N/A,N/A,Done,,,
+Sheet2,109,IPRG-655,C12,GPU RTX A4000,"Approve RTX A4000 for Kedem ml-350 PC, for BOM change and as SP due to EOL RTX4000",,"Iossifov, Andrey",,,,,,,
+Sheet2,110,IPRG-2620,C12,SPM HW trigger cable upgrade,"SPM HW trigger cable upgrade: In order to support SPM HW trigger, cable change required (must include 1.5Kohm resistor) Currently SPM SW trigger (HW trigger required for future tasks only) Same design required for David as well",,"Klugman, Elchanan",Done,Done,Done,Done,,,
+Sheet2,111,IPRG-2390,C12,ITM ROS & IR sensors remove from BOM,Remove unused sensors from the ITM BOM,, Hagay Shkalim,Done,Done,Done,Done,,,
+Sheet2,112,IPRG-2320,C12,Motor collision with  encoder housing,Redesign to relief the motor housing,,"Shkalim, Hagay",?,?,?,?,,,
+Sheet2,113,IPRG-579,C12,Wiring brackets package,Additional wiring bracket and BOM update,,"Shkalim, Hagay",partialy,partialy,?,partialy,,,
+Sheet2,114,IPRG-355,C12,GG improvements,Solve the detaching problem of the gorilla glass Improve reliability (size tolerances) Bubbles on glue solution plastic injection,,"Vladomirski, Haim",SP,SP,SP,Done,,,
+Sheet2,115,IPRG-807,C12,BID Interface cost reduction c12,Catch Tray - Done Rails cost reduction Tested directly on Alpha,,"Weisblech, Haim",N/A,N/A,N/A,N/A,,,
+Sheet2,116,IPRG-1847,C12,Move to new DFE HW - Z8G5,Move to new DFE HW - Z8G5,, Missy Wibbeler,N/A,N/A,N/A,Done,,,
+Sheet2,117,IPRG-1559,C12,Sealing improvements (PE + PWS),Improve sealing following CCL. 12-Oct- PWS +PE sealing improvement ???? +???? ??? Tested directly on Alpha,," Inbal, Noam",N/A,N/A,N/A,Done,,"מכל אלה - הכי חשוב ורלוונטי זה הברקט שמסתובב בהובלת הנייר לפני נק T2 - אפשר לייצר עפ""י נועם",
+Sheet2,118,IPRG-2275,C12,Manifold molded cable,PWS Manifold- EP Power cable change to molded,,"Haker, Ortal",N/A,N/A,N/A,Done,,,
+Sheet2,119,IPRG-778,C12,C12 cables set,"C12 cables set status, (Design ,PECO, MFG,Upgrade,Ready to Sub sys.)https://hp-my.sharepoint.com/:x:/p/ohaker/EW_gwH-LVZlJocefi-IKeuQB57qtaiZ80qYZx2Vsj3YShg?e=4%3AUgLtvw&at=9&CID=B157744C-9FB4-4E04-A86D-E100B1696392&wdLOR=c087E44E8-2E8D-46DF-B51D-B210111BC296",,"Haker, Ortal",N/A,N/A,N/A,Done,,,
+Sheet2,120,IPRG-717,C12,BDV EH WIRES #  14AWG -> 16 AWG,BDV EH lamps wire gauge from 14AWG -> 16 AWG W19304,,"Haker, Ortal",N/A,N/A,N/A,Done,,,
+Sheet2,121,IPRG-2872,C12,CR HV cables re-routing,To prevent from cross-talks between stations while using CCR there is a need for re-routing of the HV cables,,"Shani, Tal",N/A,N/A,N/A,Done,,,
+Sheet2,122,IPRG-2004,C12,PTE/PsTE V2,New version to mitigate several problems: 1. Stray Light (via IR) 2. Cost Reduction (via redesign) 3. Volume Reduction (via redesign) PTE LED intensity set point per ink PsTE LED intensity set point,,"Shani, Tal","SP
+Need to ug with interface & shader","SP
+Need to ug with interface & shader","SP
+Need to ug with interface & shader",Done,,,
+Sheet2,123,IPRG-356,C12,CRU - Rev2 - Phase 4 - optional post VR content,"Solve: BR Noise � can be solved with patch, new layout would work better CRDC settling times via patches (if possible) CRDC long fall-time (seen in small number of units) solution if needed HALT learnings (for larger MTBF)",,"Shani, Tal",SP,SP,SP,Done,,,
+Sheet2,124,IPRG-2343,C12,Reduce the height of the tank troley handle,Reduce the height of the tank troley handle to make it easier,,"Fiksman, Tzvika",,,,Done,,,
+Sheet2,125,IPRG-1311,C12,aSiD interface binding solution01,Ex-centric mechanism un-bind the sleeve from the cups,,"Yaacobov, Yossi",Done,Done,Done,Done,,,
+Sheet2,126,IPRG-541,C12,aSiD protective sleeve sticker,Add sticker on front door frame (inside) to remind user to use protective sleeve when handling an aSiD,,"Yaacobov, Yossi",Done,Done,Done,Done,,,
+Sheet2,127,IPRG-1403,C12,EOL pneomatic service unit gauge,Freeze the new alterntive pressure gauge,,"Lavi, Yuval",Done,N/A,N/A,N/A,,,
+Sheet2,128,IPRG-1226,C13,EBH front bracket modification for STIR handling,EBH front bracket modification for STIR handling in order to avoid damage to ASID during STIR maintanence,, Boaz Eden,Done,Done,Done,Done,,,
+Sheet2,129,IPRG-2057,C13,EL9576 and PS 200 FW update from Beckhoff,OPS activity to make sure the FW of Beckhoff modules EL9576 and PS200arrives with the correct FW version,, Motti Silberberg,Done,Done,Done,Done,,,
+Sheet2,131,IPRG-3278,C13,CR extended cones ,"CR extended cones to mitigate disengage wiring torn failure Not tested on system, entered from reliability forum. installed directly on Alpha",,"Shani, Tal",?,?,?,?,CT990-06040,לבדוק טל שני,
+Sheet2,132,IPRG-2079,C14,Solution for substarte slippage on the ILS roller,Replace encoder roller with higher friction roller,," Yaari, Ami",Done,Done,Done,Done,,,
+Sheet2,133,IPRG-1813,C14,RW/UW Mechanical improvements,"Mechanical improvements RW - Stopper interference, Belt alignment, WG interference UW - Potntiometer intererence, Replace gear coupling",," Yaari, Ami",Done,Done,Done,Done,,"CA002-85590	RW GEAR SHAFT
+1530-2961	GEARBOX ACCESSORY COUPLING 24MM-SHAFT
+CA002-03630	PLATE, WEB GUIDE
+CA002-03640	COVER
+",
+Sheet2,134,IPRG-1719,C14,LC  mounting - Tighten tolerance,LC mounting - Tighten tolerance,,"Yaari, Ami",N/A,N/A,N/A,N/A,,לא קריטי,
+Sheet2,135,IPRG-1300,C14,ESD brush,ESD brush CR,,"Yaari, Ami",PWS,PWS,PWS,Done,,"יש לבצע 5 ברקטים למכונה- CA240-08670, CA002-53880",
+Sheet2,136,IPRG-854,C14,NIP version,Change tolerance of bearing,,"Yaari, Ami",not instaled,not instaled,not instaled,not instaled,CA002-29710,לעשות,
+Sheet2,137,IPRG-3157,C14,CWS manifold fitting failure,Avoid CWS fitting failure cause due to over tight,,"Bentor, Anael",N/A,N/A,Done,N/A,,"הוחלף לרכיב swivel  , שמאפשר מיקום בכל זווית.
+ 
+",
+Sheet2,138,IPRG-2401,C14,IP54 propotional valve actuator (prevent dripping issue),"Replace IOS/LPHc/ITC valve actuator to IP54 class. create new config and LUT for new valve, add feedback/control error. (Statisics required)",,"Bentor, Anael",Done,Done,Done,Done,,במידת יש להחליף את שלושת השסתומים ולשנות בתוכנה,
+Sheet2,139,IPRG-1981,C14,water and Imo Level indicator FCO,New stainless steel conectors,,"Bentor, Anael",Done,Done,Done,Done,,"לבדוק  למה שלמה כתב N/A. 
+0403-1374  3units were ordered for each LP press",
+Sheet2,140,IPRG-2966,C14,BDV - upper hoods in place sensors removal,upper hoods in place sensors removal,, Boaz Eden,Done,Done,Done,Done,,,
+Sheet2,141,IPRG-2363,C14,pressure sensors relocation,"relocate hoods pressure sensors from behind the Tami4 to the hoods: reliability, serviceability & cost reduction (~$150 - BDV & wiring BOMs)",,"Eden, Boaz",דגם ראשוני,not instaled,not instaled,Done,,(2363 לבצע יחד עם 2210) CA002-92910 1 unit for each LP press was ordered ,
+Sheet2,142,IPRG-2210,C14,Pressure sensors cost reduction - change from German supplier to Czeck,Pressure sensors cost reduction - change from German supplier to Czeck - ~$400 BOM cost reduction,,"Eden, Boaz",Done,SP,SP,SP,,"2363 לבצע יחד עם 2210
+0960-5227	PRESSURETRANSMITTER0-10MBARG1/4""
+44 units were ordered
+ca002-92910	V12 BDV BOOST 2 
+4 units were ordered
+יבוצע רק בעת תקלה!!!!!",
+Sheet2,143,IPRG-2160,C14,BDV - AirTac pneumatic parts,"Pneumatic parts conversion to AirTac, estimated BOM cost reduction of $300",,"Eden, Boaz",N/A,N/A,N/A,N/A,,הוחלט לא לעשות במעבדה,
+Sheet2,144,IPRG-1742,C14,BDV cost reduction bundle BH (~$200) - ECO only,LH: unify parts EBH: raw material & suction flange AKD: duct base from Aluminum AOS: air purge layout H6 & LH: improved position pins Heating lamp connector assy: 16g,,"Eden, Boaz",N/A,N/A,N/A,N/A,,הוחלט ל לעשות גם באלפא,
+Sheet2,145,IPRG-2400,C14,T1 improved aSiD protection,Replace hard contact surfaces with cushions to reduce the chance for aSiD scratch,,"Shkalim, Hagay",Done,Done,Done,Done,,"CA002-69551	T1 CALIBRATION PLATE LP 6 units were ordered for each LP press
+
+ca000-18621 x24",
+Sheet2,146,IPRG-1805,C14,Design improvements for StiR  new version 2.0,ME deisgn / buy item change for cost reduction,, Hagay Shkalim,Done,Done,Done,Done,,הועבר לקלסטר 15,
+Sheet2,147,IPRG-1281,C14,encoder connector - fails to stay connected. Needs mechanical fix.,encoder connector - fails to stay connected. Needs mechanical fix.,, Hagay Shkalim,not instaled,not instaled,Done,Done,,חשוב לביצוע,
+Sheet2,148,IPRG-1120,C14,T1 rollers CR - extrusion,Design new extrusion roller for CR,, Hagay Shkalim,not instaled,not instaled,Done,Done,,חסרים גלילים,
+Sheet2,149,IPRG-2603,C14,Power enable connector enforcement,Solve the issue of enable connector disconnection,,"Vladomirski, Haim",not instaled,not instaled,not instaled,Done,,לוודא שעמי חלפון מייצר בבית מלאכה,
+Sheet2,150,IPRG-1770,C14,LPH MR version,LPH revision to meet the cost target of 5200$ (after 1500pcs),,"Vladomirski, Haim",not instaled,not instaled,not instaled,"St.3,4,5",,,
+Sheet2,151,IPRG-862,C14,aSid sleeve collision protection (with Gorilla glass),Changes in the LPH interface parts to prevent collision of Gorilla glass with aSid below sleeve during aSid installation,,"Vladomirski, Haim",No LPH with GG,N/A,N/A,"St.5,2,3,4",CA002-70470,ASID SLEEVE STOPPER ordered 1 set for each LP press,
+Sheet2,152,IPRG-943,C14,HV Connector plastic injection,Cost reductio activity: Plastic injected item instead of Machined item,,"Weisblech, Haim",N/A,N/A,N/A,N/A,,,
+Sheet2,153,IPRG-2276,C14,"BRI, BRO replacement connector for 14# wire thickness (not functional)","PWS BRI, BRO replacement connector for 14# wire thickness (improve reliability)",,"Haker, Ortal",N/A,N/A,N/A,N/A,,,
+Sheet2,154,IPRG-1716,C14,EtherCAT cable set labels optimization,"labels optimization, reduce labels quantity cost reduction $576",,"Haker, Ortal",N/A,N/A,N/A,N/A,,,
+Sheet2,155,IPRG-1015,C14,DC BUS LPH focus motors & ROS connection optimization,DC bus connection changes remove 6 TJ & bride cables - Cost reduction of $980,,"Haker, Ortal",not instaled,not instaled,not instaled,Done,,לבדוק עם אורטל,
+Sheet2,156,IPRG-312,C14,Improve circular connector CS# IMO SNS FLOW/TMP,CS# IMO SNS FLOW/TMP Replaced the assembly connector to molded circular connector Moved from C15 To C14,,"Haker, Ortal",N/A,N/A,N/A,Done,,,
+Sheet2,157,IPRG-3102,C14,Main Press and Wall CBs Optimization,Change Main Press CB adjustment to 160Amp and Site prep. Wall CB/Fuse change to 175Amp,,"Sherman, Paul",not instaled,Done,not instaled,Done,,שינויי בפוטנציומטר 5 דקות של אריק,
+Sheet2,158,IPRG-2396,C14,Connector (DFK-PC 16 ) UL  current rating issue,"Replace ""DFK-PC 16"" connectros in UC , PWS , PE Feed & Exit ECs (UL current rating issue , Not meet the 63A CB) Moved from C14 to C15",,"Sherman, Paul",Done,N/A,N/A,N/A,,,
+Sheet2,159,IPRG-2687,C14,Support new electrometer,Support new electrometer,,"Shani, Tal",not instaled,"St.1, St.3",not instaled,not instaled,"0960-6685	PROBE were ordered for all LP presses ?(Eliyaho Whare house)
+Electrometer board (EMB) CA002-18391 were also ordered for all LP presses (Peco 12.11.25)
+",חסר ברקט שתופס את ה BOARD,
+Sheet2,160,IPRG-1917,C14,CR housing new connector design,new connector design to increase reliability and reducing cost,,"Shani, Tal",N/A,N/A,not instaled,not instaled,CA002-81590,לדבר עם טל שני,
+Sheet2,161,IPRG-1853,C14,CR housing - bearing housing cost reduction,Moving to final technology - improved relability and reduce cost 1200$,,"Shani, Tal",N/A,N/A,not instaled,not instaled,CA003-34430,,
+Sheet2,162,IPRG-991,C14,CS BOM cost reduction package,CS BOM cost reduction package,,"Shani, Tal",N/A,N/A,N/A,partialy ST.5,,"""אף מוזרק"" + חלקי CostReduction (נמצא על אלפא 95 +גאסקט)",
+Sheet2,163,IPRG-2598,C14,aSiD interface rear plates redesign,Solution for PLACER PLATE KD1110053 deflection,,"Yaacobov, Yossi",not instaled,not instaled,not instaled,Done,,CA002-68900 6 units for each LP press was ordered,
+Sheet2,164,IPRG-1575,C14,Ink pump motor seal improvement,improvment the motor seal to reduce motor failure,,"Lavi, Yuval",partialy,SP,SP,SP,,אין צורך נמצא במלאי החלפה רק בתקול הותקן בעמדות YMC LP1,
+Sheet2,165,IPRG-4761,C15,[Main] Screws security standardization - BDV,Screws security standardization - BDV,,"Eden, Boaz",,,,N\A,,,
+Sheet2,166,IPRG-4708,C15,Screws security standardization - LPH ,"Check screws in presses, identify if required new screws or specific installation instructions",,"Vladomirski, Haim",No Need,No Need,No Need,partialy ST.3,,,
+Sheet2,167,IPRG-4176,C15,[Barak leverage] Ink Tank water fitting,"improve diagnotic, reduce failure rate",,"Lavi, Yuval",not instaled,not instaled,not instaled,St.1-5,,,
+Sheet2,168,IPRG-4158,C15,[Main] Solve screws w/o Loctite,find solution for systems installed not according to instructions and does not have Loctite,,"Vladomirski, Haim",not instaled,not instaled,not instaled,Done,,,
+Sheet2,169,IPRG-4144,C15,[Main] New catch tray design,The purpose of the new design is to prevent from IMO to remain in the tray. Undrained Tay has direct impact on gorilla glass mist which cause to streaks on the plots,,"Shani, Tal",not instaled,not instaled,not instaled,,,,
+Sheet2,170,IPRG-4034,C15,Update cable CA661-96172 (CR),Remove redunant wiring branches. Update cable CA661-96172 (CR),,"Yaari, Ami",No Need,No Need,No Need,No Need,,,
+Sheet2,171,IPRG-4008,C15,[Barak leverage] RDU seal improvement,"RDU seal improvement Reliability - consider a proactively replacement (due to the much lower price) serviceability - easier replacement, can be replaced by an operator cost - C.R of 45$ per station (45X5 = 225$) SP cost reduction of 45$",,"Lavi, Yuval",not instaled,not instaled,not instaled,Done,,,
+Sheet2,172,IPRG-3982,C15,PWS EC Cooling improvement,"The temperature at the PWS EC left side rises to 40⁰C We should consider changing the location of the cooling fans (as shown below) to achieve better cooling. After tests and investigation, we suggest changing the location of the cooling fans (Moving them from the right to the left door) It reduces the left side temperature to 33⁰C",,"Sherman, Paul",not instaled,not instaled,not instaled,Done,,,
+Sheet2,173,IPRG-3789,C15,BCR 2.0 - Design improvement 2nd package,"Includes new motor and gear, final UX improvements, robust blade configuration, include double pilling",,Hagay Shkalim,Done,Done,Done,Done,,,
+Sheet2,174,IPRG-3563,C15,[Main] Ethernet cables improve reliability,Ethernet cables improve reliability - BECKHOFF raw material,,"Haker, Ortal",No Need,No Need,No Need,Done,,"Ordered for 1 LP press (8121-3004, 8121-3022, 8121-3023, 8121-3006, 8121-3007, 8121-3012)",
+Sheet2,175,IPRG-3478,C15,"BRI, BRO Motors -  connectors protection",The connectors of BRI/BRO Motors (The motors that are mounted on the IBS cart) can be damaged by interference with cross connection cables that are not properly routed. The request is to add protective cover that will avoid the interference,,"Yaari, Ami",No Need,No Need,No Need,No Need,,,
+Sheet2,176,IPRG-3443,C15,[Main] High conductivity in IMO,distilled IMO form separator/CVC increase conductivity Silica Gel - clogged with particles reduce the flow and efficiency of reduce conductivity,,"Bentor, Anael",Done,Done,Done,Done,CA003-60380,עדיין בסיסטם ,
+Sheet2,177,IPRG-3418,C15,[Main] Sealed QSFP,Improve GBIC sealing reliability of LPH,,"Vladomirski, Haim",not instaled,Done,not instaled,Done,,CA003-51580 1 kit (6 units) was ordered for each LP press,
+Sheet2,178,IPRG-3252,C15,[Main] BID High voltage cables hood replacement - reliability improvement ,BID High voltage cables hood replacement,,"Haker, Ortal",No Need,No Need,No Need,No Need,,CA000-81112 ordered for 1 LP press,
+Sheet2,179,IPRG-3167,C15,[Main] Moving to engage aluminum arms,Cost reduction activity. Material changed from steel to aluminum.,,"Shani, Tal",not instaled,not instaled,not instaled,Done,,,
+Sheet2,180,IPRG-3008,C15,[Main] new GBIC CXP,Validate The new vendor for CXP IF of HB.,,"Iossifov, Andrey",not instaled,not instaled,not instaled,Done,,,
+Sheet2,181,IPRG-2948,C15,Pneumatic routing - adaptation for Stir 2.0,Update the pneunatic scheme and BOM with new BCR 2.0 configuration,,Hagay Shkalim,Done,Done,Done,Done,,,
+Sheet2,182,IPRG-2507,C15,IDS parts cost redcution and optimization,"SAS cost redcution : Revovler motor, revovler plate, RDU spout, single plate",,"Lavi, Yuval",N/A,partialy,not instaled,Done,,"CA002-01700 15 units were ordered for 3 LP press (6,6,3=15) CA001-73380, CA001-40830, CA001-03851, CA001-76500",
+Sheet2,183,IPRG-1964,C15,[Main] ODCS - Optical Density and Conductivity Sensor,New ODCS sensor (Gil Fisher's) in the ink tank. New electronic HW (ink tank only or whole IC). New SW. new level sensor (SW),,"Lavi, Yuval",partialy,?,?,partialy all revolver stations,,2 inks (LP2),
+Sheet2,184,IPRG-1805,C15,Design improvements for StiR  new version 2.0,ME deisgn / buy item change for cost reduction,,Hagay Shkalim,Done,Done,Done,Done,,,
+Sheet2,185,IPRG-1567,C15,[Main] Temperature sensor reliability,Improve the realiblity of the fluid systems tempreture sensors,,"Bentor, Anael",not instaled,not instaled,Done,Done,,,
+Sheet2,186,IPRG-1555,C15,[Main] Improve Skew adjustment,Improve precision and repeatabiltiy of mechanical skew adjument,,"Vladomirski, Haim",not instaled,not instaled,not instaled,1-FCO 2-5 : good 6-NO,,1-FCO 2-5 : good 6-NO,
+Sheet2,187,IPRG-1539,C15,[Main] Improve CVC performance - Improve filtration,Improve CVC performance - Improve filter cleaning frequency,,"Bentor, Anael",?,Done,?,Done,,CA002-97120 1 kit was ordered for LP press,
+Sheet2,188,IPRG-1120,C15,[Main] T1 rollers CR - extrusion,Design new extrusion roller for CR,,Hagay Shkalim,?,?,Done,Done,,,
+Sheet2,191,IPRG-5157,C18,CR - Nip rollers,Change to low cost manufacturer,,"Yaari, Ami",N/A,Done,N/A,not instaled,,,
+Sheet2,192,IPRG-5217,C16,Fix cycle for catch tray,The purpose of this initiative is to address the dripping issue during maintenance,,"Weisblech, Haim",partialy,,,,,"St 3 only. It's also called as IPRG-136
+יגיעו באמצע ינואר",
+Sheet2,193,IPRG-4485,C16,Manual thread robustness,Solve the high force required to drive the autothread chain,," Yaari, Ami",,Done,Done,,,,
+Sheet2,194,IPRG-5363,C16,[Main] IMO heaters removal Ph1,"Heaters to be removed from press – until new decision will be made, for BOM cost reduction",,"Bentor, Anael",,,,,,Removal only,
+Sheet2,195,IPRG-5141,C16,[Main] Interface Hard stop update,We encountered issues with hard stop that stops us from reaching LPH hard stop due to interface hard stop,,"Vladomirski, Haim",,,,,,19/02,
+Sheet2,196,IPRG-4452,C16,CS Funnel with Fitting 45⁰ Solution,"EtherCAT cable reliability investigation.
+In-depth investigation of circular connectors confirmed reliable closure under extreme conditions
+DAVID & KEDEM FDS Pipe routing - broken connectors
+Working with Beckhoff on the quality issue ",,"Weisblech, Haim",,,,Done,,,
+Sheet2,197,IPRG-4245,C16,[Main] CS New engage sensor,Introduction of new engage sensor with higher sense range,,"Weisblech, Haim",,,,Done,,,
+Sheet2,198,IPRG-4144,C17,[Main] New catch tray design,"The purpose of the new design is to prevent from IMO to remain in the tray.
+Undrained Tay has direct impact on gorilla glass mist which cause to streaks on the plots",,"Weisblech, Haim",,,,,,יגיעו באמצע ינואר,
+Sheet2,199,IPRG-322,C16,[Main] CS housing cost reduction phase #1,Move to Assembly of fully machined Endcaps on extruded body through 2 O-ring and 3D nose,,"Weisblech, Haim",,,,partialy ST.5,,,
+Sheet2,200,IPRG-5430,C16,[Main] Wiper In place sensor - direct connect,"Wiper In place sensor - direct connect 
+According to the field fault after investigation, pulling out the CS unit results in damage to the EMA connector.
+Define a sensor with a built-in connector as a 4*4 buy part,  together with CS WT 
+removed the EMA 5*5",,"Haker, Ortal",,,,Done,,Changing connector on press ,
+Sheet2,201,IPRG-5380,C17,[David leverage] ILS Encoder EMA hoods update,"ILS Encoder EMA hoods update for easy accessibility & Serviceability
+panel cutout required to update as well ",,"Haker, Ortal",,,,,,Changing connector on press ,
+Sheet2,202,IPRG-5278,C16,Fluid pipes routing broken connector- Rear TJ bracket redesign-,"Fluid pipes routing broken connector, 
+at the TJ connection point to the LPH rear motor.
+ECO solution redesigns the TJ bracket ",,"Haker, Ortal",,,,Done,,"24 units (3 LP presses + 2 Alpha) were ordered via PECO 24.12.25
+Brackets will be ready on 20/01",
+Sheet2,203,IPRG-4454,C16,LPH trigger cable - MFG Quality issue,LPH trigger cable - MFG Quality issue . ,,"Haker, Ortal",,,,,,7 units were ordered (4 LP presses+ 2 Alpha+ 1 SP) via PECO 22.12.25 ,
+Sheet2,205,IPRG-5131,C16,Adding ferrites to PRM_SPLY_PMP_MTR,"We noticed communication disconnections (EtherCAT) in INT215 (PRM_SPLY_PMP_MTR) that caused the press to fall (power disabled).
+This happens during power-on (when the main supplies are switched on), due to electromagnetic noise.
+The solution is adding two ferrites (9170-2655) on the power cable CA661-96201_02 (motor side) and on PT210B ( PWS EC side)",,"Sherman, Paul",,,,Done,,,
+Sheet2,207,IPRG-3966,C16,Support for the Corona structure - reconsider,"Several Corona units on the field were found to be, not parallel to the nearby rollers. We will need to reconsider updating the mechanical support of the Corona unit.",,"Fiksman, Tzvika",,,,Done,,,
+Sheet2,208,IPRG-3817,C16,[Main] Reduce pre-print -  Dryer temperature sensor replacement,"Change the dryer temperature sensor to faster responding one, to increase the dryer and the press performance",,"Fiksman, Tzvika",Done,Done,Done,Done,,,
+Sheet2,209,IPRG-2374,C16,[Main] Level sensor of the priming tank,Remove false alarm in the level sensor of the priming tank. (Too high),,"Fiksman, Tzvika",,,,,,עדיין לא נסגר סופית - חלקים יהיו שבוע הבא,
+Sheet2,210,IPRG-1920,C16,Catch tray design update,New design - vacuum foaming,,"Fiksman, Tzvika",,,,Done,,,
+Sheet2,211,IPRG-1363,C16,Priming unit robustness improvement,Fix the robustness of the priming unit to wear,,"Fiksman, Tzvika",,,,Done,,,
+Sheet2,213,IPRG-4638,C16,[Barak leverage] Ink Tube Overflow seal reliability improvement,"Provide a solution for the seal failure.
+SW adding  Ink tube in place time filter",,"Lavi, Yuval",,,,הותקן בעמדה 1 ו-12,,,
+Sheet2,214,IPRG-4172,C16,[Barak leverage] Ink Pump TopAssy SP consumption rate reduction,investigate top assembly failure - reason for removal  ink pump consumption rate reduction.,,"Lavi, Yuval",,,,Done,,,
+Sheet2,215,IPRG-4695,C16,Screws security standardization - aSiD interface,Define aSiD interface screws tightening parameters according Screws Tightening Standardization LEP lab (ME section),,"Yaacobov, Yossi",,,,Done,,ליוסי י. יש סט אחד למכונת LP,
+Sheet2,216,IPRG-4757,C16,"Screws Securing Standardization - Belt Surrounding
+For ITM only",Update subsystems screws according to latest screws securing standard for ITM only,,"Shkalim, Hagay",,Done,,,,אין עדיין חומר מבית מלאכה עבור מכונת סיסטם,
+Kedem (+),,IPRG-1922,C11,MIRS wiring improvement for CL11,New design for MIRS adapter cables (adding nut & reinforce the soldering ),, ortal haker,SP,SP,SP,Done,,,
+Kedem (+),,IPRG-1492,C12,ILS homing sensor bracket update,ILS homing sensor bracket update,, Ami Yaari,N/A,N/A,N/A,Done,,,
+Kedem (+),,IPRG-638,C12,Pistons cost reduction,Alternative manufacturer,, Ami Yaari,N/A,N/A,N/A,Done,,,
+Kedem (+),,IPRG-2504,C12,New touch monitor due to EOL old PN,"Sanity Check and preparing of the raplacement for a new touch monitor (24"" local screen)",, Andrey Iossifov,N/A,N/A,N/A,Done,,,
+Kedem (+),,IPRG-655,C12,GPU RTX A4000,"Approve RTX A4000 for Kedem ml-350 PC, for BOM change and as SP due to EOL RTX4000",, Andrey Iossifov,,,,,,,
+Kedem (+),,IPRG-2620,C12,SPM HW trigger cable upgrade,"SPM HW trigger cable upgrade: In order to support SPM HW trigger, cable change required (must include 1.5Kohm resistor) Currently SPM SW trigger (HW trigger required for future tasks only) Same design required for David as well",, Elchanan Klugman,Done,Done,,Done,,,
+Kedem (+),,IPRG-2390,C12,ITM ROS & IR sensors remove from BOM,Remove unused sensors from the ITM BOM,, Hagay Shkalim,,,,,,,
+Kedem (+),,IPRG-2320,C12,Motor collision with  encoder housing,Redesign to relief the motor housing,, Hagay Shkalim,,,,,,,
+Kedem (+),,IPRG-579,C12,Wiring brackets package,Additional wiring bracket and BOM update,, Hagay Shkalim,,,,Done,,,
+Kedem (+),,IPRG-355,C12,GG improvements,Solve the detaching problem of the gorilla glass Improve reliability (size tolerances) Bubbles on glue solution plastic injection,, Haim Vladomirski,SP,SP,SP,Done,,,
+Kedem (+),,IPRG-807,C12,BID Interface cost reduction c12,Catch Tray - Done Rails cost reduction Tested directly on Alpha,, Haim Weisblech,N/A,N/A,N/A,N/A,,,
+Kedem (+),,IPRG-1847,C12,Move to new DFE HW - Z8G5,Move to new DFE HW - Z8G5,, Missy Wibbeler,N/A,N/A,N/A,Done,,,
+Kedem (+),,IPRG-1559,C12,Sealing improvements (PE + PWS),Improve sealing following CCL. 12-Oct- PWS +PE sealing improvement ???? +???? ??? Tested directly on Alpha,, Noam Inbal,N/A,N/A,N/A,Done,,,
+Kedem (+),,IPRG-2275,C12,Manifold molded cable,PWS Manifold- EP Power cable change to molded,, ortal haker,N/A,N/A,N/A,Done,,,
+Kedem (+),,IPRG-778,C12,C12 cables set,"C12 cables set status, (Design ,PECO, MFG,Upgrade,Ready to Sub sys.)https://hp-my.sharepoint.com/:x:/p/ohaker/EW_gwH-LVZlJocefi-IKeuQB57qtaiZ80qYZx2Vsj3YShg?e=4%3AUgLtvw&at=9&CID=B157744C-9FB4-4E04-A86D-E100B1696392&wdLOR=c087E44E8-2E8D-46DF-B51D-B210111BC296",, ortal haker,N/A,N/A,N/A,Done,,,
+Kedem (+),,IPRG-717,C12,BDV EH WIRES #  14AWG -> 16 AWG,BDV EH lamps wire gauge from 14AWG -> 16 AWG W19304,, ortal haker,N/A,N/A,N/A,Done,,,
+Kedem (+),,IPRG-2872,C12,CR HV cables re-routing,To prevent from cross-talks between stations while using CCR there is a need for re-routing of the HV cables,, Tal Shani,N/A,N/A,N/A,Done,,,
+Kedem (+),,IPRG-2004,C12,PTE/PsTE V2,New version to mitigate several problems: 1. Stray Light (via IR) 2. Cost Reduction (via redesign) 3. Volume Reduction (via redesign) PTE LED intensity set point per ink PsTE LED intensity set point,, Tal Shani,"SP
+Need to ug with interface & shader","SP
+Need to ug with interface & shader","SP
+Need to ug with interface & shader",Done,,,
+Kedem (+),,IPRG-356,C12,CRU - Rev2 - Phase 4 - optional post VR content,"Solve: BR Noise � can be solved with patch, new layout would work better CRDC settling times via patches (if possible) CRDC long fall-time (seen in small number of units) solution if needed HALT learnings (for larger MTBF)",, Tal Shani,SP,SP,SP,Done,,,
+Kedem (+),,IPRG-2343,C12,Reduce the height of the tank troley handle,Reduce the height of the tank troley handle to make it easier,, Tzvika Fiksman,,,,Done,,,
+Kedem (+),,IPRG-1311,C12,aSiD interface binding solution01,Ex-centric mechanism un-bind the sleeve from the cups,, Yossi Yaacobov,Done,Done,Done,Done,,,
+Kedem (+),,IPRG-541,C12,aSiD protective sleeve sticker,Add sticker on front door frame (inside) to remind user to use protective sleeve when handling an aSiD,, Yossi Yaacobov,,,,Done,,,
+Kedem (+),,IPRG-1403,C12,EOL pneomatic service unit gauge,Freeze the new alterntive pressure gauge,, Yuval Lavi,Done,N/A,N/A,N/A,,,
+Kedem (+),,IPRG-3075,,Wiring set to support V8-CO2 (C15),Wiring set to support V8-CO2 (C15),, Paul Sherman,,,,,,,
+Kedem (+),,IPRG-2941,,V8: Adjustments for V8,"Update pipes configuration (pipes panel, length, labels)",, Yuval Lavi,,,,,,,
+Kedem (+),,IPRG-2414,,T1 CR on st1 & st6,Replace the T1 rollers and engage units with static rollers,, Hagay Shkalim,,,,,,,
+Kedem (+),,IPRG-2393,,V8: Addapting V12 lab press to V8,Removing 2 printing stations - Remove stations 1+6 and allow to print with 3-4 stations,, Motti Silberberg,,,,,,,
+Kedem (+),,IPRG-2384,,V8: EE HW configuration,"Remove relative to V12 - EtherCAT, Ethernet, CAN & USB components)",, Paul Sherman,,,,,,,
+Kedem (+),,IPRG-2380,,V8: IOS PE SIDE TOP ASSEMBLY,remove parts from BOM to support 8 inks & 4 printing stations while trying to maintain V12 compatibility as much as possible,, Avi Marzan,,,,,,,
+Kedem (+),,IPRG-2379,,V8: LPH COOLING PE SIDE TOP ASSEMBLY,remove parts from BOM to support 8 inks & 4 printing stations while trying to maintain V12 compatibility as much as possible,, Avi Marzan,,,,,,,
+Kedem (+),,IPRG-2312,,V8: station configuration recommendation,Recommended arrangement 2for stations in V8 for optimal PQ 1. Adjusting monitor of operator station (removing ink stations and printing stations) 2. Adjusting local screens 3. Adjusting wizards 4. Adjusting V12 schema to V8 on operator monitor.,, Motti Silberberg,,,,,,,
+Kedem (+),,IPRG-1112,,V8: Configuration Cable set,Design cables to appropriate V8 configuration,, Paul Sherman,,,,,,,
+Kedem (+),,IPRG-1033,,V8: BOM definition for V8- IDS,Define BOM drawings for V8,, Yuval Lavi,,,,,,,
+Kedem (+),,IPRG-1032,,V8: BOM definition for V8- wiring,Define BOM drawings for V8,, ortal haker,,,,,,,
+Kedem (+),,IPRG-1030,,V8: Define BDV config for V8,Define BDV config for V8 after drying tests with 2nd blanket rotation,, Boaz Eden,,,,,,,
+Kedem (+),,IPRG-667,,V8: aSiD interface BOM modification for v8,aSiD interface BOM modification for v8 - NPI activity,, Yossi Yaacobov,,,,,,,
+Kedem (+),,IPRG-492,,V8: T1 adaptation on st1 & st6,Adapt the stopper position to allow removing the aSiD,, Hagay Shkalim,,,,,,,
+Kedem (+),,IPRG-407,,V8: Implement changes between V12 to V8,1. Shorten Auto-thread chain 2. Assemble additional idler roller before last roller in UIC 3. Update BOM 4. Update procedures,, Ami Yaari,,,,,,,
+Kedem (+),,IPRG-327,,V8 CVC,working point and BDV inlet removal,, Avi Marzan,,,,,,,
+Kedem (+),,IPRG-1226,C13,EBH front bracket modification for STIR handling,EBH front bracket modification for STIR handling in order to avoid damage to ASID during STIR maintanence,, Boaz Eden,,Done,,Done,,,
+Kedem (+),,IPRG-2057,C13,EL9576 and PS 200 FW update from Beckhoff,OPS activity to make sure the FW of Beckhoff modules EL9576 and PS200arrives with the correct FW version,, Motti Silberberg,Done,Done,Done,Done,,,
+Kedem (+),,IPRG-513,C13,"Metalized� (PP, PE)","Add Metalized substrate support (PP, PE) - E2E support +add a cover to protect the web and rollers in Kedem, in the interface between the PE and UIC.",, Motti Silberberg,,,,,,,
+Kedem (+),,IPRG-3278,C13,CR extended cones ,"CR extended cones to mitigate disengage wiring torn failure Not tested on system, entered from reliability forum. installed directly on Alpha",, Tal Shani,,,,,,,
+Kedem (+),,IPRG-3298,C14,Reliability improvements,Reliability efforts tasks: BID Latch screw collision with ASID arm (NOSCO escalation),, Haim Weisblech,,,,,,,
+Kedem (+),,IPRG-3157,C14,CWS manifold fitting failure,Avoid CWS fitting failure cause due to over tight,, Avi Marzan,,,Done,,,,
+Kedem (+),,IPRG-3102,C14,Main Press and Wall CBs Optimization,Change Main Press CB adjustment to 160Amp and Site prep. Wall CB/Fuse change to 175Amp,, Paul Sherman,,,,,,,
+Kedem (+),,IPRG-2966,C14,BDV - upper hoods in place sensors removal,upper hoods in place sensors removal,, Boaz Eden,,,,,,,
+Kedem (+),,IPRG-2963,C14,Covers upgrade kit for Beta,Upgrade UIC lower doors & PWS mechanism,, Noam Inbal,,,,,,,
+Kedem (+),,IPRG-2687,C14,Support new electrometer,Support new electrometer,, Tal Shani,,,,,,,
+Kedem (+),,IPRG-2603,C14,Power enable connector enforcement,Solve the issue of enable connector disconnection,, Haim Vladomirski,,,,,,,
+Kedem (+),,IPRG-2598,C14,aSiD interface rear plates redesign,Solution for PLACER PLATE KD1110053 deflection,, Yossi Yaacobov,,,,,,,
+Kedem (+),,IPRG-2507,C14,IDS parts cost redcution,"SAS cost redcution : Revovler motor, revovler plate, RDU spout, single plate",, Yuval Lavi,,,,,,,
+Kedem (+),,IPRG-2401,C14,IP54 propotional valve actuator (prevent dripping issue),"Replace IOS/LPHc/ITC valve actuator to IP54 class. create new config and LUT for new valve, add feedback/control error. (Statisics required)",, Avi Marzan,,,Done,,,,
+Kedem (+),,IPRG-2400,C14,T1 improved aSiD protection,Replace hard contact surfaces with cushions to reduce the chance for aSiD scratch,, Hagay Shkalim,,,,,,,
+Kedem (+),,IPRG-2396,C14,Connector (DFK-PC 16 ) UL  current rating issue,"Replace ""DFK-PC 16"" connectros in UC , PWS , PE Feed & Exit ECs (UL current rating issue , Not meet the 63A CB) Moved from C14 to C15",, Paul Sherman,,,,,,,
+Kedem (+),,IPRG-2363,C14,pressure sensors relocation,"relocate hoods pressure sensors from behind the Tami4 to the hoods: reliability, serviceability & cost reduction (~$150 - BDV & wiring BOMs)",, Boaz Eden,,,,,,,
+Kedem (+),,IPRG-2276,C14,"BRI, BRO replacement connector for 14# wire thickness (not functional)","PWS BRI, BRO replacement connector for 14# wire thickness (improve reliability)",, ortal haker,,,,,,,
+Kedem (+),,IPRG-2210,C14,Pressure sensors cost reduction - change from German supplier to Czeck,Pressure sensors cost reduction - change from German supplier to Czeck - ~$400 BOM cost reduction,, Boaz Eden,,,,,,,
+Kedem (+),,IPRG-2160,C14,BDV - AirTac pneumatic parts,"Pneumatic parts conversion to AirTac, estimated BOM cost reduction of $300",, Boaz Eden,,,,,,,
+Kedem (+),,IPRG-2079,C14,Solution for substarte slippage on the ILS roller,Replace encoder roller with higher friction roller,, Ami Yaari,,,,,,,
+Kedem (+),,IPRG-1981,C14,water and Imo Level indicator FCO,New stainless steel conectors,, Avi Marzan,N/A,Done,N/A,N/A,,,
+Kedem (+),,IPRG-1917,C14,CR new connector design,new connector design to increase reliability and reducing cost,, Tal Shani,,,,,,,
+Kedem (+),,IPRG-1853,C14,CR housing - bearing housing cost reduction,Moving to final technology - improved relability and reduce cost 1200$,, Tal Shani,,,,,,,
+Kedem (+),,IPRG-1813,C14,RW/UW Mechanical improvements,"Mechanical improvements RW - Stopper interference, Belt alignment, WG interference UW - Potntiometer intererence, Replace gear coupling",, Ami Yaari,,,,,,,
+Kedem (+),,IPRG-1805,C14,Design improvements for StiR  new version 2.0,ME deisgn / buy item change for cost reduction,, Hagay Shkalim,Done,Done,,,,,
+Kedem (+),,IPRG-1770,C14,LPH MR version,LPH revision to meet the cost target of 5200$ (after 1500pcs),, Haim Vladomirski,,,,"St.3,4,5",,,
+Kedem (+),,IPRG-1742,C14,BDV cost reduction bundle BH (~$200) - ECO only,LH: unify parts EBH: raw material & suction flange AKD: duct base from Aluminum AOS: air purge layout H6 & LH: improved position pins Heating lamp connector assy: 16g,, Boaz Eden,,,,,,,
+Kedem (+),,IPRG-1719,C14,LC  mounting - Tighten tolerance,LC mounting - Tighten tolerance,, Ami Yaari,,,,,,,
+Kedem (+),,IPRG-1716,C14,EtherCAT cable set labels optimization,"labels optimization, reduce labels quantity cost reduction $576",, ortal haker,,,,,,,
+Kedem (+),,IPRG-1662,C14,IC common water pump failure HW solution,"investigate root cause for water pump failure, reduce water pressure, consider pump modification. Connected to ID3457 Moved from C15 To C14",, Yuval Lavi,,,Done,,,,
+Kedem (+),,IPRG-1575,C14,Ink pump motor seal improvement,improvment the motor seal to reduce motor failure,, Yuval Lavi,,,,,,,
+Kedem (+),,IPRG-1300,C14,ESD brush,ESD brush CR,, Ami Yaari,,,,,,,
+Kedem (+),,IPRG-1281,C14,encoder connector - fails to stay connected. Needs mechanical fix.,encoder connector - fails to stay connected. Needs mechanical fix.,, Hagay Shkalim,,,,,,,
+Kedem (+),,IPRG-1120,C14,T1 rollers CR - extrusion,Design new extrusion roller for CR,, Hagay Shkalim,,,,Done,,,
+Kedem (+),,IPRG-1015,C14,DC BUS LPH focus motors & ROS connection optimization,DC bus connection changes remove 6 TJ & bride cables - Cost reduction of $980,, ortal haker,,,,,,,
+Kedem (+),,IPRG-991,C14,CS BOM cost reduction package,CS BOM cost reduction package,, Tal Shani,,,,,,,
+Kedem (+),,IPRG-943,C14,HV Connector plastic injection,Cost reductio activity: Plastic injected item instead of Machined item,, Haim Weisblech,,,,,,,
+Kedem (+),,IPRG-873,C14,Screws security standardization,"Check screws in presses, identify if required new screws or specific installation instructions",, Motti Silberberg,,,,,,,
+Kedem (+),,IPRG-862,C14,aSid sleeve collision protection (with Gorilla glass),Changes in the LPH interface parts to prevent collision of Gorilla glass with aSid below sleeve during aSid installation,, Haim Vladomirski,,,,St.5,,,
+Kedem (+),,IPRG-854,C14,NIP version,Change tolerance of bearing,, Ami Yaari,,,,,,,
+Kedem (+),,IPRG-828,C14,GG - plastic injection,Change GG frame to plastic injection,, Haim Vladomirski,,,,,,,
+Kedem (+),,IPRG-322,C14,CS housing cost reduction phase #1,Move to Assembly of fully machined Endcaps on extruded body through 2 gaskets,, Tal Shani,,,,,,,
+Kedem (+),,IPRG-312,C14,Improve circular connector CS# IMO SNS FLOW/TMP,CS# IMO SNS FLOW/TMP Replaced the assembly connector to molded circular connector Moved from C15 To C14,, ortal haker,,,,,,,

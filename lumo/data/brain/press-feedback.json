@@ -1,0 +1,13 @@
+{
+  "entries": {
+    "lph_not_ready|replace part|engine - process > lph > gibic|cu199-05000": {
+      "up": 1,
+      "down": 0,
+      "symptom": "LPH_NOT_READY",
+      "action": "Replace Part",
+      "causePath": "Engine - Process > LPH > GIBIC",
+      "partNumber": "CU199-05000",
+      "lastAt": "2026-07-22T17:36:09.734Z"
+    }
+  }
+}

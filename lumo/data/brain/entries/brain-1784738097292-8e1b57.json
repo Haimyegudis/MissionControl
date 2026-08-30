@@ -1,0 +1,17 @@
+{
+  "id": "brain-1784738097292-8e1b57",
+  "type": "press-issues",
+  "source": "ingest-press-cases",
+  "name": "Press Issues Knowledge (SCA + V12 cases)",
+  "description": "715 field-service cases clustered into 470 known issues with ranked solutions. Queried via the lookup_press_issue tool.",
+  "tags": [
+    "press-issues",
+    "symptoms",
+    "solutions",
+    "V12",
+    "SCA"
+  ],
+  "addedAt": "2026-07-22T16:34:57.293Z",
+  "usageCount": 0,
+  "content": "Knowledge base at data/brain/press-issues.json. 470 symptom clusters, solutions ranked by fix count. Vector search collection V12-PressIssues in DB/PressIssuesEmbeddingsDb.db."
+}

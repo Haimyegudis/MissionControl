@@ -1,0 +1,6 @@
+{
+  "comment": "Press SUBSYSTEM synonym groups. Terms in one group name the same press unit — used to expand press-issue searches and to prefer clusters of the named subsystem. Keep only hardware/subsystem terms here (not generic vocabulary like defect=bug).",
+  "groups": [
+    ["stir", "stirring", "bru", "bcr", "blanket cleaning roller"]
+  ]
+}
