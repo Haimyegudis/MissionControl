@@ -165,6 +165,15 @@ export function resolveActiveSprint(
   };
 }
 
+/** Issues belonging to the resolved active sprint (by sprint name). */
+export function sprintIssuesOf<T extends Pick<JiraIssue, 'sprint'>>(
+  issues: readonly T[],
+  sprint: ActiveSprint | null,
+): T[] {
+  if (!sprint) return [];
+  return issues.filter((issue) => issue.sprint?.trim() === sprint.name);
+}
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** Sprint name plus countdown, with no card title — the phone shows this bare. */

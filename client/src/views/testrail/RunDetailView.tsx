@@ -9,6 +9,7 @@ import { trApi } from '../../api/testrail';
 import { Modal } from '../../components/Modal';
 import { buildCsv, downloadCsv } from '../../lib/csv';
 import { mapWithConcurrency } from '../../lib/asyncPool';
+import { useWindowedRowCap } from '../../lib/scrollWindowing';
 import { RefLinks } from '../../components/RefLinks';
 import { fmtUnixDate, passPct } from '../../lib/testrail';
 import { testrailRunIdStore } from '../../router';
@@ -59,19 +60,7 @@ export function RunDetailView() {
   const [historyTest, setHistoryTest] = useState<TrTest | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
-  const [paintCap, setPaintCap] = useState(PAINT_STEP);
-
-  // Windowed rendering: extend when the user scrolls near the page bottom.
-  useEffect(() => {
-    const onScroll = () => {
-      const doc = document.documentElement;
-      if (doc.scrollTop + window.innerHeight > doc.scrollHeight - 800) {
-        setPaintCap((c) => c + PAINT_STEP);
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  const paintCap = useWindowedRowCap(PAINT_STEP);
 
   const me = st.session?.user?.id ?? null;
 

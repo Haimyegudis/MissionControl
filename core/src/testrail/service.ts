@@ -105,10 +105,20 @@ export class TestRailService {
    *  slowly. Entries past TTL are served stale ONCE while a background
    *  refresh re-fills them (previously entries never expired at all). */
   private static ttlFor(key: string): number {
-    if (key.startsWith('runs:') || key.startsWith('planruns:') || key.startsWith('tests:') || key.startsWith('results:')) {
+    if (
+      key.startsWith('runs:') ||
+      key.startsWith('planruns:') ||
+      key.startsWith('tests:') ||
+      key.startsWith('results:') ||
+      // Cases and sections are edited outside the app (CSV uploads, TestRail
+      // UI), so they expire like run state — otherwise a fresh upload stays
+      // invisible for up to an hour.
+      key.startsWith('cases:') ||
+      key.startsWith('sections:')
+    ) {
       return 3 * 60_000; // 3 minutes
     }
-    return 60 * 60_000; // structure/meta: 1 hour
+    return 60 * 60_000; // suites/meta/projects: 1 hour
   }
 
   /** Serve from the KV store when present; `fresh` bypasses and re-fills it. */

@@ -3,6 +3,7 @@
 // module-level async actions, localStorage persistence for UI preferences.
 
 import { trApi } from '../api/testrail';
+import { hasUnknownSection, ranCaseIds, swrDue } from '../lib/testrail';
 import { isNativeApp } from '../native/platform';
 import type {
   TrCase,
@@ -333,11 +334,51 @@ function suiteIdsOf(sel: SuiteSel): number[] {
 
 const sectionLoads = new Map<string, Promise<TrSection[]>>();
 
+// Cases/sections change outside the app (CSV uploads, TestRail UI). A store
+// hit is served instantly, then revalidated in the background — at most once
+// per suite per SWR_REVALIDATE_MS — so new uploads appear without ↻ Refresh.
+const sectionSwrAt = new Map<number, number>();
+const caseSwrAt = new Map<number, number>();
+
+function revalidateSections(pid: number, suiteId: number): void {
+  if (!swrDue(sectionSwrAt.get(suiteId), Date.now())) return;
+  sectionSwrAt.set(suiteId, Date.now());
+  // fresh=1: bypass the server's TTL cache so an upload done seconds ago in
+  // TestRail is already in the repaint — cached data still paints first.
+  void trApi
+    .sections(pid, suiteId, true)
+    .then((list) => trStore.set((prev) => ({ ...prev, sections: { ...prev.sections, [suiteId]: list } })))
+    .catch(() => undefined);
+}
+
+function revalidateCases(pid: number, suiteId: number): void {
+  if (!swrDue(caseSwrAt.get(suiteId), Date.now())) return;
+  caseSwrAt.set(suiteId, Date.now());
+  void trApi
+    .cases(pid, suiteId, true)
+    .then((list) => {
+      trStore.set((prev) => ({ ...prev, cases: { ...prev.cases, [suiteId]: list } }));
+      syncSectionsIfUnknown(pid, suiteId, list);
+    })
+    .catch(() => undefined);
+}
+
+/** Cases can outrun sections when an upload lands mid-view; a case pointing at
+ *  a section we have not loaded forces a section refetch past the throttle. */
+function syncSectionsIfUnknown(pid: number, suiteId: number, cases: TrCase[]): void {
+  if (!hasUnknownSection(cases, trStore.get().sections[suiteId] ?? [])) return;
+  sectionSwrAt.delete(suiteId);
+  revalidateSections(pid, suiteId);
+}
+
 export function ensureSections(sel: SuiteSel, force = false): Promise<TrSection[][]> {
   return Promise.all(
     suiteIdsOf(sel).map((suiteId) => {
       const st = trStore.get();
-      if (!force && st.sections[suiteId]) return Promise.resolve(st.sections[suiteId] as TrSection[]);
+      if (!force && st.sections[suiteId]) {
+        revalidateSections(st.projectId as number, suiteId);
+        return Promise.resolve(st.sections[suiteId] as TrSection[]);
+      }
       const key = `${st.projectId}:${suiteId}:${force ? 1 : 0}`;
       let load = sectionLoads.get(key);
       if (!load) {
@@ -345,6 +386,7 @@ export function ensureSections(sel: SuiteSel, force = false): Promise<TrSection[
         load = trApi
           .sections(pid, suiteId, force)
           .then((list) => {
+            sectionSwrAt.set(suiteId, Date.now());
             trStore.set((prev) => ({ ...prev, sections: { ...prev.sections, [suiteId]: list } }));
             return list;
           })
@@ -362,7 +404,10 @@ export function ensureCases(sel: SuiteSel, force = false): Promise<TrCase[][]> {
   return Promise.all(
     suiteIdsOf(sel).map((suiteId) => {
       const st = trStore.get();
-      if (!force && st.cases[suiteId]) return Promise.resolve(st.cases[suiteId] as TrCase[]);
+      if (!force && st.cases[suiteId]) {
+        revalidateCases(st.projectId as number, suiteId);
+        return Promise.resolve(st.cases[suiteId] as TrCase[]);
+      }
       const key = `${st.projectId}:${suiteId}:${force ? 1 : 0}`;
       let load = caseLoads.get(key);
       if (!load) {
@@ -370,7 +415,9 @@ export function ensureCases(sel: SuiteSel, force = false): Promise<TrCase[][]> {
         load = trApi
           .cases(pid, suiteId, force)
           .then((list) => {
+            caseSwrAt.set(suiteId, Date.now());
             trStore.set((prev) => ({ ...prev, cases: { ...prev.cases, [suiteId]: list } }));
+            syncSectionsIfUnknown(pid, suiteId, list);
             return list;
           })
           .finally(() => caseLoads.delete(key));
@@ -500,7 +547,9 @@ export async function analyzeCoverage(
         let ok = false;
         for (let attempt = 0; attempt < 2 && !ok; attempt++) {
           try {
-            (await trApi.tests(r.id)).forEach((t) => covered.add(t.caseId));
+            // Untested entries are run membership, not execution — include_all
+            // runs auto-add every new case, which made never-ran read zero.
+            ranCaseIds(await trApi.tests(r.id)).forEach((id) => covered.add(id));
             ok = true;
           } catch {
             /* retry once */
@@ -523,7 +572,7 @@ export async function analyzeCoverage(
   // Persist: the scan is expensive and used to evaporate on project switch.
   try {
     localStorage.setItem(
-      `deck.tr.coverage.${suiteId}`,
+      `deck.tr.coverage2.${suiteId}`,
       JSON.stringify({ covered: [...covered], runsAnalyzed: allRuns.length - failed, totalRuns: allRuns.length, at: Date.now() }),
     );
   } catch {
@@ -542,7 +591,7 @@ export async function analyzeCoverage(
 /** Restore a persisted coverage scan (≤7 days old) into the store. */
 export function restoreCoverage(suiteId: number): boolean {
   try {
-    const raw = localStorage.getItem(`deck.tr.coverage.${suiteId}`);
+    const raw = localStorage.getItem(`deck.tr.coverage2.${suiteId}`);
     if (!raw) return false;
     const parsed = JSON.parse(raw) as { covered: number[]; runsAnalyzed: number; totalRuns: number; at: number };
     if (!Array.isArray(parsed.covered) || Date.now() - parsed.at > 7 * 86_400_000) return false;

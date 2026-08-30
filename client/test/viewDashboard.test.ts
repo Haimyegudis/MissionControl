@@ -13,6 +13,7 @@ import {
   pickTransition,
   resolveDashboardWidgets,
   sortSprintIssues,
+  sprintIssuesOf,
   stampOriginalOrder,
 } from '../src/lib/viewDashboard';
 import type { JiraTransition } from '../src/types';
@@ -178,5 +179,19 @@ describe('KPI drill-down', () => {
     for (const def of KPI_DEFS) {
       expect(kpiDrillSubtitle(def.id)).not.toBe('');
     }
+  });
+});
+
+describe('sprintIssuesOf', () => {
+  const issue = (key: string, sprint: string | null) => ({ key, sprint }) as never;
+
+  it('keeps only issues whose sprint matches the active sprint name', () => {
+    const issues = [issue('A-1', 'S2'), issue('A-2', 'S1'), issue('A-3', 'S2'), issue('A-4', null)];
+    const picked = sprintIssuesOf(issues, { name: 'S2', endDate: null, daysLeft: null });
+    expect(picked.map((i: { key: string }) => i.key)).toEqual(['A-1', 'A-3']);
+  });
+
+  it('returns empty when there is no active sprint', () => {
+    expect(sprintIssuesOf([issue('A-1', 'S2')], null)).toEqual([]);
   });
 });

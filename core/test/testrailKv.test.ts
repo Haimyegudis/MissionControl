@@ -44,6 +44,40 @@ describe('TestRailService over KV ports', () => {
     expect(people.all()).toEqual([{ id: 9, name: 'Kept' }]);
   });
 
+  it('serves a stale cases entry once and revalidates it behind the response', async () => {
+    const kv = new MemoryKvStore();
+    const svc = new TestRailService(kv, new MemoryPeopleStore());
+    kv.set('trCache', 'cases:1:2', JSON.stringify(['old']), Date.now() - 4 * 60_000);
+    const served = await svc.cachedJson('cases:1:2', async () => ['new'], false);
+    expect(served).toEqual(['old']);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(JSON.parse(kv.get('trCache', 'cases:1:2')!.json)).toEqual(['new']);
+  });
+
+  it('serves a stale sections entry once and revalidates it behind the response', async () => {
+    const kv = new MemoryKvStore();
+    const svc = new TestRailService(kv, new MemoryPeopleStore());
+    kv.set('trCache', 'sections:1:2', JSON.stringify(['old']), Date.now() - 4 * 60_000);
+    const served = await svc.cachedJson('sections:1:2', async () => ['new'], false);
+    expect(served).toEqual(['old']);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(JSON.parse(kv.get('trCache', 'sections:1:2')!.json)).toEqual(['new']);
+  });
+
+  it('does not refetch a cases entry younger than its TTL', async () => {
+    const kv = new MemoryKvStore();
+    const svc = new TestRailService(kv, new MemoryPeopleStore());
+    kv.set('trCache', 'cases:1:2', JSON.stringify(['old']), Date.now() - 60_000);
+    let fetched = false;
+    const served = await svc.cachedJson('cases:1:2', async () => {
+      fetched = true;
+      return ['new'];
+    }, false);
+    expect(served).toEqual(['old']);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(fetched).toBe(false);
+  });
+
   it('clearCache empties only the TestRail table', () => {
     const kv = new MemoryKvStore();
     kv.set('trCache', 'projects', '[]', 1);

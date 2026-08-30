@@ -72,6 +72,147 @@ export function sectionDescendants(sectionId: number, sections: TrSection[]): Se
   return out;
 }
 
+/**
+ * Rows of the collapsible section tree: sections in displayOrder, keeping only
+ * those whose every ancestor is in `expanded` (top-level rows always show).
+ */
+export function visibleSections(sections: TrSection[], expanded: ReadonlySet<number>): TrSection[] {
+  const byId = new Map(sections.map((s) => [s.id, s]));
+  const out: TrSection[] = [];
+  for (const s of [...sections].sort((a, b) => a.displayOrder - b.displayOrder)) {
+    let cur = s.parentId != null ? byId.get(s.parentId) : undefined;
+    let guard = 0;
+    let show = true;
+    while (cur && guard++ < 20) {
+      if (!expanded.has(cur.id)) {
+        show = false;
+        break;
+      }
+      cur = cur.parentId != null ? byId.get(cur.parentId) : undefined;
+    }
+    if (show) out.push(s);
+  }
+  return out;
+}
+
+/** Ids of sections that have at least one subsection. */
+export function sectionHasChildren(sections: TrSection[]): Set<number> {
+  const out = new Set<number>();
+  for (const s of sections) if (s.parentId != null) out.add(s.parentId);
+  return out;
+}
+
+/** Direct + descendant case count per section (deepest levels roll upward). */
+export function subtreeCaseCounts(
+  sections: TrSection[],
+  direct: ReadonlyMap<number, number>,
+): Map<number, number> {
+  const totals = new Map<number, number>();
+  for (const s of [...sections].sort((a, b) => b.depth - a.depth)) {
+    const total = (direct.get(s.id) ?? 0) + (totals.get(s.id) ?? 0);
+    totals.set(s.id, total);
+    if (s.parentId != null) totals.set(s.parentId, (totals.get(s.parentId) ?? 0) + total);
+  }
+  return totals;
+}
+
+export interface CasesTableRow<TCase> {
+  section: TrSection;
+  /** Cases painted directly under this header (empty when collapsed or for
+   *  ancestor-only headers). */
+  cases: TCase[];
+  /** Cases directly in this section before collapse hiding. */
+  directCount: number;
+  /** Direct + descendant case count (of the filtered set). */
+  subtreeCount: number;
+  /** This section's own collapse-toggle state. */
+  collapsed: boolean;
+}
+
+/**
+ * Nested header plan for the cases table: each leaf group is preceded by
+ * header rows for any ancestors not already emitted, so the table reads
+ * section → subsection → cases. A collapsed section keeps its own row but
+ * hides everything beneath it.
+ */
+export function casesTableRows<TCase>(
+  groups: Array<{ sectionId: number; cases: TCase[] }>,
+  sections: TrSection[],
+  collapsed: ReadonlySet<number>,
+): Array<CasesTableRow<TCase>> {
+  const byId = new Map(sections.map((s) => [s.id, s]));
+  const chainOf = (id: number): TrSection[] => {
+    const out: TrSection[] = [];
+    let cur = byId.get(id);
+    let guard = 0;
+    while (cur && guard++ < 20) {
+      out.unshift(cur);
+      cur = cur.parentId != null ? byId.get(cur.parentId) : undefined;
+    }
+    return out;
+  };
+
+  const subtree = new Map<number, number>();
+  const chains = new Map<number, TrSection[]>();
+  for (const g of groups) {
+    const chain = chainOf(g.sectionId);
+    chains.set(g.sectionId, chain);
+    for (const s of chain) subtree.set(s.id, (subtree.get(s.id) ?? 0) + g.cases.length);
+  }
+
+  const rows: Array<CasesTableRow<TCase>> = [];
+  let prev: TrSection[] = [];
+  for (const g of groups) {
+    const chain = chains.get(g.sectionId) as TrSection[];
+    if (chain.length === 0) {
+      // Case rows whose section the suite does not know — keep them visible.
+      rows.push({
+        section: {
+          id: g.sectionId,
+          suiteId: null,
+          parentId: null,
+          name: `Section ${g.sectionId}`,
+          depth: 0,
+          displayOrder: Number.MAX_SAFE_INTEGER,
+        },
+        cases: collapsed.has(g.sectionId) ? [] : g.cases,
+        directCount: g.cases.length,
+        subtreeCount: g.cases.length,
+        collapsed: collapsed.has(g.sectionId),
+      });
+      prev = [];
+      continue;
+    }
+
+    let firstNew = 0;
+    while (
+      firstNew < chain.length - 1 &&
+      firstNew < prev.length &&
+      prev[firstNew].id === chain[firstNew].id
+    ) {
+      firstNew++;
+    }
+    prev = chain;
+
+    // A collapsed ancestor hides every deeper row (including this group).
+    const hiddenFrom = chain.findIndex((s, i) => i < chain.length - 1 && collapsed.has(s.id));
+
+    for (let i = firstNew; i < chain.length; i++) {
+      if (hiddenFrom !== -1 && i > hiddenFrom) break;
+      const s = chain[i];
+      const isLeaf = i === chain.length - 1;
+      rows.push({
+        section: s,
+        cases: isLeaf && !collapsed.has(s.id) ? g.cases : [],
+        directCount: isLeaf ? g.cases.length : 0,
+        subtreeCount: subtree.get(s.id) ?? 0,
+        collapsed: collapsed.has(s.id),
+      });
+    }
+  }
+  return rows;
+}
+
 export interface SectionGroup {
   sectionId: number;
   cases: TrCase[];
@@ -284,4 +425,40 @@ export function fmtUnixDate(unix: number | null | undefined): string {
     month: 'short',
     day: 'numeric',
   });
+}
+
+// ---------------------------------------------------------------------------
+// stale-while-revalidate throttle
+// ---------------------------------------------------------------------------
+
+/** Minimum gap between background revalidations of one suite's cases/sections. */
+export const SWR_REVALIDATE_MS = 60_000;
+
+/** True when a suite-keyed cache entry is old enough to revalidate in the
+ *  background (or has never been fetched this session). */
+export function swrDue(lastAt: number | undefined, now: number, interval = SWR_REVALIDATE_MS): boolean {
+  return lastAt === undefined || now - lastAt >= interval;
+}
+
+// ---------------------------------------------------------------------------
+// never-ran coverage
+// ---------------------------------------------------------------------------
+
+/** TestRail system status: the test exists in a run but was never executed. */
+export const UNTESTED_STATUS_ID = 3;
+
+/** Case ids that actually ran. An include_all run auto-adds every new case as
+ *  Untested, so mere run membership must not count as coverage. */
+export function ranCaseIds(tests: Array<{ caseId: number; statusId: number }>): number[] {
+  return tests.filter((t) => t.statusId !== UNTESTED_STATUS_ID).map((t) => t.caseId);
+}
+
+/** True when any case points at a section id absent from the section list —
+ *  the case list outran the section list (fresh upload mid-view). */
+export function hasUnknownSection(
+  cases: Array<{ sectionId: number | null }>,
+  sections: Array<{ id: number }>,
+): boolean {
+  const known = new Set(sections.map((s) => s.id));
+  return cases.some((c) => c.sectionId != null && !known.has(c.sectionId));
 }

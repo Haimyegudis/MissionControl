@@ -10,13 +10,18 @@ import { trApi } from '../../api/testrail';
 import { Stamp } from '../../components/Stamp';
 import { downloadCsv } from '../../lib/csv';
 import { mapWithConcurrency } from '../../lib/asyncPool';
+import { useWindowedRowCap } from '../../lib/scrollWindowing';
 import {
+  casesTableRows,
   csvForCases,
   filterCases,
   fmtUnixDate,
   groupCasesBySection,
   sectionDescendants,
+  sectionHasChildren,
   sectionPath,
+  subtreeCaseCounts,
+  visibleSections,
 } from '../../lib/testrail';
 import { pushToast } from '../../stores/toasts';
 import {
@@ -152,20 +157,8 @@ export function CaseLibraryView() {
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
   const [bulkEdit, setBulkEdit] = useState<number[] | null>(null);
-  const [rowCap, setRowCap] = useState(ROW_STEP);
+  const rowCap = useWindowedRowCap(ROW_STEP);
   const [covProgress, setCovProgress] = useState<string | null>(null);
-
-  // Windowed rendering: extend when the user scrolls near the page bottom.
-  useEffect(() => {
-    const onScroll = () => {
-      const doc = document.documentElement;
-      if (doc.scrollTop + window.innerHeight > doc.scrollHeight - 800) {
-        setRowCap((c) => c + ROW_STEP);
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -235,6 +228,29 @@ export function CaseLibraryView() {
   );
 
   const groups = useMemo(() => groupCasesBySection(visible, sections), [visible, sections]);
+
+  // A search scoped to a selected section that matches nothing looks like a
+  // broken search — count what the same filters find suite-wide so the empty
+  // state can offer the wider scope in one click.
+  const matchesOutsideScope = useMemo(
+    () => {
+      if (visible.length > 0 || sectionScope == null) return 0;
+      return filterCases(
+        cases,
+        {
+          title: st.filters.titleContains,
+          ownerText: st.filters.ownerText,
+          assigneeText: st.filters.assigneeText,
+          neverRan: st.filters.showNeverRan && Boolean(coverage),
+          coverage: coverage?.covered ?? null,
+          sectionIds: null,
+          sectionPathById: sectionPathLower,
+        },
+        nameOf,
+      ).length;
+    },
+    [visible.length, sectionScope, cases, st.filters, coverage, sectionPathLower, st.people, st.meta], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   const cols = useMemo(
     () => CASE_COLS.filter((c) => c.always || st.cols.visible.includes(c.key)),
@@ -393,6 +409,43 @@ export function CaseLibraryView() {
     return out;
   }, [cases]);
 
+  // ---- collapsible section tree (left panel) -------------------------------
+
+  const [expandedSecs, setExpandedSecs] = useState<Set<number>>(new Set());
+  const parentSecs = useMemo(() => sectionHasChildren(sections), [sections]);
+  const treeRows = useMemo(() => visibleSections(sections, expandedSecs), [sections, expandedSecs]);
+  const subtreeCounts = useMemo(
+    () => subtreeCaseCounts(sections, countBySection),
+    [sections, countBySection],
+  );
+  const toggleExpanded = (id: number) =>
+    setExpandedSecs((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  // A section selected while hidden (search, palette, stale state) must not
+  // sit invisible in a collapsed branch — expand its ancestors.
+  useEffect(() => {
+    if (st.selSectionId == null) return;
+    setExpandedSecs((prev) => {
+      const byId = new Map(sections.map((s) => [s.id, s]));
+      let cur = byId.get(st.selSectionId as number);
+      let next: Set<number> | null = null;
+      let guard = 0;
+      while (cur && cur.parentId != null && guard++ < 20) {
+        if (!(next ?? prev).has(cur.parentId)) {
+          next = next ?? new Set(prev);
+          next.add(cur.parentId);
+        }
+        cur = byId.get(cur.parentId);
+      }
+      return next ?? prev;
+    });
+  }, [st.selSectionId, sections]);
+
   // Phone rendering of the same grouped data. The desktop table is a
   // fixed-layout grid of up to eight columns, which cannot be made legible at
   // 384px; the section grouping is the part that carries meaning, so it stays
@@ -515,68 +568,83 @@ export function CaseLibraryView() {
 
   // Memoized: up to ROW_CAP rows × ~8 cells used to rebuild on every render
   // (every keystroke and checkbox click).
+  const tableRows = useMemo(
+    () => casesTableRows(groups, sections, st.collapsedSecs),
+    [groups, sections, st.collapsedSecs],
+  );
+  const groupsById = useMemo(() => new Map(groups.map((g) => [g.sectionId, g.cases])), [groups]);
+
   const bodyRows: ReactNode[] = useMemo(() => {
   const rows: ReactNode[] = [];
   let painted = 0;
-  for (const group of groups) {
+  for (const row of tableRows) {
     if (painted >= rowCap) break;
-    const collapsed = st.collapsedSecs.has(group.sectionId);
-    const allSel = group.cases.every((c) => st.caseSel.has(c.id));
-    const shown = collapsed ? [] : group.cases.slice(0, rowCap - painted);
+    const direct = groupsById.get(row.section.id) ?? [];
+    const allSel = direct.length > 0 && direct.every((c) => st.caseSel.has(c.id));
+    const shown = row.cases.slice(0, rowCap - painted);
     painted += shown.length;
+    const suite =
+      st.selSuiteId === 'all' && row.section.depth === 0 && row.section.suiteId != null
+        ? st.suites.find((su) => su.id === row.section.suiteId)
+        : undefined;
     rows.push(
       <tr
-        key={`sec-${group.sectionId}`}
+        key={`sec-${row.section.id}`}
         className="secrow"
         style={{ cursor: 'pointer' }}
-        onClick={() => toggleCollapsedSection(group.sectionId)}
+        onClick={() => toggleCollapsedSection(row.section.id)}
       >
         <td colSpan={span}>
-          <div className="secrow-flex">
-            <input
-              type="checkbox"
-              checked={allSel}
-              title="select all in section"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => {
-                const on = e.target.checked;
-                setCaseSelection((next) => {
-                  for (const c of group.cases) {
-                    if (on) next.add(c.id);
-                    else next.delete(c.id);
-                  }
-                });
-              }}
-            />
-            <span>{collapsed ? '▸' : '▾'}</span>
+          <div className="secrow-flex" style={{ paddingLeft: row.section.depth * 18 }}>
+            {direct.length > 0 ? (
+              <input
+                type="checkbox"
+                checked={allSel}
+                title="select all in section"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  setCaseSelection((next) => {
+                    for (const c of direct) {
+                      if (on) next.add(c.id);
+                      else next.delete(c.id);
+                    }
+                  });
+                }}
+              />
+            ) : null}
+            <span>{row.collapsed ? '▸' : '▾'}</span>
             <span className="secrow-path">
-              {sectionPath(group.sectionId, sections, st.suites, st.selSuiteId === 'all')}{' '}
+              {suite ? `⟨${suite.name}⟩ ` : ''}
+              {row.section.name}{' '}
               <span className="muted" style={{ fontFamily: 'var(--font-mono)', fontWeight: 400 }}>
-                · {group.cases.length}
+                · {row.subtreeCount}
               </span>
             </span>
-            <span className="sec-actions">
-              <button
-                className="btn"
-                style={{ padding: '2px 8px', fontSize: 11 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setTransfer({ mode: 'copy', ids: group.cases.map((c) => c.id) });
-                }}
-              >
-                copy…
-              </button>
-              <button
-                className="btn"
-                style={{ padding: '2px 8px', fontSize: 11 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setTransfer({ mode: 'move', ids: group.cases.map((c) => c.id) });
-                }}
-              >
-                move…
-              </button>
-            </span>
+            {direct.length > 0 ? (
+              <span className="sec-actions">
+                <button
+                  className="btn"
+                  style={{ padding: '2px 8px', fontSize: 11 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTransfer({ mode: 'copy', ids: direct.map((c) => c.id) });
+                  }}
+                >
+                  copy…
+                </button>
+                <button
+                  className="btn"
+                  style={{ padding: '2px 8px', fontSize: 11 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTransfer({ mode: 'move', ids: direct.map((c) => c.id) });
+                  }}
+                >
+                  move…
+                </button>
+              </span>
+            ) : null}
           </div>
         </td>
       </tr>,
@@ -628,8 +696,19 @@ export function CaseLibraryView() {
             {loadError
               ? `✕ Failed to load cases: ${loadError} — use ↻ Refresh to retry.`
               : casesLoaded(st)
-                ? 'Nothing here. Adjust the filter or add a case.'
+                ? sectionScope != null
+                  ? 'Nothing here in the selected section.'
+                  : 'Nothing here. Adjust the filter or add a case.'
                 : 'loading cases for this suite…'}
+            {!loadError && casesLoaded(st) && matchesOutsideScope > 0 ? (
+              <button
+                className="btn"
+                style={{ marginLeft: 10 }}
+                onClick={() => selectSection(null)}
+              >
+                Show {matchesOutsideScope} match{matchesOutsideScope === 1 ? '' : 'es'} in all sections
+              </button>
+            ) : null}
           </div>
         </td>
       </tr>,
@@ -637,7 +716,7 @@ export function CaseLibraryView() {
   }
   return rows;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groups, st.collapsedSecs, st.caseSel, sections, st.suites, st.selSuiteId, cols, cellCtx, span, visible.length, loadError, rowCap]);
+  }, [tableRows, groupsById, st.caseSel, st.suites, st.selSuiteId, cols, cellCtx, span, visible.length, loadError, rowCap, sectionScope, matchesOutsideScope]);
 
   const suiteOptions = (
     <>
@@ -733,16 +812,43 @@ export function CaseLibraryView() {
               <span className="cnt">{cases.length}</span>
             </div>
             {st.selSuiteId !== 'all'
-              ? [...sections]
-                  .sort((a, b) => a.displayOrder - b.displayOrder)
-                  .map((s) => (
+              ? treeRows.map((s) => {
+                  const isParent = parentSecs.has(s.id);
+                  const open = expandedSecs.has(s.id);
+                  return (
                     <div
                       key={s.id}
                       className={`tr-sec ${st.selSectionId === s.id ? 'active' : ''}`}
-                      style={{ paddingLeft: 10 + s.depth * 14 }}
+                      style={{ paddingLeft: 4 + s.depth * 14 }}
                       onClick={() => selectSection(s.id)}
                     >
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span
+                        className="tr-sec-arrow"
+                        title={isParent ? (open ? 'Collapse subsections' : 'Show subsections') : undefined}
+                        style={{
+                          flex: '0 0 16px',
+                          textAlign: 'center',
+                          cursor: isParent ? 'pointer' : 'default',
+                          color: 'var(--muted)',
+                          userSelect: 'none',
+                        }}
+                        onClick={(e) => {
+                          if (!isParent) return;
+                          e.stopPropagation();
+                          toggleExpanded(s.id);
+                        }}
+                      >
+                        {isParent ? (open ? '▾' : '▸') : ''}
+                      </span>
+                      <span
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         {s.name}
                       </span>
                       <button
@@ -767,9 +873,12 @@ export function CaseLibraryView() {
                       >
                         +
                       </button>
-                      <span className="cnt">{countBySection.get(s.id) ?? ''}</span>
+                      <span className="cnt">
+                        {(isParent ? subtreeCounts.get(s.id) : countBySection.get(s.id)) || ''}
+                      </span>
                     </div>
-                  ))
+                  );
+                })
               : null}
           </div>
         ) : null}
