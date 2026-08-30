@@ -1,1 +1,2 @@
 lumo/DB/** filter=lfs diff=lfs merge=lfs -text
+lumo/data/brain/code-signal-index*.json filter=lfs diff=lfs merge=lfs -text
